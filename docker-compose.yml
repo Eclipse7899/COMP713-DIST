@@ -16,6 +16,8 @@ services:
             context: ./backend
         ports:
         - "3000:3000"
+        environment:
+            - DATABASE_URL=postgres://user:password@db:5432/mydb
         networks:
         - webnet
         depends_on:
