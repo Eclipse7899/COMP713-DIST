@@ -13,9 +13,50 @@ datasource db {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
+  id        String   @id @default(cuid(2))
   createdAt DateTime @default(now())
   email     String   @unique
   username  String   @unique
   password  String
+  food      Food[]
+}
+
+model Food {
+  id         String       @id @default(cuid(2))
+  name       String
+  category   FoodCategory
+  quantity   Float        @default(1)
+  unit       FoodUnit     @default(ITEM)
+  expiryDate DateTime?
+  addedAt    DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiryDate])
+  @@index([category])
+}
+
+enum FoodCategory {
+  FRUIT
+  VEGETABLE
+  MEAT
+  DAIRY
+  GRAINS
+  DRINKS
+  SNACKS
+  SAUCES
+  FROZEN
+  OTHER
+}
+
+enum FoodUnit {
+  ITEM
+  KG
+  G
+  L
+  ML
+  PACK
 }
