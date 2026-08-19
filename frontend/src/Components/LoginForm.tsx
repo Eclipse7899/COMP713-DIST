@@ -1,5 +1,6 @@
 import * as React from "react";
 import {useState} from "react";
+import {authControllerLogin} from "../generated/client";
 
 export default function LoginForm() {
     const [email, setEmail] = useState("");
@@ -11,26 +12,19 @@ export default function LoginForm() {
         setError("");
 
         try {
-            const response = await fetch("/api/auth/login", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
+            const { data, error } = await authControllerLogin({
+                body: {
                     email,
                     password,
-                }),
-            });
+                }
+            })
 
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.message || "Login failed");
+            if (error || data === undefined) {
+                throw new Error("Login failed");
             }
 
-            localStorage.setItem("token", data.token);
-
-            console.log("Logged in:", data.user);
+            localStorage.setItem("token", data.accessToken);
+            console.log("Logged in:", data.user.email);
         } catch (err: any) {
             setError(err.message);
         }

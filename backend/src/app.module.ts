@@ -7,24 +7,21 @@ import { AuthRepo } from './repository/auth.repo';
 import { UserRepo } from './repository/users.repo';
 import { PrismaClient } from './generated/prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
-import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
+import { ConfigModule } from '@nestjs/config';
+
+const prisma = new PrismaClient({
+  adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }),
+});
 
 @Module({
   imports: [
-    ConfigModule.forRoot({
-      isGlobal: true,
-      envFilePath: ['.env', '.env.development', '.env.production'],
-    }),
     JwtModule.registerAsync({
       imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) => ({
-        secretOrPrivateKey: configService.get<string>('SECRET_KEY'),
-        signOptions: {
-          expiresIn: 3600,
-        },
+      useFactory: async () => ({
+        secret: process.env.JWT_SECRET,
+        signOptions: { expiresIn: '1h' },
       }),
-      inject: [ConfigService],
     }),
   ],
   controllers: [AuthController, UsersController],
@@ -35,18 +32,7 @@ import { JwtModule } from '@nestjs/jwt';
     UserRepo,
     {
       provide: PrismaClient,
-      inject: [ConfigService],
-      useFactory: (configService: ConfigService) => {
-        const databaseUrl = configService.get<string>('DATABASE_URL');
-        if (!databaseUrl) {
-          throw new Error(
-            'DATABASE_URL is not defined in the environment variables',
-          );
-        }
-        return new PrismaClient({
-          adapter: new PrismaPg({ connectionString: databaseUrl }),
-        });
-      },
+      useValue: prisma,
     },
   ],
 })
