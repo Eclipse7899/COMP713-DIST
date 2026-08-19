@@ -1,6 +1,6 @@
-import { PrismaClient } from '../generated/prisma/client';
 import { Injectable } from '@nestjs/common';
 import { type User } from '../models/user.model';
+import { PrismaClient } from '../generated/prisma/client';
 
 @Injectable()
 export class AuthRepo {
@@ -8,14 +8,13 @@ export class AuthRepo {
 
   async createUser(
     email: string,
-    password: string,
+    hashed_password: string,
     username: string,
   ): Promise<User> {
-
     return this.prisma.user.create({
       data: {
         email,
-        password,
+        hashed_password,
         username,
       },
     });

@@ -1,13 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import { AuthRepo } from '../repository/auth.repo';
 import { User } from '../models/user.model';
+import { comparePasswords, hashPassword } from '../util';
 
 @Injectable()
 export class AuthService {
   constructor(private readonly authRepo: AuthRepo) {}
 
   async registerUser(email: string, password: string, username: string) {
-    return this.authRepo.createUser(email, password, username);
+    const hashedPassword = await hashPassword(password);
+    return this.authRepo.createUser(email, hashedPassword, username);
   }
 
   async loginUser(email: string, password: string): Promise<User | null> {
@@ -15,7 +17,9 @@ export class AuthService {
     if (!user) {
       return null;
     }
-    if (user.password !== password) {
+    const isMatch = await comparePasswords(password, user.hashed_password);
+    if (!isMatch) {
+      return null;
     }
     return user;
   }
