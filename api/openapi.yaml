@@ -1,0 +1,363 @@
+openapi: 3.0.0
+security:
+  - bearerAuth: [ ]
+paths:
+  /api/auth/register:
+    post:
+      operationId: registerUser
+      parameters: [ ]
+      security: [ ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+      responses:
+        "201":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserResponse"
+        "409":
+          description: Email already exists
+      tags:
+        - Auth
+  /api/auth/login:
+    post:
+      operationId: loginUser
+      parameters: [ ]
+      security: [ ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginResponse"
+        "401":
+          description: Invalid email or password
+      tags:
+        - Auth
+  /api/users/me:
+    get:
+      operationId: getCurrentUser
+      parameters: [ ]
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserResponse"
+        "404":
+          description: User not found
+      tags:
+        - Users
+  /api/foods:
+    post:
+      operationId: createFoodForUser
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateFoodRequest"
+      responses:
+        "201":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FoodResponse"
+        "404":
+          description: User not found
+      tags:
+        - Foods
+    get:
+      operationId: findFoodsByUserId
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: expired
+          in: query
+          required: false
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FoodResponse"
+        "404":
+          description: User not found
+      tags:
+        - Foods
+  /api/foods/{foodId}:
+    get:
+      operationId: findFoodById
+      parameters:
+        - name: foodId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FoodResponse"
+        "404":
+          description: User or Food not found
+      tags:
+        - Foods
+    delete:
+      operationId: deleteFoodByIdForUser
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: foodId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Food deleted successfully
+        "404":
+          description: User or Food not found
+      tags:
+        - Foods
+    put:
+      operationId: updateFoodByIdForUser
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: foodId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateFoodRequest"
+      responses:
+        "200":
+          description: Food updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FoodResponse"
+        "404":
+          description: User or Food not found
+      tags:
+        - Foods
+info:
+  title: Stocked API
+  description: The stocked API description
+  version: "1.0"
+  contact: { }
+tags:
+  - name: stocked
+    description: ""
+servers: [ ]
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    RegisterRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+        username:
+          type: string
+      required:
+        - email
+        - password
+        - username
+    UserResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+          format: email
+        username:
+          type: string
+      required:
+        - id
+        - email
+        - username
+    LoginRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+      required:
+        - email
+        - password
+    LoginResponse:
+      type: object
+      properties:
+        accessToken:
+          type: string
+        user:
+          $ref: "#/components/schemas/UserResponse"
+      required:
+        - accessToken
+        - user
+    CreateFoodRequest:
+      type: object
+      required:
+        - name
+        - category
+      properties:
+        name:
+          type: string
+          example: "Milk"
+        category:
+          $ref: "#/components/schemas/FoodCategory"
+        quantity:
+          type: number
+          format: float
+          default: 1
+          example: 2
+        unit:
+          $ref: "#/components/schemas/FoodUnit"
+        expiryDate:
+          type: string
+          format: date-time
+          nullable: true
+          example: "2026-08-25T00:00:00Z"
+    UpdateFoodRequest:
+      type: object
+      required:
+        - name
+        - category
+        - quantity
+        - unit
+      properties:
+        name:
+          type: string
+        category:
+          $ref: "#/components/schemas/FoodCategory"
+        quantity:
+          type: number
+          format: float
+        unit:
+          $ref: "#/components/schemas/FoodUnit"
+        expiryDate:
+          type: string
+          format: date-time
+          nullable: true
+    FoodResponse:
+      type: object
+      required:
+        - id
+        - name
+        - category
+        - quantity
+        - unit
+        - addedAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          example: "clx123abc456"
+
+        name:
+          type: string
+          example: "Milk"
+
+        category:
+          $ref: '#/components/schemas/FoodCategory'
+
+        quantity:
+          type: number
+          format: float
+          default: 1
+          example: 2
+
+        unit:
+          $ref: '#/components/schemas/FoodUnit'
+
+        expiryDate:
+          type: string
+          format: date-time
+          nullable: true
+          example: "2026-08-25T00:00:00Z"
+
+        addedAt:
+          type: string
+          format: date-time
+          example: "2026-08-22T08:30:00Z"
+
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2026-08-22T08:30:00Z"
+    FoodCategory:
+      type: string
+      enum:
+        - FRUIT
+        - VEGETABLE
+        - MEAT
+        - DAIRY
+        - GRAINS
+        - DRINKS
+        - SNACKS
+        - SAUCES
+        - FROZEN
+        - OTHER
+
+    FoodUnit:
+      type: string
+      enum:
+        - ITEM
+        - KG
+        - G
+        - L
+        - ML
+        - PACK

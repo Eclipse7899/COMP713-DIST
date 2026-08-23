@@ -1,8 +1,6 @@
-import { Injectable } from '@nestjs/common';
-import { type User } from '../models/user.model';
-import { PrismaClient } from '../generated/prisma/client';
+import { type User } from '../../models/user.model';
+import { PrismaClient } from '../../../../backend/src/generated/prisma/client';
 
-@Injectable()
 export class AuthRepo {
   constructor(private readonly prisma: PrismaClient) {}
 

@@ -14,12 +14,27 @@ datasource db {
 }
 
 model User {
-  id              String   @id @default(cuid(2))
-  createdAt       DateTime @default(now())
-  email           String   @unique
-  username        String   @unique
+  id              String     @id @default(cuid(2))
+  createdAt       DateTime   @default(now())
+  email           String     @unique
+  username        String     @unique
   hashed_password String
-  food            Food[]
+  userFoods       UserFood[]
+}
+
+model UserFood {
+  id        String   @id @default(cuid(2))
+  userId    String
+  foodId    String
+  quantity  Float    @default(1)
+  unit      FoodUnit @default(ITEM)
+  addedAt   DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+  food Food @relation(fields: [foodId], references: [id])
+
+  @@unique([userId, foodId])
 }
 
 model Food {
@@ -31,11 +46,8 @@ model Food {
   expiryDate DateTime?
   addedAt    DateTime     @default(now())
   updatedAt  DateTime     @updatedAt
+  userFoods  UserFood[]
 
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
   @@index([expiryDate])
   @@index([category])
 }

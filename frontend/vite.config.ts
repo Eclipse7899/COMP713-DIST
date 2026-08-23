@@ -10,7 +10,7 @@ export default defineConfig({
         tailwindcss(),
         heyApiPlugin({
           config: {
-              input: '../api/swagger.json',
+              input: '../api/openapi.yaml',
               output: 'src/generated/client',
           },
         }),

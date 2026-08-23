@@ -1,70 +1,52 @@
-import {
-  Body,
-  Controller,
-  HttpStatus,
-  Post,
-  UnauthorizedException,
-} from '@nestjs/common';
-import { AuthService } from '../services/auth.service';
-import { RegisterDto } from '../dto/register.dto';
-import { UserDto } from '../dto/user.dto';
-import { JwtService } from '@nestjs/jwt';
-import { LoginDto } from '../dto/login.dto';
+import { Body, Controller, Post, UnauthorizedException } from "@nestjs/common";
+import { AuthService } from "../modules/auth/auth.service";
 import {
   ApiConflictResponse,
   ApiCreatedResponse,
   ApiOkResponse,
-  ApiResponse,
-} from '@nestjs/swagger';
-import { LoggedInDto } from '../dto/logged-in.dto';
+  ApiUnauthorizedResponse,
+} from "@nestjs/swagger";
+import {
+  LoginResponse,
+  LoginUserData,
+  type RegisterUserData,
+  RegisterUserResponse,
+} from "../generated/api";
 
-@Controller('auth')
+@Controller("auth")
 export class AuthController {
-  constructor(
-    private readonly authService: AuthService,
-    private readonly jwtService: JwtService,
-  ) {}
+  constructor(private readonly authService: AuthService) {}
 
-  @ApiCreatedResponse({
-    type: UserDto,
-  })
-  @ApiConflictResponse({
-    description: 'Email already exists',
-  })
-  @Post('register')
-  async register(@Body() registerDto: RegisterDto): Promise<UserDto> {
-    const { email, password, username } = registerDto;
+  @ApiCreatedResponse()
+  @ApiConflictResponse()
+  @Post("register")
+  async registerUser(
+    @Body() body: RegisterUserData["body"],
+  ): Promise<RegisterUserResponse> {
+    const { email, password, username } = body;
     const user = await this.authService.registerUser(email, password, username);
-    const userDto = new UserDto();
-    userDto.id = user.id;
-    userDto.email = user.email;
-    userDto.username = user.username;
-    return userDto;
+    return {
+      id: user.id,
+      email: user.email,
+      username: user.username,
+    };
   }
 
-  @ApiOkResponse({
-    description: 'Login successful',
-    type: LoggedInDto,
-  })
-  @ApiResponse({
-    status: HttpStatus.UNAUTHORIZED,
-    description: 'Invalid email or password',
-  })
-  @Post('login')
-  async login(@Body() loginDto: LoginDto): Promise<LoggedInDto> {
-    const { email, password } = loginDto;
-    const user = await this.authService.loginUser(email, password);
-    if (!user) {
-      throw new UnauthorizedException('Invalid email or password');
+  @ApiOkResponse()
+  @ApiUnauthorizedResponse()
+  @Post("login")
+  async loginUser(@Body() body: LoginUserData["body"]): Promise<LoginResponse> {
+    const result = await this.authService.validateUser(
+      body.email,
+      body.password,
+    );
+    if (!result.success) {
+      throw new UnauthorizedException("Invalid credentials");
     }
-
-    const token = await this.jwtService.signAsync({ userId: user.id });
-    const loggedInDto = new LoggedInDto();
-    loggedInDto.accessToken = token;
-    loggedInDto.user = new UserDto();
-    loggedInDto.user.id = user.id;
-    loggedInDto.user.email = user.email;
-    loggedInDto.user.username = user.username;
-    return loggedInDto;
+    const { user, token } = result.data;
+    return {
+      accessToken: token,
+      user,
+    };
   }
 }

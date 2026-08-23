@@ -1,21 +1,24 @@
-import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { Elysia } from "elysia";
+import { node } from "@elysiajs/node";
+import { authController } from './modules/auth';
+import { userController } from './modules/user';
+import { config } from './config';
 
-async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
-  app.setGlobalPrefix('api');
+new Elysia({ adapter: node() })
+  .guard(
+    {
+      beforeHandle({ headers, status }) {
+        if (!headers['Authorization']) {
+          return status(401, {
+            message: 'Missing Authorization header'
+          })
+        }
+      }
+    },
+    (app) => app
+      .use(authController)
+      .use(userController)
+  )
+  .listen({ port: config.port });
 
-  const config = new DocumentBuilder()
-    .setTitle('Stocked API')
-    .setDescription('The stocked API description')
-    .setVersion('1.0')
-    .addTag('stocked')
-    .build();
-
-  const documentFactory = () => SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api', app, documentFactory);
-
-  await app.listen(process.env.PORT ?? 3000);
-}
-bootstrap();
+console.log(`Listening on http://localhost:${config.port}`);
