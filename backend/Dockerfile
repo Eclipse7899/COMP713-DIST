@@ -1,30 +1,29 @@
-FROM node:25.9-alpine AS build
-LABEL authors="Eclipse7899"
-
+FROM oven/bun:latest AS base
 WORKDIR /app
 
-COPY package*.json ./
+FROM base AS build
 
-RUN npm ci
+COPY package.json bun.lock* ./
 
-COPY ../backend .
+RUN bun install
 
-RUN npx prisma generate
-RUN npm run build
-
-FROM node:25.9-alpine AS production
-
-WORKDIR /app
+COPY prisma ./prisma
+COPY src ./src
 
 ENV NODE_ENV=production
 
-COPY package*.json ./
-RUN npm ci --omit=dev
+RUN bun run prisma:generate
+RUN bun build ./src/index.ts --outdir ./dist --target bun
+
+FROM base AS release
 
 COPY --from=build /app/dist ./dist
+COPY --from=build /app/package.json ./
+COPY --from=build /app/node_modules ./node_modules
 
+ENV NODE_ENV=production
+
+USER bun
 EXPOSE 3000
 
-USER node
-
-CMD ["node", "dist/src/main.js"]
+ENTRYPOINT ["bun", "run", "dist/index.js"]
