@@ -3,6 +3,7 @@
   "scripts": {
     "dev": "bun run --hot src/index.ts",
     "prisma:generate": "prisma generate",
+    "prisma:migrate-dev": "prisma migrate dev",
     "lint": "oxlint",
     "format": "oxfmt"
   },
