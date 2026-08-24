@@ -1,23 +1,21 @@
-import { AuthRepo } from './auth.repo';
-import { comparePasswords, hashPassword } from '../../util';
-import { Result } from '../../types';
-import { User } from '../../models/user.model';
+import { comparePasswords, hashPassword, Result } from '../util';
+import { User } from '../generated/prisma/client';
+import { UserRepo } from '../repositories/users.repo';
 
 export class AuthService {
-  constructor(
-    private readonly authRepo: AuthRepo,
-  ) {}
+  constructor(private readonly userRepo: UserRepo) {
+  }
 
   async registerUser(email: string, password: string, username: string) {
     const hashedPassword = await hashPassword(password);
-    return this.authRepo.createUser(email, hashedPassword, username);
+    return this.userRepo.createUser(email, hashedPassword, username);
   }
 
   async validateUser(
     email: string,
     password: string,
   ): Promise<Result<User, void>> {
-    const user = await this.authRepo.findUserByEmail(email);
+    const user = await this.userRepo.findUserByEmail(email);
     if (!user) {
       return {
         success: false,

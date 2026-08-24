@@ -1,9 +1,14 @@
 {
-    "compilerOptions": {
-        "module": "ESNext",
-        "target": "ESNext",
-        "strict": true,
-        "moduleResolution": "node",
-        "esModuleInterop": true
-    }
+  "compilerOptions": {
+    "strict": true,
+    "noImplicitAny": true,
+    "noUnusedParameters": true,
+    "types": ["bun"],
+    "jsx": "react-jsx",
+    "jsxImportSource": "hono/jsx",
+    "module": "ESNext",
+    "target": "ESNext",
+    "moduleResolution": "Bundler",
+    "esModuleInterop": true
+  }
 }

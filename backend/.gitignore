@@ -1,8 +1,4 @@
-.DS_Store
-.env
-.env.local
-package-lock.json
-
+# deps
 node_modules/
 
-src/generated
+src/generated/

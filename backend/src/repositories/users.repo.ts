@@ -1,8 +1,15 @@
-import { type User } from '../../models/user.model';
-import { PrismaClient } from '../../../../backend/src/generated/prisma/client';
+import { PrismaClient } from '@prisma/client/extension';
+import { User } from '../generated/prisma/client';
 
-export class AuthRepo {
-  constructor(private readonly prisma: PrismaClient) {}
+export class UserRepo {
+  constructor(private readonly prisma: PrismaClient) {
+  }
+
+  async findById(userId: string) {
+    return this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+  }
 
   async createUser(
     email: string,
