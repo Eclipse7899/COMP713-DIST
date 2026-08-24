@@ -41,7 +41,7 @@ export const items = new Hono<{ Variables: Variables }>()
       } catch (e: any) {
         return c.json({ error: e.message ?? String(e) }, 400);
       }
-    }
+    },
   )
   .post(
     '/',
@@ -59,7 +59,7 @@ export const items = new Hono<{ Variables: Variables }>()
       } catch (e: any) {
         return c.json({ error: e.message ?? String(e) }, 400);
       }
-    }
+    },
   )
   .get(
     '/expired',
@@ -71,7 +71,7 @@ export const items = new Hono<{ Variables: Variables }>()
       } catch (e: any) {
         return c.json({ error: e.message ?? String(e) }, 400);
       }
-    }
+    },
   )
   .get(
     '/:id',
@@ -88,7 +88,7 @@ export const items = new Hono<{ Variables: Variables }>()
       } catch (e: any) {
         return c.json({ error: e.message ?? String(e) }, 400);
       }
-    }
+    },
   )
   .patch(
     '/:id',
@@ -107,7 +107,7 @@ export const items = new Hono<{ Variables: Variables }>()
       } catch (e: any) {
         return c.json({ error: e.message ?? String(e) }, 400);
       }
-    }
+    },
   )
   .delete(
     '/:id',
@@ -120,7 +120,7 @@ export const items = new Hono<{ Variables: Variables }>()
       } catch (e: any) {
         return c.json({ error: e.message ?? String(e) }, 400);
       }
-    }
+    },
   )
   .post(
     '/food/:foodId',
@@ -140,7 +140,7 @@ export const items = new Hono<{ Variables: Variables }>()
       } catch (e: any) {
         return c.json({ error: e.message ?? String(e) }, 400);
       }
-    }
+    },
   )
   .delete(
     '/food/:foodId',
@@ -154,6 +154,6 @@ export const items = new Hono<{ Variables: Variables }>()
       } catch (e: any) {
         return c.json({ error: e.message ?? String(e) }, 400);
       }
-    }
+    },
   );
 

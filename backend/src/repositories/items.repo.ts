@@ -2,7 +2,8 @@ import { FoodItem, PrismaClient } from '../generated/prisma/client';
 import type { FoodUnit } from '../generated/prisma/enums';
 
 export class ItemsRepo {
-  constructor(private readonly prisma: PrismaClient) {}
+  constructor(private readonly prisma: PrismaClient) {
+  }
 
   async create(data: {
     userId: string;
@@ -38,7 +39,9 @@ export class ItemsRepo {
     });
   }
 
-  async findAllByUser(userId: string): Promise<(FoodItem & { food: { id: string; name: string; category: any } })[]> {
+  async findAllByUser(userId: string): Promise<(FoodItem & {
+    food: { id: string; name: string; category: any }
+  })[]> {
     return this.prisma.foodItem.findMany({
       where: { userId },
       include: { food: { select: { id: true, name: true, category: true } } },

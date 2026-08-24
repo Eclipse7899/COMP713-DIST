@@ -6,7 +6,8 @@ import type { FoodCategory } from '../generated/prisma/enums';
  * FoodService handles business logic for Food operations
  */
 export class FoodService {
-  constructor(private readonly foodRepo: FoodRepo) {}
+  constructor(private readonly foodRepo: FoodRepo) {
+  }
 
   async createFood(data: {
     name: string;

@@ -1,4 +1,4 @@
-import Joi from 'joi'
+import Joi from 'joi';
 
 const schema = Joi.object({
   NODE_ENV: Joi.string()
@@ -15,18 +15,18 @@ const schema = Joi.object({
 
   JWT_SECRET: Joi.string()
     .min(32)
-    .required()
-}).unknown()
+    .required(),
+}).unknown();
 
-const { error, value } = schema.validate(process.env)
+const { error, value } = schema.validate(process.env);
 
 if (error) {
-  throw new Error(`Configuration error: ${error.message}`)
+  throw new Error(`Configuration error: ${error.message}`);
 }
 
 export const config = {
   env: value.NODE_ENV,
   port: value.PORT,
   databaseUrl: value.DATABASE_URL,
-  jwtSecret: value.JWT_SECRET
-}
+  jwtSecret: value.JWT_SECRET,
+};

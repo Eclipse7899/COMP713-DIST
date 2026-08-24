@@ -6,7 +6,8 @@ import type { FoodCategory } from '../generated/prisma/enums';
  * Foods can be global (createdByUserId = null) or user-created
  */
 export class FoodRepo {
-  constructor(private readonly prisma: PrismaClient) {}
+  constructor(private readonly prisma: PrismaClient) {
+  }
 
   async create(data: {
     name: string;
@@ -33,14 +34,14 @@ export class FoodRepo {
   async findByCategory(category: FoodCategory): Promise<Food[]> {
     return this.prisma.food.findMany({
       where: { category },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
     });
   }
 
   async findByCreator(createdByUserId: string): Promise<Food[]> {
     return this.prisma.food.findMany({
       where: { createdByUserId },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
     });
   }
 

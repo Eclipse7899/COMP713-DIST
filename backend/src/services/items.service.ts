@@ -1,12 +1,13 @@
 import { ItemsRepo } from '../repositories/items.repo';
 import { FoodItem } from '../generated/prisma/client';
-import type { FoodUnit, FoodCategory } from '../generated/prisma/enums';
+import type { FoodCategory, FoodUnit } from '../generated/prisma/enums';
 
 /**
  * ItemsService handles business logic for FoodItem operations (user's inventory)
  */
 export class ItemsService {
-  constructor(private readonly itemsRepo: ItemsRepo) {}
+  constructor(private readonly itemsRepo: ItemsRepo) {
+  }
 
   async createItem(data: {
     userId: string;
@@ -22,7 +23,9 @@ export class ItemsService {
     return this.itemsRepo.findByIdAndUser(id, userId);
   }
 
-  async listUserItems(userId: string): Promise<(FoodItem & { food: { id: string; name: string; category: any } })[]> {
+  async listUserItems(userId: string): Promise<(FoodItem & {
+    food: { id: string; name: string; category: any }
+  })[]> {
     return this.itemsRepo.findAllByUser(userId);
   }
 
