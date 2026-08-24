@@ -1,6 +1,6 @@
-import { comparePasswords, hashPassword, Result } from '../util';
-import { User } from '../generated/prisma/client';
-import { UserRepo } from '../repositories/users.repo';
+import { comparePasswords, hashPassword, type Result } from '../util';
+import type { User } from '../generated/prisma/client';
+import UserRepo from '../repositories/users.repo';
 
 export class AuthService {
   constructor(private readonly userRepo: UserRepo) {}

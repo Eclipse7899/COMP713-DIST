@@ -1,17 +1,12 @@
 services:
-    web:
-        image: nginx:latest
+    frontend:
+        build:
+            context: .
+            dockerfile: ./frontend/Dockerfile
         ports:
-        - "80:80"
-        volumes:
-        - ./frontend/dist:/usr/share/nginx/html
-        - type: bind
-          source: ./nginx/default.conf
-          target: /etc/nginx/conf.d/default.conf
+            - "8080:80"
         networks:
-        - webnet
-        depends_on:
-        - backend
+            - webnet
 
     backend:
         build:

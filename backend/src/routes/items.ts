@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { db } from '../db';
 import { ItemsRepo } from '../repositories/items.repo';
 import { ItemsService } from '../services/items.service';
-import { Variables } from './variables';
+import type { Variables } from './variables';
 import { z } from 'zod';
 import { zValidator } from '@hono/zod-validator';
 

@@ -1,8 +1,8 @@
 import { UserService } from '../services/user.service';
-import { UserRepo } from '../repositories/users.repo';
+import UserRepo from '../repositories/users.repo';
 import { db } from '../db';
 import { Hono } from 'hono';
-import { Variables } from './variables';
+import type { Variables } from './variables';
 
 const userRepository = new UserRepo(db);
 const userService = new UserService(userRepository);

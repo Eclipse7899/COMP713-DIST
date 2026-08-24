@@ -1,4 +1,4 @@
-import { Food, PrismaClient } from '../generated/prisma/client';
+import { type Food, PrismaClient } from '../generated/prisma/client';
 import type { FoodCategory } from '../generated/prisma/enums';
 
 /**

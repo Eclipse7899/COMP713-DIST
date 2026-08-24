@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { JwtVariables } from 'hono/jwt';
+import type { JwtVariables } from 'hono/jwt';
 
 const jwtSchema = z.object({
   sub: z.string(),

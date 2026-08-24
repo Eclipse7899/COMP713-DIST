@@ -1,7 +1,7 @@
 import { PrismaClient } from '@prisma/client/extension';
-import { User } from '../generated/prisma/client';
+import { type User } from '../generated/prisma/client';
 
-export class UserRepo {
+class UserRepo {
   constructor(private readonly prisma: PrismaClient) {}
 
   async findById(userId: string) {
@@ -32,3 +32,5 @@ export class UserRepo {
     });
   }
 }
+
+export default UserRepo;

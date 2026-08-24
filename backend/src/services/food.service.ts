@@ -1,5 +1,5 @@
 import { FoodRepo } from '../repositories/food.repo';
-import { Food } from '../generated/prisma/client';
+import type { Food } from '../generated/prisma/client';
 import type { FoodCategory } from '../generated/prisma/enums';
 
 /**

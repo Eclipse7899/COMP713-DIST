@@ -2,13 +2,19 @@
   "compilerOptions": {
     "strict": true,
     "noImplicitAny": true,
-    "noUnusedParameters": true,
+    "verbatimModuleSyntax": true,
     "types": ["bun"],
     "jsx": "react-jsx",
     "jsxImportSource": "hono/jsx",
     "module": "ESNext",
     "target": "ESNext",
+    "noEmit": true,
     "moduleResolution": "Bundler",
-    "esModuleInterop": true
+    "esModuleInterop": true,
+
+    /* Linting */
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true
   }
 }

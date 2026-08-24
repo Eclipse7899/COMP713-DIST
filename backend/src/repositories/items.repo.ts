@@ -1,4 +1,4 @@
-import { FoodItem, PrismaClient } from '../generated/prisma/client';
+import { type FoodItem, PrismaClient } from '../generated/prisma/client';
 import type { FoodUnit } from '../generated/prisma/enums';
 
 export class ItemsRepo {

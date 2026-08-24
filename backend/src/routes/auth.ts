@@ -5,7 +5,7 @@ import { zValidator } from '@hono/zod-validator';
 import { Hono } from 'hono';
 import { sign } from 'hono/jwt';
 import { config } from '../config';
-import { UserRepo } from '../repositories/users.repo';
+import UserRepo from '../repositories/users.repo';
 
 const userRepo = new UserRepo(db);
 const authService = new AuthService(userRepo);

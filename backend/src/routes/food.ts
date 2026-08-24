@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { db } from '../db';
 import { FoodRepo } from '../repositories/food.repo';
 import { FoodService } from '../services/food.service';
-import { Variables } from './variables';
+import type { Variables } from './variables';
 import { z } from 'zod';
 import { FoodCategory } from '../generated/prisma/enums';
 import { zValidator } from '@hono/zod-validator';

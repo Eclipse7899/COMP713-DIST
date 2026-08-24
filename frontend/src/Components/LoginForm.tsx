@@ -1,6 +1,6 @@
 import * as React from "react";
 import {useState} from "react";
-import {authControllerLogin} from "../generated/client";
+import { client } from '../client.ts';
 
 export default function LoginForm() {
     const [email, setEmail] = useState("");
@@ -12,29 +12,36 @@ export default function LoginForm() {
         setError("");
 
         try {
-            const { data, error } = await authControllerLogin({
-                body: {
+            const result = await client.api.auth.login.$post({
+                'json': {
                     email,
-                    password,
+                    password
                 }
-            })
-
-            if (error || data === undefined) {
-                throw new Error("Login failed");
+            });
+            switch (result.status) {
+                case 200:
+                    const data = await result.json();
+                    localStorage.setItem("token", data.accessToken);
+                    console.log("Logged in:", data.user.email);
+                    break;
+                case 401:
+                    throw new Error("Invalid email or password");
+                case 400:
+                    throw new Error("Account is disabled");
+                default:
+                    const _exhaustiveCheck: never = result;
+                    return _exhaustiveCheck;
             }
-
-            localStorage.setItem("token", data.accessToken);
-            console.log("Logged in:", data.user.email);
         } catch (err: any) {
             setError(err.message);
         }
     }
     return (
         <div
-            className="w-full max-w-md p-8 space-y-6 bg-[var(--bg)] border border-[var(--border)] rounded-2xl shadow-[var(--shadow)]">
+            className="w-full max-w-md p-8 space-y-6 bg-(--bg) border border-(--border) rounded-2xl shadow-(--shadow)">
             <div className="space-y-4 text-center">
-                <h1 className="text-2xl font-bold text-[var(--text-h)]">Welcome back</h1>
-                <p className="text-[var(--text)]">Enter your credentials to access your account</p>
+                <h1 className="text-2xl font-bold text-(--text-h)">Welcome back</h1>
+                <p className="text-(--text)">Enter your credentials to access your account</p>
             </div>
             <form onSubmit={handleSubmit} className="space-y-4">
                 {error && (
@@ -45,7 +52,7 @@ export default function LoginForm() {
                 )}
                 <div className="text-left space-y-2">
                     <div>
-                        <label className="text-sm font-medium text-[var(--text-h)]" htmlFor="email">
+                        <label className="text-sm font-medium text-(--text-h)" htmlFor="email">
                             Email address
                         </label>
                     </div>
