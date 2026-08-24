@@ -2,8 +2,7 @@ import { PrismaClient } from '@prisma/client/extension';
 import { User } from '../generated/prisma/client';
 
 export class UserRepo {
-  constructor(private readonly prisma: PrismaClient) {
-  }
+  constructor(private readonly prisma: PrismaClient) {}
 
   async findById(userId: string) {
     return this.prisma.user.findUnique({

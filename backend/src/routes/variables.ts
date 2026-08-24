@@ -6,6 +6,6 @@ const jwtSchema = z.object({
   email: z.email(),
 });
 
-type JwtPayload = z.infer<typeof jwtSchema>
+type JwtPayload = z.infer<typeof jwtSchema>;
 
-export type Variables = JwtVariables<JwtPayload>
+export type Variables = JwtVariables<JwtPayload>;

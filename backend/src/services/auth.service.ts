@@ -3,8 +3,7 @@ import { User } from '../generated/prisma/client';
 import { UserRepo } from '../repositories/users.repo';
 
 export class AuthService {
-  constructor(private readonly userRepo: UserRepo) {
-  }
+  constructor(private readonly userRepo: UserRepo) {}
 
   async registerUser(email: string, password: string, username: string) {
     const hashedPassword = await hashPassword(password);

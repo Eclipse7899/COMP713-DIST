@@ -7,11 +7,7 @@ import { Variables } from './variables';
 const userRepository = new UserRepo(db);
 const userService = new UserService(userRepository);
 
-export const users = new Hono<{ Variables: Variables }>()
-  .get('/me', (c) => {
-      const userId = c.get('jwtPayload').sub;
-      return c.json(
-        userService.getCurrentUser(userId),
-      );
-    },
-  );
+export const users = new Hono<{ Variables: Variables }>().get('/me', (c) => {
+  const userId = c.get('jwtPayload').sub;
+  return c.json(userService.getCurrentUser(userId));
+});

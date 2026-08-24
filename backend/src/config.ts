@@ -1,32 +1,12 @@
-import Joi from 'joi';
+import { z } from 'zod';
 
-const schema = Joi.object({
-  NODE_ENV: Joi.string()
-    .valid('development', 'test', 'production')
+const schema = z.object({
+  NODE_ENV: z
+    .enum(['development', 'test', 'production'])
     .default('development'),
+  PORT: z.coerce.number().int().min(1).max(65535).default(3000),
+  DATABASE_URL: z.url(),
+  JWT_SECRET: z.string().min(32),
+});
 
-  PORT: Joi.number()
-    .port()
-    .default(3000),
-
-  DATABASE_URL: Joi.string()
-    .uri()
-    .required(),
-
-  JWT_SECRET: Joi.string()
-    .min(32)
-    .required(),
-}).unknown();
-
-const { error, value } = schema.validate(process.env);
-
-if (error) {
-  throw new Error(`Configuration error: ${error.message}`);
-}
-
-export const config = {
-  env: value.NODE_ENV,
-  port: value.PORT,
-  databaseUrl: value.DATABASE_URL,
-  jwtSecret: value.JWT_SECRET,
-};
+export const config = schema.parse(process.env);

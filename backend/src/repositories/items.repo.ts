@@ -2,8 +2,7 @@ import { FoodItem, PrismaClient } from '../generated/prisma/client';
 import type { FoodUnit } from '../generated/prisma/enums';
 
 export class ItemsRepo {
-  constructor(private readonly prisma: PrismaClient) {
-  }
+  constructor(private readonly prisma: PrismaClient) {}
 
   async create(data: {
     userId: string;
@@ -33,15 +32,20 @@ export class ItemsRepo {
     });
   }
 
-  async findByUserAndFood(userId: string, foodId: string): Promise<FoodItem | null> {
+  async findByUserAndFood(
+    userId: string,
+    foodId: string,
+  ): Promise<FoodItem | null> {
     return this.prisma.foodItem.findUnique({
       where: { userId_foodId: { userId, foodId } },
     });
   }
 
-  async findAllByUser(userId: string): Promise<(FoodItem & {
-    food: { id: string; name: string; category: any }
-  })[]> {
+  async findAllByUser(userId: string): Promise<
+    (FoodItem & {
+      food: { id: string; name: string; category: any };
+    })[]
+  > {
     return this.prisma.foodItem.findMany({
       where: { userId },
       include: { food: { select: { id: true, name: true, category: true } } },
@@ -49,7 +53,10 @@ export class ItemsRepo {
     }) as any;
   }
 
-  async findByUserAndCategory(userId: string, category: string): Promise<FoodItem[]> {
+  async findByUserAndCategory(
+    userId: string,
+    category: string,
+  ): Promise<FoodItem[]> {
     return this.prisma.foodItem.findMany({
       where: {
         userId,
@@ -109,7 +116,8 @@ export class ItemsRepo {
     const updatePayload: any = {};
     if (data.quantity !== undefined) updatePayload.quantity = data.quantity;
     if (data.unit !== undefined) updatePayload.unit = data.unit;
-    if (data.expiryDate !== undefined) updatePayload.expiryDate = data.expiryDate;
+    if (data.expiryDate !== undefined)
+      updatePayload.expiryDate = data.expiryDate;
 
     return this.prisma.foodItem.update({ where: { id }, data: updatePayload });
   }
@@ -135,4 +143,3 @@ export class ItemsRepo {
     return this.prisma.foodItem.deleteMany({ where: { userId } });
   }
 }
-

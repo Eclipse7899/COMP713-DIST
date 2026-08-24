@@ -6,8 +6,7 @@ import type { FoodCategory } from '../generated/prisma/enums';
  * FoodService handles business logic for Food operations
  */
 export class FoodService {
-  constructor(private readonly foodRepo: FoodRepo) {
-  }
+  constructor(private readonly foodRepo: FoodRepo) {}
 
   async createFood(data: {
     name: string;
@@ -33,7 +32,10 @@ export class FoodService {
     return this.foodRepo.findByCreator(userId);
   }
 
-  async listAccessibleFoods(userId: string, category?: FoodCategory): Promise<Food[]> {
+  async listAccessibleFoods(
+    userId: string,
+    category?: FoodCategory,
+  ): Promise<Food[]> {
     return this.foodRepo.findAccessible(userId, category);
   }
 
@@ -51,5 +53,3 @@ export class FoodService {
     return this.foodRepo.delete(id);
   }
 }
-
-
