@@ -1,5 +1,4 @@
-import { PrismaClient } from '@prisma/client/extension';
-import { type User } from '../generated/prisma/client';
+import { type PrismaClient, type User } from '../generated/prisma/client';
 
 class UserRepo {
   constructor(private readonly prisma: PrismaClient) {}
@@ -27,7 +26,7 @@ class UserRepo {
   async findUserByEmail(email: string): Promise<User | null> {
     return this.prisma.user.findUnique({
       where: {
-        email,
+        email: email,
       },
     });
   }
