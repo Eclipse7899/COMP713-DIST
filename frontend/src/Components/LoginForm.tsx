@@ -1,11 +1,14 @@
 import * as React from 'react';
 import { useState } from 'react';
 import { client } from '../client.ts';
+import { useNavigate } from 'react-router';
+import { saveJwt } from '../../util.ts';
 
 export default function LoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const navigate = useNavigate();
 
   async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -21,8 +24,9 @@ export default function LoginForm() {
       switch (result.status) {
         case 200:
           const data = await result.json();
-          localStorage.setItem('token', data.accessToken);
+          saveJwt(data.accessToken);
           console.log('Logged in:', data.user.email);
+          navigate('/dashboard');
           break;
         case 401:
           throw new Error('Invalid email or password');
