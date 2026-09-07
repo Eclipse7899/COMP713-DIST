@@ -4,6 +4,8 @@
     "dev": "bun run --hot src/index.ts",
     "prisma:generate": "prisma generate",
     "prisma:migrate-dev": "prisma migrate dev",
+    "prisma:seed": "prisma db seed",
+    "prisma:reset": "prisma migrate reset",
     "lint": "oxlint",
     "format": "oxfmt"
   },
@@ -23,6 +25,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@types/bun": "^1.4.0"
+    "@types/bun": "^1.4.0",
+    "vitest": "^5.0.0"
   }
 }
