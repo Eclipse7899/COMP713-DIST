@@ -54,7 +54,7 @@ export const food = new Hono<{ Variables: Variables }>()
     const category = c.req.query('category');
     const foods = await foodService.listAccessibleFoods(
       userId,
-      category ? (category as any) : undefined,
+      category ? (category as FoodCategory) : undefined,
     );
     return c.json(foods);
   })
