@@ -1,13 +1,8 @@
 import { Hono } from 'hono';
-import { db } from '../db';
-import { ItemsRepo } from '../repositories/items.repo';
 import { ItemsService } from '../services/items.service';
 import type { Variables } from './variables';
 import { z } from 'zod';
 import { zValidator } from '@hono/zod-validator';
-
-const itemsRepo = new ItemsRepo(db);
-const itemsService = new ItemsService(itemsRepo);
 
 const createItemSchema = z.object({
   foodId: z.cuid2(),
@@ -30,8 +25,9 @@ const foodIdParamSchema = z.object({
   foodId: z.cuid2(),
 });
 
-export const items = new Hono<{ Variables: Variables }>()
-  .get('/', async (c) => {
+export function createItemsRoute(itemsService: ItemsService) {
+  return new Hono<{ Variables: Variables }>()
+    .get('/', async (c) => {
     const userId = c.get('jwtPayload').sub;
     try {
       const items = await itemsService.listUserItems(userId);
@@ -39,8 +35,8 @@ export const items = new Hono<{ Variables: Variables }>()
     } catch (e: any) {
       return c.json({ error: e.message ?? String(e) }, 400);
     }
-  })
-  .post('/', zValidator('json', createItemSchema), async (c) => {
+    })
+    .post('/', zValidator('json', createItemSchema), async (c) => {
     const userId = c.get('jwtPayload').sub;
     const { foodId, quantity, unit, expiryDate } = c.req.valid('json');
     try {
@@ -53,8 +49,8 @@ export const items = new Hono<{ Variables: Variables }>()
     } catch (e: any) {
       return c.json({ error: e.message ?? String(e) }, 400);
     }
-  })
-  .get('/expired', async (c) => {
+    })
+    .get('/expired', async (c) => {
     const userId = c.get('jwtPayload').sub;
     try {
       const items = await itemsService.listExpiredItems(userId);
@@ -62,8 +58,8 @@ export const items = new Hono<{ Variables: Variables }>()
     } catch (e: any) {
       return c.json({ error: e.message ?? String(e) }, 400);
     }
-  })
-  .get('/:id', zValidator('param', idParamSchema), async (c) => {
+    })
+    .get('/:id', zValidator('param', idParamSchema), async (c) => {
     const userId = c.get('jwtPayload').sub;
     const id = c.req.valid('param').id;
     try {
@@ -75,12 +71,12 @@ export const items = new Hono<{ Variables: Variables }>()
     } catch (e: any) {
       return c.json({ error: e.message ?? String(e) }, 400);
     }
-  })
-  .patch(
-    '/:id',
-    zValidator('param', idParamSchema),
-    zValidator('json', updateItemSchema),
-    async (c) => {
+    })
+    .patch(
+      '/:id',
+      zValidator('param', idParamSchema),
+      zValidator('json', updateItemSchema),
+      async (c) => {
       const id = c.req.valid('param').id;
       const body = c.req.valid('json');
       try {
@@ -95,9 +91,9 @@ export const items = new Hono<{ Variables: Variables }>()
       } catch (e: any) {
         return c.json({ error: e.message ?? String(e) }, 400);
       }
-    },
-  )
-  .delete('/:id', zValidator('param', idParamSchema), async (c) => {
+      },
+    )
+    .delete('/:id', zValidator('param', idParamSchema), async (c) => {
     const id = c.req.valid('param').id;
     try {
       const deleted = await itemsService.removeItem(id);
@@ -105,12 +101,12 @@ export const items = new Hono<{ Variables: Variables }>()
     } catch (e: any) {
       return c.json({ error: e.message ?? String(e) }, 400);
     }
-  })
-  .post(
-    '/food/:foodId',
-    zValidator('param', foodIdParamSchema),
-    zValidator('json', updateItemSchema),
-    async (c) => {
+    })
+    .post(
+      '/food/:foodId',
+      zValidator('param', foodIdParamSchema),
+      zValidator('json', updateItemSchema),
+      async (c) => {
       const userId = c.get('jwtPayload').sub;
       const foodId = c.req.valid('param').foodId;
       const body = c.req.valid('json');
@@ -126,12 +122,12 @@ export const items = new Hono<{ Variables: Variables }>()
       } catch (e: any) {
         return c.json({ error: e.message ?? String(e) }, 400);
       }
-    },
-  )
-  .delete(
-    '/food/:foodId',
-    zValidator('param', foodIdParamSchema),
-    async (c) => {
+      },
+    )
+    .delete(
+      '/food/:foodId',
+      zValidator('param', foodIdParamSchema),
+      async (c) => {
       const userId = c.get('jwtPayload').sub;
       const foodId = c.req.valid('param').foodId;
       try {
@@ -140,5 +136,6 @@ export const items = new Hono<{ Variables: Variables }>()
       } catch (e: any) {
         return c.json({ error: e.message ?? String(e) }, 400);
       }
-    },
-  );
+      },
+    );
+}

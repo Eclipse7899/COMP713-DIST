@@ -1,10 +1,13 @@
-import { Hono } from 'hono';
-import { api } from './routes';
-import { config } from './config';
+import { createDb } from './db';
+import { getConfig } from './config';
+import { createApp } from './app';
 
-const app = new Hono();
 
-const routes = app.route('/api', api);
+const config = getConfig();
+
+const db = createDb(config.DATABASE_URL);
+
+const { app, routes } = createApp(config.JWT_SECRET, db);
 
 export type AppType = typeof routes;
 

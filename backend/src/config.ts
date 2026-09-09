@@ -9,4 +9,6 @@ const schema = z.object({
   JWT_SECRET: z.string().min(32),
 });
 
-export const config = schema.parse(process.env);
+export function getConfig() {
+  return schema.parse(process.env);
+}
