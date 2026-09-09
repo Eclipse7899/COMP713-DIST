@@ -1,4 +1,15 @@
 import { type PrismaClient, type User } from '../generated/prisma/client';
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
+
+export type CreateUserResult =
+  | {
+  success: true;
+  data: User;
+}
+  | {
+  success: false;
+  error: 'USERNAME_TAKEN' | 'EMAIL_TAKEN';
+};
 
 class UserRepo {
   constructor(private readonly prisma: PrismaClient) {}
@@ -13,14 +24,40 @@ class UserRepo {
     email: string,
     hashed_password: string,
     username: string,
-  ): Promise<User> {
-    return this.prisma.user.create({
-      data: {
-        email,
-        hashed_password,
-        username,
-      },
-    });
+  ): Promise<CreateUserResult> {
+    try{
+      return {
+        success: true,
+        data: await this.prisma.user.create({
+          data: {
+            email,
+            hashed_password,
+            username,
+          },
+        })
+      };
+    }
+    catch (error: any) {
+      if (error instanceof PrismaClientKnownRequestError) {
+        if (error.code === 'P2002') {
+          // @ts-ignore
+          const fields = error.meta?.driverAdapterError?.cause?.constraint?.fields;
+          if (fields?.includes('username')) {
+            return {
+              success: false,
+              error: 'USERNAME_TAKEN',
+            };
+          }
+          if (fields?.includes('email')) {
+            return {
+              success: false,
+              error: 'EMAIL_TAKEN',
+            };
+          }
+        }
+      }
+      throw error;
+    }
   }
 
   async findUserByEmail(email: string): Promise<User | null> {

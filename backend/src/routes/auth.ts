@@ -12,7 +12,7 @@ const loginSchema = z.object({
 const registerSchema = z.object({
   email: z.email(),
   password: z.string().min(8),
-  username: z.string(),
+  username: z.string().min(3).max(20).regex(/^[a-zA-Z0-9_-]+$/),
 });
 
 async function createAccessToken(jwt_secret: string, user: {
@@ -56,20 +56,26 @@ export function createAuthRoute(jwt_secret: string, authService: AuthService) {
       })
       .post('/register', zValidator('json', registerSchema), async (c) => {
         const { email, password, username } = c.req.valid('json');
-        const user = await authService.registerUser(email, password, username);
-        if (!user) {
-          return c.json({ message: 'User registration failed' }, 400);
+        const result = await authService.registerUser(email, password, username);
+        if (!result.success) {
+          if (result.error === 'EMAIL_TAKEN') {
+            return c.json({ message: 'Email is already taken' }, 409);
+          } else if (result.error === 'USERNAME_TAKEN') {
+            return c.json({ message: 'Username is already taken' }, 409);
+          }
         }
-        return c.json(
-          {
-            user: {
-              id: user.id,
-              email: user.email,
-              username: user.username,
+        else{
+          return c.json(
+            {
+              user: {
+                id: result.data.id,
+                email: result.data.email,
+                username: result.data.username,
+              },
             },
-          },
-          201,
-        );
+            201,
+          );
+        }
       });
   }
 }
