@@ -34,6 +34,98 @@ describe('Authentication', () => {
     expect(response.status).toBe(201);
   });
 
+  it('should not register a user with an existing email', async () => {
+    const registerResponse = await app.request('/api/auth/register', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        username: 'testuser3',
+        password: 'testpassword',
+        email: 'testuser3@example.com',
+      }),
+    });
+
+    expect(registerResponse.status).toBe(201);
+
+    const repeatedRegisterResponse = await app.request('/api/auth/register', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        username: 'newtestuser3',
+        password: 'testpassword',
+        email: 'testuser3@example.com',
+      }),
+    });
+
+    expect(repeatedRegisterResponse.status).toBe(409);
+  });
+
+  it('should not register a user with an existing username', async () => {
+    const registerResponse = await app.request('/api/auth/register', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        username: 'testuser4',
+        password: 'testpassword',
+        email: 'testuser4@example.com',
+      }),
+    });
+
+    expect(registerResponse.status).toBe(201);
+
+    const repeatedRegisterResponse = await app.request('/api/auth/register', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        username: 'testuser4',
+        password: 'testpassword',
+        email: 'newtestuser4@example.com',
+      }),
+    });
+
+    expect(repeatedRegisterResponse.status).toBe(409);
+  });
+
+  it ('should not register a user with short password', async () => {
+    const response = await app.request('/api/auth/register', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        username: 'testuser5',
+        password: 'short',
+        email: 'testuser5@example.com',
+      }),
+    });
+
+    expect(response.status).toBe(400);
+  });
+
+  it ('should not register a user with invalid email', async () => {
+    const response = await app.request('/api/auth/register', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        username: 'testuser6',
+        password: 'testpassword',
+        email: 'invalid-email',
+      }),
+    });
+
+    expect(response.status).toBe(400);
+  });
+
   it('should login an existing user', async () => {
     const registerResponse = await app.request('/api/auth/register', {
       method: 'POST',
@@ -41,8 +133,8 @@ describe('Authentication', () => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        username: 'testuser',
-        email: 'testuser@example.com',
+        username: 'testuser2',
+        email: 'testuser2@example.com',
         password: 'testpassword',
       }),
     });
@@ -55,7 +147,7 @@ describe('Authentication', () => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        email: 'testuser@example.com',
+        email: 'testuser2@example.com',
         password: 'testpassword',
       }),
     });
@@ -64,6 +156,6 @@ describe('Authentication', () => {
 
     const data = await response.json();
 
-    expect(data).toHaveProperty('token');
+    expect(data).toHaveProperty('accessToken');
   });
 });
