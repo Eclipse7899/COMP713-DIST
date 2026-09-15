@@ -2,44 +2,61 @@ import * as React from 'react';
 import { useEffect, useState } from 'react';
 import { DetailedError, hc, parseResponse } from 'hono/client';
 import type { AppType } from '@stocked/backend/src';
-import { getJwt } from '../../util.ts';
+import { clearJwt, getJwt } from '../../util.ts';
 import type { InferResponseType } from 'hono';
-import type {
+import { jwtDecode } from 'jwt-decode';
+import {
   FoodCategory,
   FoodUnit,
 } from '@stocked/backend/src/generated/prisma/enums.ts';
-
-const client = hc<AppType>('/', {
-  headers: {
-    Authorization: 'Bearer ' + getJwt(),
-  },
-});
+import FoodItemDisplay from '../Components/FoodItemDisplay.tsx';
+import { titleCase } from '../util.ts';
+import { Navigate } from 'react-router';
+import { client } from '../client.ts';
 
 type StockedItem = InferResponseType<typeof client.api.items.$get, 200>[number];
 
 type FoodType = InferResponseType<typeof client.api.food.$get>[number];
 
-const initialForm = {
-  foodId: '',
-  quantity: '1',
-  unit: 'ITEM' as FoodUnit,
-  expiryDate: '',
-};
-
 export default function DashboardPage() {
+  const token = getJwt();
+
+  const client = hc<AppType>('/', {
+    headers: {
+      Authorization: 'Bearer ' + token,
+    },
+  });
+
+  const initialForm = {
+    foodId: '',
+    quantity: '1',
+    unit: FoodUnit.ITEM as FoodUnit,
+    expiryDate: '',
+  };
+
   const [items, setItems] = useState<StockedItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
-  const [deletingId, setDeletingId] = useState('');
   const [form, setForm] = useState(initialForm);
   const [foodTypes, setFoodTypes] = useState<FoodType[]>([]);
   const [typesLoading, setTypesLoading] = useState(true);
   const [addingType, setAddingType] = useState(false);
   const [newFoodType, setNewFoodType] = useState({
     name: '',
-    category: 'OTHER' as FoodCategory,
+    category: FoodCategory.OTHER as FoodCategory,
+    unit: FoodUnit.ITEM as FoodUnit,
   });
+
+  const [now, setNow] = useState(Date.now());
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setNow(Date.now());
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   const loadItems = async () => {
     setLoading(true);
@@ -57,10 +74,6 @@ export default function DashboardPage() {
     setItems(res);
     setLoading(false);
   };
-
-  useEffect(() => {
-    void Promise.all([loadItems(), loadFoodTypes()]);
-  }, []);
 
   const loadFoodTypes = async () => {
     setTypesLoading(true);
@@ -100,7 +113,6 @@ export default function DashboardPage() {
   };
 
   const deleteItem = async (id: string) => {
-    setDeletingId(id);
     setError('');
     const res = await parseResponse(client.api.items[':id'].$delete({ param: { id } })).catch(
       (e: DetailedError) => {
@@ -109,14 +121,12 @@ export default function DashboardPage() {
     );
     if (!res) {
       setError('Failed to delete item.');
-      setDeletingId('');
       return;
     }
     setItems((current) => current.filter((item) => item.id !== id));
-    setDeletingId('');
   };
 
-  const addFoodType = async (event: React.FormEvent<HTMLFormElement>) => {
+  const addFoodType = async (event: React.SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
     setAddingType(true);
     setError('');
@@ -134,9 +144,36 @@ export default function DashboardPage() {
     }
     setFoodTypes((current) => [...current, res]);
     setForm((current) => ({ ...current, foodId: res.id }));
-    setNewFoodType({ name: '', category: 'OTHER' });
+    setForm((current) => ({ ...current, unit: FoodUnit.ITEM }));
+    setNewFoodType({
+      name: '',
+      category: FoodCategory.OTHER,
+      unit: FoodUnit.ITEM,
+    });
     setAddingType(false);
   };
+
+  useEffect(() => {
+    void Promise.all([loadItems(), loadFoodTypes()]);
+  }, []);
+
+  if (token) {
+    try {
+      const decoded = jwtDecode(token);
+      if (decoded.exp && decoded.exp < now / 1000) {
+        console.error('Token has expired');
+        clearJwt();
+        return <Navigate to="/login" replace={true} />
+      }
+    } catch (error) {
+      console.error('Invalid token format:', error);
+      clearJwt();
+      return <Navigate to="/login" replace={true} />
+    }
+  } else {
+    console.log('No JWT token found');
+    return <Navigate to="/login" replace={true} />
+  }
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-10 space-y-8">
@@ -150,7 +187,7 @@ export default function DashboardPage() {
         <h2 className="text-xl font-semibold text-(--text-h)">Add food type</h2>
         <div className="grid md:grid-cols-3 gap-4">
           <input
-            className="px-4 py-3 rounded-lg border border-(--border) bg-white"
+            className="px-4 py-3 rounded-lg border border-(--border) "
             placeholder="Food name"
             value={newFoodType.name}
             onChange={(e) => setNewFoodType({
@@ -160,23 +197,18 @@ export default function DashboardPage() {
             required
           />
           <select
-            className="px-4 py-3 rounded-lg border border-(--border) bg-white"
+            className="px-4 py-3 rounded-lg border border-(--border) "
             value={newFoodType.category}
             onChange={(e) => setNewFoodType({
               ...newFoodType,
               category: e.target.value as FoodCategory,
             })}
           >
-            <option>FRUIT</option>
-            <option>VEGETABLE</option>
-            <option>MEAT</option>
-            <option>DAIRY</option>
-            <option>GRAINS</option>
-            <option>DRINKS</option>
-            <option>SNACKS</option>
-            <option>SAUCES</option>
-            <option>FROZEN</option>
-            <option>OTHER</option>
+            {Object.values(FoodCategory).map((category) => (
+              <option key={category} value={category}>
+                {titleCase(category)}
+              </option>
+            ))}
           </select>
           <button
             disabled={addingType}
@@ -193,7 +225,7 @@ export default function DashboardPage() {
           item</h2>
         <div className="grid md:grid-cols-4 gap-4">
           <select
-            className="px-4 py-3 rounded-lg border border-(--border) bg-white"
+            className="px-4 py-3 rounded-lg border border-(--border) "
             value={form.foodId}
             onChange={(e) => setForm({ ...form, foodId: e.target.value })}
             required
@@ -208,7 +240,7 @@ export default function DashboardPage() {
             ))}
           </select>
           <input
-            className="px-4 py-3 rounded-lg border border-(--border) bg-white"
+            className="px-4 py-3 rounded-lg border border-(--border) "
             type="number"
             min="1"
             step="1"
@@ -217,22 +249,21 @@ export default function DashboardPage() {
             onChange={(e) => setForm({ ...form, quantity: e.target.value })}
           />
           <select
-            className="px-4 py-3 rounded-lg border border-(--border) bg-white"
+            className="px-4 py-3 rounded-lg border border-(--border) "
             value={form.unit}
             onChange={(e) => setForm({
               ...form,
               unit: e.target.value as FoodUnit,
             })}
           >
-            <option>ITEM</option>
-            <option>KG</option>
-            <option>G</option>
-            <option>L</option>
-            <option>ML</option>
-            <option>PACK</option>
+            {Object.values(FoodUnit).map((unit) => (
+              <option key={unit} value={unit}>
+                {unit}
+              </option>
+            ))}
           </select>
           <input
-            className="px-4 py-3 rounded-lg border border-(--border) bg-white"
+            className="px-4 py-3 rounded-lg border border-(--border) "
             type="datetime-local"
             value={form.expiryDate}
             onChange={(e) => setForm({ ...form, expiryDate: e.target.value })}
@@ -260,23 +291,8 @@ export default function DashboardPage() {
           <ul className="divide-y divide-(--border)">
             {items.map((item) => (
               <li key={item.id}
-                  className="p-4 flex items-center justify-between gap-4">
-                <div>
-                  <div
-                    className="font-semibold text-(--text-h)">{item.food.name}</div>
-                  <div className="text-sm text-(--text)">
-                    {item.quantity} {item.unit} · {item.food.category}
-                    {item.expiryDate ? ` · expires ${new Date(item.expiryDate).toLocaleString()}` : ''}
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => deleteItem(item.id)}
-                  disabled={deletingId === item.id}
-                  className="px-4 py-2 rounded-lg border border-red-200 text-red-700 disabled:opacity-60"
-                >
-                  {deletingId === item.id ? 'Deleting...' : 'Delete'}
-                </button>
+                  className="p-4 flex flex-col justify-between items-stretch">
+                <FoodItemDisplay item={item} onDelete={deleteItem}/>
               </li>
             ))}
           </ul>

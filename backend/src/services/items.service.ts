@@ -24,7 +24,7 @@ export class ItemsService {
 
   async listUserItems(userId: string): Promise<
     (FoodItem & {
-      food: { id: string; name: string; category: any };
+      food: { id: string; name: string; category: FoodCategory };
     })[]
   > {
     return this.itemsRepo.findAllByUser(userId);

@@ -19,12 +19,12 @@ export default function HomePage() {
         <div className="flex flex-col sm:flex-row gap-4">
           <a
             href="/signup"
-            className="px-8 py-3 bg-(--primary) text-white font-semibold rounded-full hover:shadow-lg hover:bg-(--primary-soft) transition-all">
+            className="px-8 py-3 bg-(--primary) text-white font-semibold rounded-lg hover:shadow-lg hover:bg-(--primary-soft) transition-all">
             Sign Up
           </a>
           <a
             href="/login"
-            className="px-8 py-3 bg-transparent border border-(--border) text-(--text-h) font-semibold rounded-full hover:bg-(--background) hover:border-(--primary) transition-all">
+            className="px-8 py-3 bg-transparent border border-(--border) text-(--text-h) font-semibold rounded-lg hover:bg-(--background) hover:border-(--primary) transition-all">
             Login
           </a>
         </div>
