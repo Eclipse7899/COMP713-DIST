@@ -1,10 +1,14 @@
-import { type FoodItem, PrismaClient } from '../generated/prisma/client';
+import {
+  type FoodCategory,
+  type FoodItem,
+  PrismaClient,
+} from '../generated/prisma/client';
 import type { FoodUnit } from '../generated/prisma/enums';
 
 export class ItemsRepo {
   constructor(private readonly prisma: PrismaClient) {}
 
-  async create(data: {
+  create(data: {
     userId: string;
     foodId: string;
     quantity?: number;
@@ -22,26 +26,7 @@ export class ItemsRepo {
     });
   }
 
-  async findById(id: string): Promise<FoodItem | null> {
-    return this.prisma.foodItem.findUnique({ where: { id } });
-  }
-
-  async findByIdAndUser(id: string, userId: string): Promise<FoodItem | null> {
-    return this.prisma.foodItem.findFirst({
-      where: { id, userId },
-    });
-  }
-
-  async findByUserAndFood(
-    userId: string,
-    foodId: string,
-  ): Promise<FoodItem | null> {
-    return this.prisma.foodItem.findUnique({
-      where: { userId_foodId: { userId, foodId } },
-    });
-  }
-
-  async findAllByUser(userId: string): Promise<
+  findAllByUser(userId: string): Promise<
     (FoodItem & {
       food: { id: string; name: string; category: any };
     })[]
@@ -53,32 +38,7 @@ export class ItemsRepo {
     }) as any;
   }
 
-  async findByUserAndCategory(
-    userId: string,
-    category: string,
-  ): Promise<FoodItem[]> {
-    return this.prisma.foodItem.findMany({
-      where: {
-        userId,
-        food: { category: category as any },
-      },
-      orderBy: { expiryDate: 'asc' },
-    }) as any;
-  }
-
-  async findExpiredByUser(userId: string): Promise<FoodItem[]> {
-    return this.prisma.foodItem.findMany({
-      where: {
-        userId,
-        expiryDate: {
-          lt: new Date(),
-        },
-      },
-      orderBy: { expiryDate: 'asc' },
-    });
-  }
-
-  async upsertByUserAndFood(
+  upsertByUserAndFood(
     userId: string,
     foodId: string,
     data: {
@@ -105,7 +65,7 @@ export class ItemsRepo {
     });
   }
 
-  async update(
+  update(
     id: string,
     data: Partial<{
       quantity: number;
@@ -122,24 +82,43 @@ export class ItemsRepo {
     return this.prisma.foodItem.update({ where: { id }, data: updatePayload });
   }
 
-  async incrementQuantity(id: string, amount: number): Promise<FoodItem> {
+  incrementQuantity(id: string, amount: number): Promise<FoodItem> {
     return this.prisma.foodItem.update({
       where: { id },
       data: { quantity: { increment: amount } } as any,
     });
   }
 
-  async delete(id: string): Promise<FoodItem> {
+  delete(id: string): Promise<FoodItem> {
     return this.prisma.foodItem.delete({ where: { id } });
   }
 
-  async deleteByUserAndFood(userId: string, foodId: string): Promise<FoodItem> {
+  deleteByUserAndFood(userId: string, foodId: string): Promise<FoodItem> {
     return this.prisma.foodItem.delete({
       where: { userId_foodId: { userId, foodId } },
     });
   }
 
-  async deleteAllByUser(userId: string): Promise<{ count: number }> {
+  deleteAllByUser(userId: string): Promise<{ count: number }> {
     return this.prisma.foodItem.deleteMany({ where: { userId } });
+  }
+
+  filterByUser(userId: string, categories: FoodCategory[], expiresBefore: Date | null, name_contains: string | null, sort: 'asc' | 'desc') {
+    const whereClause: any = { userId };
+    if (categories.length > 0) {
+      whereClause.food = { category: { in: categories } };
+    }
+    if (expiresBefore) {
+      whereClause.expiryDate = { lt: expiresBefore };
+    }
+    if (name_contains) {
+      whereClause.food = { ...whereClause.food, name: { contains: name_contains, mode: 'insensitive' } };
+    }
+
+    return this.prisma.foodItem.findMany({
+      where: whereClause,
+      include: { food: { select: { id: true, name: true, category: true } } },
+      orderBy: { expiryDate: sort },
+    }) as any;
   }
 }

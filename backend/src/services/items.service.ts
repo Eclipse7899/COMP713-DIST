@@ -2,13 +2,10 @@ import { ItemsRepo } from '../repositories/items.repo';
 import type { FoodItem } from '../generated/prisma/client';
 import type { FoodCategory, FoodUnit } from '../generated/prisma/enums';
 
-/**
- * ItemsService handles business logic for FoodItem operations (user's inventory)
- */
 export class ItemsService {
   constructor(private readonly itemsRepo: ItemsRepo) {}
 
-  async createItem(data: {
+  createItem(data: {
     userId: string;
     foodId: string;
     quantity?: number;
@@ -18,11 +15,7 @@ export class ItemsService {
     return this.itemsRepo.create(data);
   }
 
-  async getItemById(id: string, userId: string): Promise<FoodItem | null> {
-    return this.itemsRepo.findByIdAndUser(id, userId);
-  }
-
-  async listUserItems(userId: string): Promise<
+  listUserItems(userId: string): Promise<
     (FoodItem & {
       food: { id: string; name: string; category: FoodCategory };
     })[]
@@ -30,18 +23,11 @@ export class ItemsService {
     return this.itemsRepo.findAllByUser(userId);
   }
 
-  async listUserItemsByCategory(
-    userId: string,
-    category: FoodCategory,
-  ): Promise<FoodItem[]> {
-    return this.itemsRepo.findByUserAndCategory(userId, category);
+  filterItems(userId: string, categories: FoodCategory[], expiresBefore: Date | null, name_contains: string | null, sort: 'asc' | 'desc'): Promise<FoodItem[]> {
+    return this.itemsRepo.filterByUser(userId, categories, expiresBefore, name_contains, sort);
   }
 
-  async listExpiredItems(userId: string): Promise<FoodItem[]> {
-    return this.itemsRepo.findExpiredByUser(userId);
-  }
-
-  async upsertItem(
+  upsertItem(
     userId: string,
     foodId: string,
     data: {
@@ -53,7 +39,7 @@ export class ItemsService {
     return this.itemsRepo.upsertByUserAndFood(userId, foodId, data);
   }
 
-  async updateItem(
+  updateItem(
     id: string,
     data: Partial<{
       quantity: number;
@@ -64,19 +50,19 @@ export class ItemsService {
     return this.itemsRepo.update(id, data);
   }
 
-  async incrementItemQuantity(id: string, amount: number): Promise<FoodItem> {
+  incrementItemQuantity(id: string, amount: number): Promise<FoodItem> {
     return this.itemsRepo.incrementQuantity(id, amount);
   }
 
-  async removeItem(id: string): Promise<FoodItem> {
+  removeItem(id: string): Promise<FoodItem> {
     return this.itemsRepo.delete(id);
   }
 
-  async removeItemByFoodId(userId: string, foodId: string): Promise<FoodItem> {
+  removeItemByFoodId(userId: string, foodId: string): Promise<FoodItem> {
     return this.itemsRepo.deleteByUserAndFood(userId, foodId);
   }
 
-  async clearUserInventory(userId: string): Promise<{ count: number }> {
+  clearUserInventory(userId: string): Promise<{ count: number }> {
     return this.itemsRepo.deleteAllByUser(userId);
   }
 }

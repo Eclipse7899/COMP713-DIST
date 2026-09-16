@@ -50,28 +50,6 @@ export function createItemsRoute(itemsService: ItemsService) {
       return c.json({ error: e.message ?? String(e) }, 400);
     }
     })
-    .get('/expired', async (c) => {
-    const userId = c.get('jwtPayload').sub;
-    try {
-      const items = await itemsService.listExpiredItems(userId);
-      return c.json(items);
-    } catch (e: any) {
-      return c.json({ error: e.message ?? String(e) }, 400);
-    }
-    })
-    .get('/:id', zValidator('param', idParamSchema), async (c) => {
-    const userId = c.get('jwtPayload').sub;
-    const id = c.req.valid('param').id;
-    try {
-      const item = await itemsService.getItemById(id, userId);
-      if (!item) {
-        return c.json({ error: 'Item not found' }, 404);
-      }
-      return c.json(item);
-    } catch (e: any) {
-      return c.json({ error: e.message ?? String(e) }, 400);
-    }
-    })
     .patch(
       '/:id',
       zValidator('param', idParamSchema),
