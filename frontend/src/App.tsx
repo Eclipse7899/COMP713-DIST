@@ -5,6 +5,7 @@ import LoginPage from './Pages/LoginPage.tsx';
 import SignupPage from './Pages/SignupPage.tsx';
 import Navbar from './Components/Navbar.tsx';
 import DashboardPage from './Pages/DashboardPage.tsx';
+import ProtectedRoute from './Components/AuthenticatedRoute.tsx';
 
 function App() {
   return (
@@ -14,7 +15,9 @@ function App() {
         <Route path="/" element={<HomePage/>}/>
         <Route path="/login" element={<LoginPage/>}/>
         <Route path="/signup" element={<SignupPage/>}/>
-        <Route path="/dashboard" element={<DashboardPage/>}/>
+        <Route element={<ProtectedRoute />}>
+          <Route path="/dashboard" element={<DashboardPage />} />
+        </Route>
       </Routes>
     </BrowserRouter>
   );
