@@ -7,36 +7,12 @@ import { zValidator } from '@hono/zod-validator';
 
 const createFoodSchema = z.object({
   name: z.string().min(1, 'Name is required'),
-  category: z.enum([
-    'FRUIT',
-    'VEGETABLE',
-    'MEAT',
-    'DAIRY',
-    'GRAINS',
-    'DRINKS',
-    'SNACKS',
-    'SAUCES',
-    'FROZEN',
-    'OTHER',
-  ]),
+  category: z.enum(FoodCategory),
 });
 
 const updateFoodSchema = z.object({
   name: z.string().min(1).optional(),
-  category: z
-    .enum([
-      'FRUIT',
-      'VEGETABLE',
-      'MEAT',
-      'DAIRY',
-      'GRAINS',
-      'DRINKS',
-      'SNACKS',
-      'SAUCES',
-      'FROZEN',
-      'OTHER',
-    ])
-    .optional(),
+  category: z.enum(FoodCategory).optional(),
 });
 
 const foodIdParamSchema = z.object({

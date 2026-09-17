@@ -3,19 +3,27 @@ import { ItemsService } from '../services/items.service';
 import type { Variables } from '../variables';
 import { z } from 'zod';
 import { zValidator } from '@hono/zod-validator';
+import { FoodCategory, FoodUnit } from '../generated/prisma/enums';
 
 const createItemSchema = z.object({
   foodId: z.cuid2(),
   quantity: z.number().positive().optional(),
-  unit: z.enum(['ITEM', 'KG', 'G', 'L', 'ML', 'PACK']).optional(),
+  unit: z.enum(FoodUnit).optional(),
   expiryDate: z.iso.datetime().optional().nullable(),
 });
 
 const updateItemSchema = z.object({
   quantity: z.number().positive().optional(),
-  unit: z.enum(['ITEM', 'KG', 'G', 'L', 'ML', 'PACK']).optional(),
+  unit: z.enum(FoodUnit).optional(),
   expiryDate: z.iso.datetime().optional().nullable(),
 });
+
+const filterSchema = z.object({
+  contains: z.string().optional(),
+  categories: z.preprocess((val) => (Array.isArray(val) ? val : [val]), z.array(z.enum(FoodCategory)).optional()),
+  sort: z.enum(['asc', 'desc']).optional(),
+  expiryDate: z.iso.datetime().optional().nullable(),
+}).optional();
 
 const idParamSchema = z.object({
   id: z.cuid2(),
@@ -27,8 +35,24 @@ const foodIdParamSchema = z.object({
 
 export function createItemsRoute(itemsService: ItemsService) {
   return new Hono<{ Variables: Variables }>()
-    .get('/', async (c) => {
+    .get('/', zValidator('query', filterSchema), async (c) => {
       const userId = c.get('jwtPayload').sub;
+      const query = c.req.valid('query');
+      if (query != undefined && Object.keys(query).length > 0) {
+        const { contains, categories, sort, expiryDate } = query;
+        try {
+          const items = await itemsService.filterItems(
+            userId,
+            categories ?? [],
+            expiryDate ? new Date(expiryDate) : null,
+            contains ?? null,
+            sort ?? 'asc',
+          );
+          return c.json(items);
+        } catch (e: any) {
+          return c.json({ error: e.message ?? String(e) }, 400);
+        }
+      }
       try {
         const items = await itemsService.listUserItems(userId);
         return c.json(items);

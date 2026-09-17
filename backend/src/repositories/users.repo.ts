@@ -39,8 +39,8 @@ class UserRepo {
     } catch (error: any) {
       if (error instanceof PrismaClientKnownRequestError) {
         if (error.code === 'P2002') {
-          // @ts-ignore
           const fields =
+            // @ts-ignore
             error.meta?.driverAdapterError?.cause?.constraint?.fields;
           if (fields?.includes('username')) {
             return {
