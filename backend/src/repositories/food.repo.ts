@@ -1,10 +1,6 @@
 import { type Food, PrismaClient } from '../generated/prisma/client';
 import type { FoodCategory } from '../generated/prisma/enums';
 
-/**
- * FoodRepo handles Food model operations (food definitions/catalog)
- * Foods can be global (createdByUserId = null) or user-created
- */
 export class FoodRepo {
   constructor(private readonly prisma: PrismaClient) {}
 
@@ -22,29 +18,7 @@ export class FoodRepo {
     });
   }
 
-  async findById(id: string): Promise<Food | null> {
-    return this.prisma.food.findUnique({ where: { id } });
-  }
-
-  async findAll(): Promise<Food[]> {
-    return this.prisma.food.findMany({ orderBy: { createdAt: 'desc' } });
-  }
-
-  async findByCategory(category: FoodCategory): Promise<Food[]> {
-    return this.prisma.food.findMany({
-      where: { category },
-      orderBy: { createdAt: 'desc' },
-    });
-  }
-
-  async findByCreator(createdByUserId: string): Promise<Food[]> {
-    return this.prisma.food.findMany({
-      where: { createdByUserId },
-      orderBy: { createdAt: 'desc' },
-    });
-  }
-
-  async findAccessible(
+  async findForUser(
     userId: string,
     category?: FoodCategory,
   ): Promise<Food[]> {
@@ -57,21 +31,38 @@ export class FoodRepo {
     });
   }
 
-  async update(
+  async updateForUser(
     id: string,
     data: Partial<{
       name: string;
       category: FoodCategory;
     }>,
-  ): Promise<Food> {
-    const updatePayload: any = {};
-    if (data.name !== undefined) updatePayload.name = data.name;
-    if (data.category !== undefined) updatePayload.category = data.category;
+    userId: string,
+  ): Promise<Food | null> {
+    const result = await this.prisma.food.updateManyAndReturn({
+      where: {
+        id,
+        createdByUserId: userId,
+      },
+      data: data,
+    });
 
-    return this.prisma.food.update({ where: { id }, data: updatePayload });
+    return result[0] ?? null;
   }
 
-  async delete(id: string): Promise<Food> {
-    return this.prisma.food.delete({ where: { id } });
+  async deleteForUser(id: string, userId: string): Promise<boolean> {
+    const deleted = await this.prisma.food.deleteMany({
+      where: {
+        id,
+        createdByUserId: userId
+      }
+    });
+    return deleted.count !== 0;
+  }
+
+  async findById(id: string) {
+    return this.prisma.food.findUnique({
+      where: { id },
+    });
   }
 }
