@@ -40,7 +40,7 @@ export function createFoodRoute(foodService: FoodService) {
       });
       return c.json(created, 201);
     })
-    .patch(
+    .put(
       '/:id',
       zValidator('param', foodIdParamSchema),
       zValidator('json', updateFoodSchema),

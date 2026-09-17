@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { useEffect } from 'react';
 import { type DetailedError, parseResponse } from 'hono/client';
-import type { FoodType } from '../models';
+import type { EditFoodType, FoodType } from '../models';
 import { getClient } from '../client';
 import { AddFoodTypeForm } from './Forms/AddFoodTypeForm.tsx';
 import FoodTypeBox from './FoodTypeBox';
@@ -45,6 +45,22 @@ export default function FoodTypes() {
     setTypes((current) => current.filter((type) => type.id !== id));
   };
 
+  const editType = async (id: string, form: EditFoodType) => {
+    setError('');
+    const res = await parseResponse(
+      client.api.food[':id'].$put({ param: { id }, json: form }),
+    ).catch((e: DetailedError) => {
+      console.error(e);
+    });
+    if (!res) {
+      setError('Failed to update food type.');
+      return;
+    }
+    setTypes((current) =>
+      current.map((type) => (type.id === id ? { ...type, ...form } : type)),
+    );
+  };
+
   useEffect(() => {
     loadTypes();
   }, []);
@@ -85,7 +101,7 @@ export default function FoodTypes() {
           <ul className="divide-y divide-(--border)">
             {types.map((type) => (
               <li key={type.id} className="p-4 hover:bg-(--secondary)/5 transition-colors">
-                <FoodTypeBox foodType={type} onDelete={deleteType} />
+                <FoodTypeBox foodType={type} onDelete={deleteType} onEdit={editType} />
               </li>
             ))}
           </ul>
