@@ -17,12 +17,14 @@ const registerSchema = z.object({
 
 async function createAccessToken(jwt_secret: string, user: {
   id: string;
-  email: string
+  email: string;
+  username: string;
 }) {
   return sign(
     {
       sub: user.id,
       email: user.email,
+      username: user.username,
       exp: Math.floor(Date.now() / 1000) + 60 * 60,
     },
     jwt_secret,

@@ -1,6 +1,5 @@
-import { hc } from 'hono/client';
-import { getJwt } from '../util.ts';
-import type { AppType } from '@stocked/backend/src';
+import { clearJwt, getJwt } from '../util.ts';
+import { jwtDecode } from 'jwt-decode';
 
 export function titleCase(str: string): string {
   return str
@@ -10,13 +9,24 @@ export function titleCase(str: string): string {
     .join(' ');
 }
 
-
-export function getClient() {
+export function checkAuthentication(): boolean {
   const token = getJwt();
 
-  return hc<AppType>('/', {
-    headers: {
-      Authorization: 'Bearer ' + token,
-    },
-  });
+  if (!token) {
+    return false;
+  }
+
+  try {
+    const { exp } = jwtDecode(token);
+    if (!exp || exp * 1000 <= Date.now()) {
+      clearJwt();
+      return false;
+    }
+    else{
+      return true;
+    }
+  } catch {
+    clearJwt();
+    return false;
+  }
 }
