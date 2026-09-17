@@ -32,14 +32,14 @@ export default function Navbar() {
               </span>
               <Link
                 to="/dashboard"
-                className="px-4 py-2 text-(--text-h) rounded-lg border border-(--border) hover:bg-(--secondary)/10 font-medium transition-all active:scale-95 shadow-sm"
+                className="btn-secondary"
               >
                 Dashboard
               </Link>
               <button
                 type="button"
                 onClick={logout}
-                className="px-4 py-2 bg-(--primary) hover:bg-(--primary-soft) text-white font-medium rounded-lg transition-all active:scale-95 shadow-sm"
+                className="btn"
               >
                 Logout
               </button>

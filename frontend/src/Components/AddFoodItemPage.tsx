@@ -85,18 +85,16 @@ export default function AddFoodItemPage({
       <h2 className="text-xl font-semibold text-(--text-h)">
         Add stocked item
       </h2>
-
       <ErrorMessage message={error} />
-
       <form onSubmit={submit} className="flex flex-col gap-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="space-y-1.5 text-left">
+          <div className="flex flex-col gap-2">
             <label className="text-sm font-medium text-(--text-h)" htmlFor="foodId">
               Food Type
             </label>
             <select
               id="foodId"
-              className="w-full px-4 py-2.5 bg-(--bg) text-(--text-h) border border-(--border) rounded-lg focus:outline-none focus:ring-2 focus:ring-(--primary) transition-all"
+              className="w-full dropdown"
               value={form.foodId}
               onChange={(e) => setForm({ ...form, foodId: e.target.value })}
               required
@@ -110,13 +108,13 @@ export default function AddFoodItemPage({
             </select>
           </div>
 
-          <div className="space-y-1.5 text-left">
+          <div className="flex flex-col gap-2">
             <label className="text-sm font-medium text-(--text-h)" htmlFor="quantity">
               Quantity
             </label>
             <input
               id="quantity"
-              className="w-full px-4 py-2.5 bg-(--bg) text-(--text-h) border border-(--border) rounded-lg focus:outline-none focus:ring-2 focus:ring-(--primary) transition-all"
+              className="w-full text-input"
               type="number"
               min="1"
               step="1"
@@ -132,13 +130,13 @@ export default function AddFoodItemPage({
             />
           </div>
 
-          <div className="space-y-1.5 text-left">
+          <div className="flex flex-col gap-2">
             <label className="text-sm font-medium text-(--text-h)" htmlFor="unit">
               Unit
             </label>
             <select
               id="unit"
-              className="w-full px-4 py-2.5 bg-(--bg) text-(--text-h) border border-(--border) rounded-lg focus:outline-none focus:ring-2 focus:ring-(--primary) transition-all"
+              className="w-full dropdown"
               value={form.unit}
               onChange={(e) =>
                 setForm({
@@ -156,13 +154,13 @@ export default function AddFoodItemPage({
             </select>
           </div>
 
-          <div className="space-y-1.5 text-left">
+          <div className="flex flex-col gap-2">
             <label className="text-sm font-medium text-(--text-h)" htmlFor="expiryDate">
               Expiry Date
             </label>
             <input
               id="expiryDate"
-              className="w-full px-4 py-2.5 bg-(--bg) text-(--text-h) border border-(--border) rounded-lg focus:outline-none focus:ring-2 focus:ring-(--primary) transition-all"
+              className="w-full text-input"
               type="datetime-local"
               value={form.expiryDate ?? ''}
               onChange={(e) => setForm({ ...form, expiryDate: e.target.value })}
@@ -174,14 +172,14 @@ export default function AddFoodItemPage({
           <button
             type="submit"
             disabled={isDisabled}
-            className="px-5 py-2.5 rounded-lg bg-(--primary) hover:bg-(--primary-soft) text-white font-semibold transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+            className="btn"
           >
             {isDisabled ? 'Adding...' : 'Add item'}
           </button>
           <button
             type="button"
             onClick={onCancel}
-            className="px-5 py-2.5 rounded-lg border border-(--border) hover:bg-(--secondary)/10 text-(--text-h) font-semibold transition-all active:scale-95 shadow-sm"
+            className="btn-secondary"
           >
             Cancel
           </button>

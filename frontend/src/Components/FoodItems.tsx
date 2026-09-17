@@ -68,7 +68,7 @@ export default function FoodItems() {
         <button
           type="button"
           onClick={() => setAddItemModalOpen(true)}
-          className="px-4 py-2 rounded-lg bg-(--primary) hover:bg-(--primary-soft) text-white font-medium transition-all active:scale-95 shadow-sm"
+          className="btn"
         >
           Add Item
         </button>

@@ -28,7 +28,7 @@ export default function FoodTypeBox({
             {foodType.name}
           </span>
           {foodType.createdByUserId && (
-            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-(--accent-bg) text-(--accent)">
+            <span className="chip bg-(--accent-bg) text-(--accent)">
               Custom
             </span>
           )}
@@ -44,8 +44,7 @@ export default function FoodTypeBox({
             type="button"
             onClick={() => handleDelete(foodType.id)}
             disabled={isDeleting}
-            className="px-3 py-1.5 text-sm font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 hover:bg-red-100 dark:hover:bg-red-900/40 border border-red-200 dark:border-red-900/50 rounded-lg transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
+            className="btn-danger">
             {isDeleting ? 'Deleting...' : 'Delete'}
           </button>
         </div>

@@ -50,7 +50,7 @@ export default function FoodItemBox({
               {item.quantity} {item.unit} · {titleCase(item.food.category)}
             </span>
             {isExpired ? (
-              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-red-100 text-red-700 dark:bg-red-950/60 dark:text-red-400">
+              <span className="chip bg-red-100 text-red-700 dark:bg-red-950/60 dark:text-red-400">
                 Expired
               </span>
             ) : item.expiryDate ? (
@@ -63,7 +63,7 @@ export default function FoodItemBox({
         {progressValue !== null && (
           <div className="w-full bg-(--border) h-1.5 rounded-full overflow-hidden">
             <div
-              className={`h-full rounded-full transition-all duration-300 ${
+              className={`h-full rounded-full transition-all duration-1000 ${
                 isExpired
                   ? 'bg-red-500'
                   : progressValue > 0.75
@@ -81,8 +81,7 @@ export default function FoodItemBox({
           type="button"
           onClick={() => handleDelete(item.id)}
           disabled={isDeleting}
-          className="px-3 py-1.5 text-sm font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 hover:bg-red-100 dark:hover:bg-red-900/40 border border-red-200 dark:border-red-900/50 rounded-lg transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
+          className="btn-danger"        >
           {isDeleting ? 'Deleting...' : 'Delete'}
         </button>
       </div>
