@@ -140,6 +140,10 @@ code {
     @apply rounded-2xl border border-(--border) bg-(--bg) shadow-(--shadow)
 }
 
+.card-flat {
+    @apply rounded-2xl border border-(--border) bg-(--bg) shadow-none
+}
+
 .chip {
     @apply px-2 py-0.5 rounded text-xs font-medium
 }
