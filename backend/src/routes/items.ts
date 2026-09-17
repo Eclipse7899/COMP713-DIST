@@ -7,15 +7,16 @@ import { FoodCategory, FoodUnit } from '../generated/prisma/enums';
 
 const createItemSchema = z.object({
   foodId: z.cuid2(),
-  quantity: z.number().positive().optional(),
-  unit: z.enum(FoodUnit).optional(),
-  expiryDate: z.iso.datetime().optional().nullable(),
+  quantity: z.number().positive(),
+  unit: z.enum(FoodUnit),
+  expiryDate: z.iso.datetime().nullable(),
 });
 
 const updateItemSchema = z.object({
-  quantity: z.number().positive().optional(),
-  unit: z.enum(FoodUnit).optional(),
-  expiryDate: z.iso.datetime().optional().nullable(),
+  foodId: z.cuid2(),
+  quantity: z.number().positive(),
+  unit: z.enum(FoodUnit),
+  expiryDate: z.iso.datetime().nullable(),
 });
 
 const filterSchema = z.object({
@@ -29,10 +30,6 @@ const idParamSchema = z.object({
   id: z.cuid2(),
 });
 
-const foodIdParamSchema = z.object({
-  foodId: z.cuid2(),
-});
-
 export function createItemsRoute(itemsService: ItemsService) {
   return new Hono<{ Variables: Variables }>()
     .get('/', zValidator('query', filterSchema), async (c) => {
@@ -43,10 +40,12 @@ export function createItemsRoute(itemsService: ItemsService) {
         try {
           const items = await itemsService.filterItems(
             userId,
-            categories ?? [],
-            expiryDate ? new Date(expiryDate) : null,
-            contains ?? null,
-            sort ?? 'asc',
+            {
+              categories,
+              expiresBefore: expiryDate ? new Date(expiryDate) : null,
+              name_contains: contains,
+              sort,
+            },
           );
           return c.json(items);
         } catch (e: any) {
@@ -64,9 +63,11 @@ export function createItemsRoute(itemsService: ItemsService) {
       const userId = c.get('jwtPayload').sub;
       const { foodId, quantity, unit, expiryDate } = c.req.valid('json');
       try {
-        const item = await itemsService.upsertItem(userId, foodId, {
-          quantity: quantity ?? 1,
-          unit: (unit ?? 'ITEM') as any,
+        const item = await itemsService.createItem({
+          userId,
+          foodId,
+          quantity,
+          unit,
           expiryDate: expiryDate ? new Date(expiryDate) : null,
         });
         return c.json(item, 201);
@@ -74,15 +75,17 @@ export function createItemsRoute(itemsService: ItemsService) {
         return c.json({ error: e.message ?? String(e) }, 400);
       }
     })
-    .patch(
+    .put(
       '/:id',
       zValidator('param', idParamSchema),
       zValidator('json', updateItemSchema),
       async (c) => {
         const id = c.req.valid('param').id;
+        const userId = c.get('jwtPayload').sub;
         const body = c.req.valid('json');
         try {
-          const updated = await itemsService.updateItem(id, {
+          const updated = await itemsService.updateItem(id, userId, {
+            foodId: body.foodId,
             quantity: body.quantity,
             unit: body.unit,
             expiryDate: body.expiryDate
@@ -97,47 +100,15 @@ export function createItemsRoute(itemsService: ItemsService) {
     )
     .delete('/:id', zValidator('param', idParamSchema), async (c) => {
       const id = c.req.valid('param').id;
+      const userId = c.get('jwtPayload').sub;
       try {
-        const deleted = await itemsService.removeItem(id);
-        return c.json(deleted);
+        const deleted = await itemsService.removeItem(id, userId);
+        if (!deleted) {
+          return c.json({ error: 'Item not found or not owned by user' }, 404);
+        }
+        return c.json({ success: true });
       } catch (e: any) {
         return c.json({ error: e.message ?? String(e) }, 400);
       }
-    })
-    .post(
-      '/food/:foodId',
-      zValidator('param', foodIdParamSchema),
-      zValidator('json', updateItemSchema),
-      async (c) => {
-        const userId = c.get('jwtPayload').sub;
-        const foodId = c.req.valid('param').foodId;
-        const body = c.req.valid('json');
-        try {
-          const item = await itemsService.upsertItem(userId, foodId, {
-            quantity: body.quantity,
-            unit: body.unit,
-            expiryDate: body.expiryDate
-              ? new Date(body.expiryDate)
-              : body.expiryDate,
-          } as any);
-          return c.json(item, 201);
-        } catch (e: any) {
-          return c.json({ error: e.message ?? String(e) }, 400);
-        }
-      },
-    )
-    .delete(
-      '/food/:foodId',
-      zValidator('param', foodIdParamSchema),
-      async (c) => {
-        const userId = c.get('jwtPayload').sub;
-        const foodId = c.req.valid('param').foodId;
-        try {
-          const deleted = await itemsService.removeItemByFoodId(userId, foodId);
-          return c.json(deleted);
-        } catch (e: any) {
-          return c.json({ error: e.message ?? String(e) }, 400);
-        }
-      },
-    );
+    });
 }

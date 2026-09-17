@@ -8,73 +8,46 @@ export class ItemsService {
   createItem(data: {
     userId: string;
     foodId: string;
-    quantity?: number;
-    unit?: FoodUnit;
-    expiryDate?: Date | null;
+    quantity: number;
+    unit: FoodUnit;
+    expiryDate: Date | null;
   }): Promise<FoodItem> {
     return this.itemsRepo.create(data);
   }
 
-  listUserItems(userId: string): Promise<
-    (FoodItem & {
-      food: { id: string; name: string; category: FoodCategory };
-    })[]
-  > {
+  listUserItems(userId: string) {
     return this.itemsRepo.findAllByUser(userId);
   }
 
   filterItems(
     userId: string,
-    categories: FoodCategory[],
-    expiresBefore: Date | null,
-    name_contains: string | null,
-    sort: 'asc' | 'desc',
-  ): Promise<FoodItem[]> {
+    data: {
+      categories?: FoodCategory[];
+      expiresBefore?: Date | null;
+      name_contains?: string;
+      sort?: 'asc' | 'desc';
+    },
+  ) {
     return this.itemsRepo.filterByUser(
       userId,
-      categories,
-      expiresBefore,
-      name_contains,
-      sort,
+      data,
     );
-  }
-
-  upsertItem(
-    userId: string,
-    foodId: string,
-    data: {
-      quantity?: number;
-      unit?: FoodUnit;
-      expiryDate?: Date | null;
-    },
-  ): Promise<FoodItem> {
-    return this.itemsRepo.upsertByUserAndFood(userId, foodId, data);
   }
 
   updateItem(
     id: string,
-    data: Partial<{
+    userId: string,
+    data: {
+      foodId: string;
       quantity: number;
       unit: FoodUnit;
       expiryDate: Date | null;
-    }>,
-  ): Promise<FoodItem> {
-    return this.itemsRepo.update(id, data);
+    },
+  ) {
+    return this.itemsRepo.updateByUser(id, userId, data);
   }
 
-  incrementItemQuantity(id: string, amount: number): Promise<FoodItem> {
-    return this.itemsRepo.incrementQuantity(id, amount);
-  }
-
-  removeItem(id: string): Promise<FoodItem> {
-    return this.itemsRepo.delete(id);
-  }
-
-  removeItemByFoodId(userId: string, foodId: string): Promise<FoodItem> {
-    return this.itemsRepo.deleteByUserAndFood(userId, foodId);
-  }
-
-  clearUserInventory(userId: string): Promise<{ count: number }> {
-    return this.itemsRepo.deleteAllByUser(userId);
+  removeItem(id: string, userId: string) {
+    return this.itemsRepo.deleteByUser(id, userId);
   }
 }

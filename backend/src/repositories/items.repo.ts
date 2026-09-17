@@ -3,131 +3,96 @@ import {
   type FoodItem,
   PrismaClient,
 } from '../generated/prisma/client';
-import type { FoodUnit } from '../generated/prisma/enums';
+import { FoodUnit } from '../generated/prisma/enums';
 
 export class ItemsRepo {
   constructor(private readonly prisma: PrismaClient) {}
 
-  create(data: {
-    userId: string;
-    foodId: string;
-    quantity?: number;
-    unit?: FoodUnit;
-    expiryDate?: Date | null;
-  }): Promise<FoodItem> {
+  create(
+    data: {
+      userId: string;
+      foodId: string;
+      quantity: number;
+      unit: FoodUnit;
+      expiryDate: Date | null;
+    }): Promise<FoodItem> {
     return this.prisma.foodItem.create({
       data: {
         userId: data.userId,
         foodId: data.foodId,
-        quantity: data.quantity ?? 1,
-        unit: data.unit ?? 'ITEM',
+        quantity: data.quantity,
+        unit: data.unit,
         expiryDate: data.expiryDate ?? null,
       },
+      include: { food: { select: { id: true, name: true, category: true } } },
     });
   }
 
-  findAllByUser(userId: string): Promise<
-    (FoodItem & {
-      food: { id: string; name: string; category: any };
-    })[]
-  > {
+  findAllByUser(userId: string) {
     return this.prisma.foodItem.findMany({
       where: { userId },
       include: { food: { select: { id: true, name: true, category: true } } },
       orderBy: { expiryDate: 'asc' },
-    }) as any;
+    })
   }
 
-  upsertByUserAndFood(
-    userId: string,
-    foodId: string,
-    data: {
-      quantity?: number;
-      unit?: FoodUnit;
-      expiryDate?: Date | null;
-    },
-  ): Promise<FoodItem> {
-    return this.prisma.foodItem.upsert({
-      where: { userId_foodId: { userId, foodId } },
-      update: {
-        quantity: data.quantity ?? undefined,
-        unit: data.unit ?? undefined,
-        expiryDate: data.expiryDate ?? undefined,
-        updatedAt: new Date(),
-      },
-      create: {
-        userId,
-        foodId,
-        quantity: data.quantity ?? 1,
-        unit: data.unit ?? 'ITEM',
-        expiryDate: data.expiryDate ?? null,
-      },
-    });
-  }
-
-  update(
+  async updateByUser(
     id: string,
-    data: Partial<{
+    userId: string,
+    data: {
+      foodId: string;
       quantity: number;
       unit: FoodUnit;
       expiryDate: Date | null;
-    }>,
-  ): Promise<FoodItem> {
-    const updatePayload: any = {};
-    if (data.quantity !== undefined) updatePayload.quantity = data.quantity;
-    if (data.unit !== undefined) updatePayload.unit = data.unit;
-    if (data.expiryDate !== undefined)
-      updatePayload.expiryDate = data.expiryDate;
-
-    return this.prisma.foodItem.update({ where: { id }, data: updatePayload });
-  }
-
-  incrementQuantity(id: string, amount: number): Promise<FoodItem> {
-    return this.prisma.foodItem.update({
+    },
+  ) {
+    const batch = await this.prisma.foodItem.updateMany({
+      where: { id, userId },
+      data: data,
+    });
+    if (batch.count === 0) {
+      return null;
+    }
+    return this.prisma.foodItem.findUnique({
       where: { id },
-      data: { quantity: { increment: amount } } as any,
+      include: { food: { select: { id: true, name: true, category: true } } },
     });
   }
 
-  delete(id: string): Promise<FoodItem> {
-    return this.prisma.foodItem.delete({ where: { id } });
-  }
-
-  deleteByUserAndFood(userId: string, foodId: string): Promise<FoodItem> {
-    return this.prisma.foodItem.delete({
-      where: { userId_foodId: { userId, foodId } },
+  async deleteByUser(id: string, userId: string) {
+    const batch = await this.prisma.foodItem.deleteMany({
+      where: { id, userId },
     });
-  }
-
-  deleteAllByUser(userId: string): Promise<{ count: number }> {
-    return this.prisma.foodItem.deleteMany({ where: { userId } });
+    return batch.count !== 0;
   }
 
   filterByUser(
     userId: string,
-    categories: FoodCategory[],
-    expiresBefore: Date | null,
-    name_contains: string | null,
-    sort: 'asc' | 'desc',
+    data: {
+      categories?: FoodCategory[];
+      expiresBefore?: Date | null;
+      name_contains?: string | null;
+      sort?: 'asc' | 'desc';
+    },
   ) {
     const whereClause: any = { userId };
-    if (categories.length > 0) {
-      whereClause.food = { category: { in: categories } };
+    if (data.categories && data.categories?.length > 0) {
+      whereClause.food = { category: { in: data.categories } };
     }
-    if (expiresBefore) {
-      whereClause.expiryDate = { lt: expiresBefore };
+    if (data.expiresBefore) {
+      whereClause.expiryDate = { lt: data.expiresBefore };
     }
-    if (name_contains) {
+    if (data.name_contains) {
       whereClause.food = {
         ...whereClause.food,
-        name: { contains: name_contains, mode: 'insensitive' },
+        name: { contains: data.name_contains, mode: 'insensitive' },
       };
     }
 
     return this.prisma.foodItem.findMany({
       where: whereClause,
       include: { food: { select: { id: true, name: true, category: true } } },
-      orderBy: { expiryDate: sort },
-    }) as any;
+      orderBy: { expiryDate: data.sort },
+    });
   }
 }
