@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { FoodService } from '../services/food.service';
-import type { Variables } from './variables';
+import type { Variables } from '../variables';
 import { z } from 'zod';
 import { FoodCategory } from '../generated/prisma/enums';
 import { zValidator } from '@hono/zod-validator';

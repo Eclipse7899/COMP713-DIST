@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { ItemsService } from '../services/items.service';
-import type { Variables } from './variables';
+import type { Variables } from '../variables';
 import { z } from 'zod';
 import { zValidator } from '@hono/zod-validator';
 

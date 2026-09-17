@@ -1,5 +1,6 @@
 import { clearJwt, getJwt } from '../util.ts';
 import { jwtDecode } from 'jwt-decode';
+import type { JwtFields } from '@stocked/backend/src/variables.ts';
 
 export function titleCase(str: string): string {
   return str
@@ -9,24 +10,24 @@ export function titleCase(str: string): string {
     .join(' ');
 }
 
-export function checkAuthentication(): boolean {
+export function getAuthentication() {
   const token = getJwt();
 
   if (!token) {
-    return false;
+    return null;
   }
 
   try {
-    const { exp } = jwtDecode(token);
-    if (!exp || exp * 1000 <= Date.now()) {
+    const model = jwtDecode<JwtFields>(token);
+    if (!model.exp || model.exp * 1000 <= Date.now()) {
       clearJwt();
-      return false;
+      return null;
     }
     else{
-      return true;
+      return model;
     }
   } catch {
     clearJwt();
-    return false;
+    return null;
   }
 }

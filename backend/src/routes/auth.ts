@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { zValidator } from '@hono/zod-validator';
 import { Hono } from 'hono';
 import { sign } from 'hono/jwt';
+import type { JwtFields, Variables } from '../variables';
 
 const loginSchema = z.object({
   email: z.email(),
@@ -20,20 +21,21 @@ async function createAccessToken(jwt_secret: string, user: {
   email: string;
   username: string;
 }) {
+  const payload: JwtFields = {
+    sub: user.id,
+    email: user.email,
+    username: user.username,
+    exp: Math.floor(Date.now() / 1000) + 60 * 60,
+  }
   return sign(
-    {
-      sub: user.id,
-      email: user.email,
-      username: user.username,
-      exp: Math.floor(Date.now() / 1000) + 60 * 60,
-    },
+    payload,
     jwt_secret,
   );
 }
 
 export function createAuthRoute(jwt_secret: string, authService: AuthService) {
   {
-    return new Hono()
+    return new Hono<{ Variables: Variables }>()
       .post('/login', zValidator('json', loginSchema), async (c) => {
         const { email, password } = c.req.valid('json');
         const result = await authService.validateUser(email, password);
