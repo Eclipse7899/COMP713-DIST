@@ -9,4 +9,6 @@ export type AddFoodType = InferRequestType<typeof typeClient.api.food.$post>['js
 
 export type AddFoodItem = InferRequestType<typeof typeClient.api.items.$post>['json'];
 export type StockedItem = InferResponseType<typeof typeClient.api.items.$get, 200>[number];
-export type FoodItemResp = StockedItem;
+
+const itemsById = typeClient.api.items[':id'];
+export type EditFoodItem = InferRequestType<typeof itemsById.$put>['json'];
