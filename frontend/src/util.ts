@@ -22,8 +22,7 @@ export function getAuthentication() {
     if (!model.exp || model.exp * 1000 <= Date.now()) {
       clearJwt();
       return null;
-    }
-    else{
+    } else {
       return model;
     }
   } catch {

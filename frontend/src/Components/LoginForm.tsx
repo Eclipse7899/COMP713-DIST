@@ -10,6 +10,7 @@ export default function LoginForm() {
   const [error, setError] = useState('');
   const client = React.useMemo(() => getClient(), []);
   const navigate = useNavigate();
+
   async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
     setError('');

@@ -3,13 +3,13 @@ import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
 
 export type CreateUserResult =
   | {
-  success: true;
-  data: User;
-}
+      success: true;
+      data: User;
+    }
   | {
-  success: false;
-  error: 'USERNAME_TAKEN' | 'EMAIL_TAKEN';
-};
+      success: false;
+      error: 'USERNAME_TAKEN' | 'EMAIL_TAKEN';
+    };
 
 class UserRepo {
   constructor(private readonly prisma: PrismaClient) {}
@@ -25,7 +25,7 @@ class UserRepo {
     hashed_password: string,
     username: string,
   ): Promise<CreateUserResult> {
-    try{
+    try {
       return {
         success: true,
         data: await this.prisma.user.create({
@@ -34,14 +34,14 @@ class UserRepo {
             hashed_password,
             username,
           },
-        })
+        }),
       };
-    }
-    catch (error: any) {
+    } catch (error: any) {
       if (error instanceof PrismaClientKnownRequestError) {
         if (error.code === 'P2002') {
           // @ts-ignore
-          const fields = error.meta?.driverAdapterError?.cause?.constraint?.fields;
+          const fields =
+            error.meta?.driverAdapterError?.cause?.constraint?.fields;
           if (fields?.includes('username')) {
             return {
               success: false,

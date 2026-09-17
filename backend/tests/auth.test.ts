@@ -94,7 +94,7 @@ describe('Authentication', () => {
     expect(repeatedRegisterResponse.status).toBe(409);
   });
 
-  it ('should not register a user with short password', async () => {
+  it('should not register a user with short password', async () => {
     const response = await app.request('/api/auth/register', {
       method: 'POST',
       headers: {
@@ -110,7 +110,7 @@ describe('Authentication', () => {
     expect(response.status).toBe(400);
   });
 
-  it ('should not register a user with invalid email', async () => {
+  it('should not register a user with invalid email', async () => {
     const response = await app.request('/api/auth/register', {
       method: 'POST',
       headers: {

@@ -23,8 +23,20 @@ export class ItemsService {
     return this.itemsRepo.findAllByUser(userId);
   }
 
-  filterItems(userId: string, categories: FoodCategory[], expiresBefore: Date | null, name_contains: string | null, sort: 'asc' | 'desc'): Promise<FoodItem[]> {
-    return this.itemsRepo.filterByUser(userId, categories, expiresBefore, name_contains, sort);
+  filterItems(
+    userId: string,
+    categories: FoodCategory[],
+    expiresBefore: Date | null,
+    name_contains: string | null,
+    sort: 'asc' | 'desc',
+  ): Promise<FoodItem[]> {
+    return this.itemsRepo.filterByUser(
+      userId,
+      categories,
+      expiresBefore,
+      name_contains,
+      sort,
+    );
   }
 
   upsertItem(

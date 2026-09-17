@@ -13,10 +13,7 @@ export class FoodService {
     return this.foodRepo.create(data);
   }
 
-  async getFood(
-    userId: string,
-    category?: FoodCategory,
-  ): Promise<Food[]> {
+  async getFood(userId: string, category?: FoodCategory): Promise<Food[]> {
     return this.foodRepo.findForUser(userId, category);
   }
 

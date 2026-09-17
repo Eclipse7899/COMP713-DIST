@@ -2,7 +2,6 @@ import { createDb } from './db';
 import { getConfig } from './config';
 import { createApp } from './app';
 
-
 const config = getConfig();
 
 const db = createDb(config.DATABASE_URL);

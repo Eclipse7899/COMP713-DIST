@@ -18,10 +18,7 @@ export class FoodRepo {
     });
   }
 
-  async findForUser(
-    userId: string,
-    category?: FoodCategory,
-  ): Promise<Food[]> {
+  async findForUser(userId: string, category?: FoodCategory): Promise<Food[]> {
     return this.prisma.food.findMany({
       where: {
         category: category ? category : undefined,
@@ -54,8 +51,8 @@ export class FoodRepo {
     const deleted = await this.prisma.food.deleteMany({
       where: {
         id,
-        createdByUserId: userId
-      }
+        createdByUserId: userId,
+      },
     });
     return deleted.count !== 0;
   }

@@ -103,7 +103,13 @@ export class ItemsRepo {
     return this.prisma.foodItem.deleteMany({ where: { userId } });
   }
 
-  filterByUser(userId: string, categories: FoodCategory[], expiresBefore: Date | null, name_contains: string | null, sort: 'asc' | 'desc') {
+  filterByUser(
+    userId: string,
+    categories: FoodCategory[],
+    expiresBefore: Date | null,
+    name_contains: string | null,
+    sort: 'asc' | 'desc',
+  ) {
     const whereClause: any = { userId };
     if (categories.length > 0) {
       whereClause.food = { category: { in: categories } };
@@ -112,7 +118,10 @@ export class ItemsRepo {
       whereClause.expiryDate = { lt: expiresBefore };
     }
     if (name_contains) {
-      whereClause.food = { ...whereClause.food, name: { contains: name_contains, mode: 'insensitive' } };
+      whereClause.food = {
+        ...whereClause.food,
+        name: { contains: name_contains, mode: 'insensitive' },
+      };
     }
 
     return this.prisma.foodItem.findMany({

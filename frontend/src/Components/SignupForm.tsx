@@ -58,16 +58,19 @@ export default function SignupForm() {
   }
 
   return (
-    <div className="w-full max-w-md p-8 space-y-6 bg-(--bg) border border-(--border) rounded-2xl shadow-(--shadow)">
+    <div
+      className="w-full max-w-md p-8 space-y-6 bg-(--bg) border border-(--border) rounded-2xl shadow-(--shadow)">
       <div className="space-y-4 text-center">
-        <h1 className="text-2xl font-bold text-(--text-h)">Create an account</h1>
+        <h1 className="text-2xl font-bold text-(--text-h)">Create an
+          account</h1>
         <p className="text-(--text)">
           Sign up to get started with {APP_NAME}
         </p>
       </div>
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && (
-          <div className="p-3 text-sm text-red-600 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/30 rounded-lg">
+          <div
+            className="p-3 text-sm text-red-600 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/30 rounded-lg">
             {error}
           </div>
         )}

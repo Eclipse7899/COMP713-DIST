@@ -12,6 +12,6 @@ export function getClient() {
       headers: {
         Authorization: `Bearer ${token}`,
       },
-    }
+    },
   );
 }

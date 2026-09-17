@@ -13,24 +13,28 @@ const loginSchema = z.object({
 const registerSchema = z.object({
   email: z.email(),
   password: z.string().min(8),
-  username: z.string().min(3).max(20).regex(/^[a-zA-Z0-9_-]+$/),
+  username: z
+    .string()
+    .min(3)
+    .max(20)
+    .regex(/^[a-zA-Z0-9_-]+$/),
 });
 
-async function createAccessToken(jwt_secret: string, user: {
-  id: string;
-  email: string;
-  username: string;
-}) {
+async function createAccessToken(
+  jwt_secret: string,
+  user: {
+    id: string;
+    email: string;
+    username: string;
+  },
+) {
   const payload: JwtFields = {
     sub: user.id,
     email: user.email,
     username: user.username,
     exp: Math.floor(Date.now() / 1000) + 60 * 60,
-  }
-  return sign(
-    payload,
-    jwt_secret,
-  );
+  };
+  return sign(payload, jwt_secret);
 }
 
 export function createAuthRoute(jwt_secret: string, authService: AuthService) {
@@ -60,7 +64,11 @@ export function createAuthRoute(jwt_secret: string, authService: AuthService) {
       })
       .post('/register', zValidator('json', registerSchema), async (c) => {
         const { email, password, username } = c.req.valid('json');
-        const result = await authService.registerUser(email, password, username);
+        const result = await authService.registerUser(
+          email,
+          password,
+          username,
+        );
         if (!result.success) {
           switch (result.error) {
             case 'EMAIL_TAKEN':

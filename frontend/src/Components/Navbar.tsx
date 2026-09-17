@@ -10,8 +10,8 @@ export default function Navbar() {
 
   const logout = () => {
     clearJwt();
-    navigate("/", { replace: true });
-  }
+    navigate('/', { replace: true });
+  };
 
   return (
     <nav
@@ -28,7 +28,8 @@ export default function Navbar() {
           {(authenticated ? (
                 <div className="flex items-center space-x-4">
                   <div>
-                    <span className="px-4 py-2 text-(--text-h) font-medium transition-colors">
+                    <span
+                      className="px-4 py-2 text-(--text-h) font-medium transition-colors">
                       Welcome, {authenticated.username}
                     </span>
                   </div>

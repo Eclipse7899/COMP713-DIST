@@ -44,7 +44,8 @@ export default function FoodItemBox({ item, onDelete }: {
             {
               isExpired
                 ? <div className="text-red-500">Expired</div>
-                : <div>{item.expiryDate ? ` · expires ${new Date(item.expiryDate).toLocaleString()}` : '' }</div>
+                :
+                <div>{item.expiryDate ? ` · expires ${new Date(item.expiryDate).toLocaleString()}` : ''}</div>
             }
           </div>
         </div>
@@ -56,7 +57,7 @@ export default function FoodItemBox({ item, onDelete }: {
           </div>
         }
       </div>
-      <div className={"flex flex-col gap-2 justify-center"}>
+      <div className={'flex flex-col gap-2 justify-center'}>
         <button
           type="button"
           onClick={() => deleteItem(item.id)}

@@ -3,7 +3,7 @@ import { useState } from 'react';
 import FoodItems from '../Components/FoodItems.tsx';
 import FoodTypes from '../Components/FoodTypes.tsx';
 
-type PageType = 'items' | 'food' ;
+type PageType = 'items' | 'food';
 
 function renderPage(pageType: PageType) {
   switch (pageType) {
@@ -21,7 +21,7 @@ export default function DashboardPage() {
   const tabs: { label: string; value: PageType }[] = [
     { label: 'My Stock', value: 'items' },
     { label: 'My Food Types', value: 'food' },
-  ]
+  ];
   return (
     <div className="max-w-6xl mx-auto px-4 py-10 space-y-8">
       <div className="flex flex-col gap-2">
@@ -49,5 +49,5 @@ export default function DashboardPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }

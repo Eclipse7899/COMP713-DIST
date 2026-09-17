@@ -16,7 +16,8 @@ export function createApi(
     foodService: FoodService;
     itemsService: ItemsService;
     authService: AuthService;
-  }) {
+  },
+) {
   const users = createUsersRoute(deps.userService);
   const food = createFoodRoute(deps.foodService);
   const items = createItemsRoute(deps.itemsService);

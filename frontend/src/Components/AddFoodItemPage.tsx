@@ -73,6 +73,7 @@ export default function AddFoodItemPage({ onCancel, onDone }: {
   function cancel() {
     onCancel();
   }
+
   return (
     <div>
       {error && (
@@ -109,7 +110,10 @@ export default function AddFoodItemPage({ onCancel, onDone }: {
             step="1"
             placeholder="Quantity"
             value={form.quantity}
-            onChange={(e) => setForm({ ...form, quantity: Number(e.target.value) })}
+            onChange={(e) => setForm({
+              ...form,
+              quantity: Number(e.target.value),
+            })}
           />
           <select
             className="px-4 py-3 rounded-lg border border-(--border) "
@@ -153,5 +157,5 @@ export default function AddFoodItemPage({ onCancel, onDone }: {
         </div>
       </form>
     </div>
-  )
+  );
 }
