@@ -53,6 +53,14 @@ export function createItemsRoute(itemsService: ItemsService) {
         unit,
         expiryDate: expiryDate,
       });
+      if (!item.success) {
+        switch (item.error) {
+          case 'FOOD_NOT_FOUND':
+            return c.json({ error: 'Food not found' }, 404);
+          case 'UNAUTHORIZED_FOOD':
+            return c.json({ error: 'Unauthorized food' }, 403);
+        }
+      }
       return c.json(item, 201);
     })
     .put(
@@ -70,10 +78,15 @@ export function createItemsRoute(itemsService: ItemsService) {
           unit: body.unit,
           expiryDate: body.expiryDate
         });
-        if (!updated) {
-          return c.json({ error: 'Item not found or not owned by user' }, 404);
+        if (!updated.success) {
+          switch (updated.error) {
+            case 'ITEM_NOT_FOUND':
+              return c.json({ error: 'Item not found or not owned by user' }, 404);
+            case 'FOOD_NOT_FOUND':
+              return c.json({ error: 'Food not found' }, 404);
+          }
         }
-        return c.json(updated);
+        return c.json(updated.data);
       },
     )
     .delete('/:id', zValidator('param', idParamSchema), async (c) => {

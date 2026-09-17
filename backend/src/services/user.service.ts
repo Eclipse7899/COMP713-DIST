@@ -1,17 +1,24 @@
 import UserRepo from '../repositories/users.repo';
+import type { Result } from '../util';
 
 export class UserService {
   constructor(private userRepo: UserRepo) {}
 
-  async getCurrentUser(userId: string): Promise<{ id: string, email: string, username: string } | null> {
+  async getCurrentUser(userId: string): Promise<Result<{ id: string, email: string, username: string }, 'NOT_FOUND'> | null> {
     const user = await this.userRepo.findById(userId);
     if (!user) {
-      return null;
+      return {
+        success: false,
+        error: 'NOT_FOUND',
+      }
     }
     return {
-      id: user.id,
-      email: user.email,
-      username: user.username,
+      success: true,
+      data: {
+        id: user.id,
+        email: user.email,
+        username: user.username,
+      },
     }
   }
 }

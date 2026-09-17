@@ -23,27 +23,19 @@ export function createFoodRoute(foodService: FoodService) {
   return new Hono<{ Variables: Variables }>()
     .get('/', async (c) => {
       const userId = c.get('jwtPayload').sub;
-      const category = c.req.query('category');
-      const foods = await foodService.getFood(
-        userId,
-        category ? (category as FoodCategory) : undefined,
-      );
+      const foods = await foodService.getFood(userId);
       return c.json(foods);
     })
     .post('/', zValidator('json', createFoodSchema), async (c) => {
       const userId = c.get('jwtPayload').sub;
       const { name, category } = c.req.valid('json');
-      const created = await foodService.createFood({
-        name,
-        category: category as FoodCategory,
-        createdByUserId: userId,
-      });
-      return c.json({
-        id: created.id,
-        name: created.name,
-        category: created.category,
-        createdByUserId: created.createdByUserId,
-      }, 201);
+      const created = await foodService.createFood(
+        userId,
+        {
+          name,
+          category: category, }
+        );
+      return c.json(created, 201);
     })
     .put(
       '/:id',
@@ -63,14 +55,7 @@ export function createFoodRoute(foodService: FoodService) {
               return c.json({ error: 'Unauthorized' }, 403);
           }
         }
-
-        const updated = result.data;
-        return c.json({
-          id: updated.id,
-          name: updated.name,
-          category: updated.category,
-          createdByUserId: updated.createdByUserId,
-        });
+        return c.json(result.data);
       },
     )
     .delete('/:id', zValidator('param', foodIdParamSchema), async (c) => {

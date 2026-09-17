@@ -8,13 +8,13 @@ export class FoodRepo {
   async create(data: {
     name: string;
     category: FoodCategory;
-    createdByUserId?: string | null;
+    createdByUserId: string | null;
   }): Promise<Food> {
     return this.prisma.food.create({
       data: {
         name: data.name,
         category: data.category,
-        createdByUserId: data.createdByUserId ?? null,
+        createdByUserId: data.createdByUserId,
       },
     });
   }
