@@ -1,13 +1,17 @@
 import * as React from 'react';
 import { FoodUnit } from '@stocked/backend/src/generated/prisma/enums.ts';
-import type { AddFoodItem, FoodType } from '../models.ts';
+import type { AddFoodItem, FoodType } from '../models';
 import { type DetailedError, parseResponse } from 'hono/client';
-import { getClient } from '../client.ts';
+import { getClient } from '../client';
+import { titleCase } from '../util';
+import ErrorMessage from './ErrorMessage';
 
-
-export default function AddFoodItemPage({ onCancel, onDone }: {
-  onCancel: () => void,
-  onDone: () => void
+export default function AddFoodItemPage({
+  onCancel,
+  onDone,
+}: {
+  onCancel: () => void;
+  onDone: () => void;
 }) {
   const initialFormState: AddFoodItem = {
     foodId: '',
@@ -22,9 +26,11 @@ export default function AddFoodItemPage({ onCancel, onDone }: {
   const client = React.useMemo(() => getClient(), []);
 
   const loadFoodTypes = async () => {
-    const res = await parseResponse(client.api.food.$get()).catch((e: DetailedError) => {
-      console.error(e);
-    });
+    const res = await parseResponse(client.api.food.$get()).catch(
+      (e: DetailedError) => {
+        console.error(e);
+      },
+    );
 
     if (!res) {
       setError('Failed to load food types.');
@@ -39,19 +45,23 @@ export default function AddFoodItemPage({ onCancel, onDone }: {
   };
 
   const addItem = async () => {
-    const res = await parseResponse(client.api.items.$post({
-      json: {
-        foodId: form.foodId,
-        quantity: Number(form.quantity),
-        unit: form.unit,
-        expiryDate: form.expiryDate ? new Date(form.expiryDate).toISOString() : null,
-      },
-    })).catch((e: DetailedError) => {
+    const res = await parseResponse(
+      client.api.items.$post({
+        json: {
+          foodId: form.foodId,
+          quantity: Number(form.quantity),
+          unit: form.unit,
+          expiryDate: form.expiryDate
+            ? new Date(form.expiryDate).toISOString()
+            : null,
+        },
+      }),
+    ).catch((e: DetailedError) => {
       console.error(e);
     });
 
     if (!res) {
-      setError('Failed to add item.');
+      setError('Failed to add item. Please try again.');
       return;
     }
 
@@ -70,87 +80,108 @@ export default function AddFoodItemPage({ onCancel, onDone }: {
     setIsDisabled(false);
   }
 
-  function cancel() {
-    onCancel();
-  }
-
   return (
-    <div>
-      {error && (
-        <div
-          className="p-3 text-sm text-red-600 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/30 rounded-lg">
-          {error}
+    <div className="rounded-2xl border border-(--border) bg-(--bg) p-6 shadow-(--shadow) space-y-4">
+      <h2 className="text-xl font-semibold text-(--text-h)">
+        Add stocked item
+      </h2>
+
+      <ErrorMessage message={error} />
+
+      <form onSubmit={submit} className="flex flex-col gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="space-y-1.5 text-left">
+            <label className="text-sm font-medium text-(--text-h)" htmlFor="foodId">
+              Food Type
+            </label>
+            <select
+              id="foodId"
+              className="w-full px-4 py-2.5 bg-(--bg) text-(--text-h) border border-(--border) rounded-lg focus:outline-none focus:ring-2 focus:ring-(--primary) transition-all"
+              value={form.foodId}
+              onChange={(e) => setForm({ ...form, foodId: e.target.value })}
+              required
+            >
+              <option value="">Select food type</option>
+              {foodTypes.map((foodType) => (
+                <option key={foodType.id} value={foodType.id}>
+                  {foodType.name} ({titleCase(foodType.category)})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="space-y-1.5 text-left">
+            <label className="text-sm font-medium text-(--text-h)" htmlFor="quantity">
+              Quantity
+            </label>
+            <input
+              id="quantity"
+              className="w-full px-4 py-2.5 bg-(--bg) text-(--text-h) border border-(--border) rounded-lg focus:outline-none focus:ring-2 focus:ring-(--primary) transition-all"
+              type="number"
+              min="1"
+              step="1"
+              placeholder="Quantity"
+              value={form.quantity}
+              onChange={(e) =>
+                setForm({
+                  ...form,
+                  quantity: Number(e.target.value),
+                })
+              }
+              required
+            />
+          </div>
+
+          <div className="space-y-1.5 text-left">
+            <label className="text-sm font-medium text-(--text-h)" htmlFor="unit">
+              Unit
+            </label>
+            <select
+              id="unit"
+              className="w-full px-4 py-2.5 bg-(--bg) text-(--text-h) border border-(--border) rounded-lg focus:outline-none focus:ring-2 focus:ring-(--primary) transition-all"
+              value={form.unit}
+              onChange={(e) =>
+                setForm({
+                  ...form,
+                  unit: e.target.value as FoodUnit,
+                })
+              }
+              required
+            >
+              {Object.values(FoodUnit).map((unit) => (
+                <option key={unit} value={unit}>
+                  {titleCase(unit)}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="space-y-1.5 text-left">
+            <label className="text-sm font-medium text-(--text-h)" htmlFor="expiryDate">
+              Expiry Date
+            </label>
+            <input
+              id="expiryDate"
+              className="w-full px-4 py-2.5 bg-(--bg) text-(--text-h) border border-(--border) rounded-lg focus:outline-none focus:ring-2 focus:ring-(--primary) transition-all"
+              type="datetime-local"
+              value={form.expiryDate ?? ''}
+              onChange={(e) => setForm({ ...form, expiryDate: e.target.value })}
+            />
+          </div>
         </div>
-      )}
-      <form onSubmit={submit}
-            className="flex flex-col gap-4 p-6 rounded-2xl">
-        <h2 className="text-xl font-semibold text-(--text-h)">
-          Add stocked item
-        </h2>
-        <div className="grid md:grid-cols-4 gap-4">
-          <select
-            className="px-4 py-3 rounded-lg border border-(--border) "
-            value={form.foodId}
-            onChange={(e) => setForm({ ...form, foodId: e.target.value })}
-            required
-          >
-            <option
-              value="">Select food type
-            </option>
-            {foodTypes.map((foodType) => (
-              <option key={foodType.id} value={foodType.id}>
-                {foodType.name} ({foodType.category})
-              </option>
-            ))}
-          </select>
-          <input
-            className="px-4 py-3 rounded-lg border border-(--border) "
-            type="number"
-            min="1"
-            step="1"
-            placeholder="Quantity"
-            value={form.quantity}
-            onChange={(e) => setForm({
-              ...form,
-              quantity: Number(e.target.value),
-            })}
-          />
-          <select
-            className="px-4 py-3 rounded-lg border border-(--border) "
-            value={form.unit}
-            defaultValue=""
-            onChange={(e) => setForm({
-              ...form,
-              unit: e.target.value as FoodUnit,
-            })}
-            required
-          >
-            <option value="">Select unit</option>
-            {Object.values(FoodUnit).map((unit) => (
-              <option key={unit} value={unit}>
-                {unit}
-              </option>
-            ))}
-          </select>
-          <input
-            className="px-4 py-3 rounded-lg border border-(--border) "
-            type="datetime-local"
-            placeholder="Expiry date"
-            value={form.expiryDate ? undefined : ''}
-            onChange={(e) => setForm({ ...form, expiryDate: e.target.value })}
-          />
-        </div>
-        <div className="flex flex-row gap-4">
+
+        <div className="flex flex-row gap-3 pt-2">
           <button
+            type="submit"
             disabled={isDisabled}
-            className="w-fit px-5 py-3 rounded-lg bg-(--primary) text-white font-semibold disabled:opacity-60"
+            className="px-5 py-2.5 rounded-lg bg-(--primary) hover:bg-(--primary-soft) text-white font-semibold transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
           >
             {isDisabled ? 'Adding...' : 'Add item'}
           </button>
           <button
             type="button"
-            onClick={cancel}
-            className="w-fit px-5 py-3 rounded-lg bg-(--secondary)/60 text-white font-semibold disabled:opacity-60"
+            onClick={onCancel}
+            className="px-5 py-2.5 rounded-lg border border-(--border) hover:bg-(--secondary)/10 text-(--text-h) font-semibold transition-all active:scale-95 shadow-sm"
           >
             Cancel
           </button>

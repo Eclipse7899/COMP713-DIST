@@ -1,10 +1,9 @@
 import { Navigate, Outlet } from 'react-router';
-import { getAuthentication } from '../util.ts';
-
+import { getAuthentication } from '../util';
 
 export default function ProtectedRoute() {
   if (getAuthentication() === null) {
-    return <Navigate to="/login" replace/>;
+    return <Navigate to="/login" replace />;
   }
-  return <Outlet/>;
+  return <Outlet />;
 }

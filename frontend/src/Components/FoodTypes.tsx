@@ -1,10 +1,11 @@
 import * as React from 'react';
 import { useEffect } from 'react';
 import { type DetailedError, parseResponse } from 'hono/client';
-import type { FoodType } from '../models.ts';
-import { getClient } from '../client.ts';
-import { AddFoodTypePage } from './AddFoodTypePage.tsx';
-import FoodTypeBox from './FoodTypeBox.tsx';
+import type { FoodType } from '../models';
+import { getClient } from '../client';
+import { AddFoodTypePage } from './AddFoodTypePage';
+import FoodTypeBox from './FoodTypeBox';
+import ErrorMessage from './ErrorMessage';
 
 export default function FoodTypes() {
   const [types, setTypes] = React.useState<FoodType[]>([]);
@@ -32,11 +33,11 @@ export default function FoodTypes() {
 
   const deleteType = async (id: string) => {
     setError('');
-    const res = await parseResponse(client.api.food[':id'].$delete({ param: { id } })).catch(
-      (e: DetailedError) => {
-        console.error(e);
-      },
-    );
+    const res = await parseResponse(
+      client.api.food[':id'].$delete({ param: { id } }),
+    ).catch((e: DetailedError) => {
+      console.error(e);
+    });
     if (!res) {
       setError('Failed to delete food type.');
       return;
@@ -47,48 +48,49 @@ export default function FoodTypes() {
   useEffect(() => {
     loadTypes();
   }, []);
+
+  if (addTypeModalOpen) {
+    return (
+      <AddFoodTypePage
+        onCancel={() => setAddTypeModalOpen(false)}
+        onDone={() => {
+          setAddTypeModalOpen(false);
+          loadTypes();
+        }}
+      />
+    );
+  }
+
   return (
-    <div>
-      {(addTypeModalOpen) ? (
-        <div>
-          <AddFoodTypePage
-            onCancel={() => setAddTypeModalOpen(false)}
-            onDone={
-              () => {
-                setAddTypeModalOpen(false);
-                loadTypes();
-              }
-            }/>
-        </div>
-      ) : (
-        <div>
-          <div className="flex flex-col gap-4 items-stretch">
-            <button
-              onClick={() => setAddTypeModalOpen(true)}
-              className="px-4 py-2 rounded-lg bg-(--primary) hover:bg-(--primary)/90 text-(--text-h)">
-              Add Custom Food
-            </button>
-            <div>
-              {error && <div className="text-red-500">{error}</div>}
-              {loading ? (
-                <div className="p-6">Loading food types...</div>
-              ) : types.length === 0 ? (
-                <div className="p-6">No food types yet.</div>
-              ) : (
-                <div className="rounded-2xl border border-(--border)">
-                  <ul className="divide-y divide-(--border)">
-                    {types.map((type) => (
-                      <li key={type.id} className="p-4">
-                        <FoodTypeBox foodType={type} onDelete={deleteType}/>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+    <div className="flex flex-col gap-4 items-stretch">
+      <div className="flex justify-between items-center">
+        <h2 className="text-xl font-semibold text-(--text-h)">Food Types</h2>
+        <button
+          type="button"
+          onClick={() => setAddTypeModalOpen(true)}
+          className="px-4 py-2 rounded-lg bg-(--primary) hover:bg-(--primary-soft) text-white font-medium transition-all active:scale-95 shadow-sm"
+        >
+          Add Custom Food
+        </button>
+      </div>
+
+      <ErrorMessage message={error} />
+
+      <div className="rounded-2xl border border-(--border) bg-(--bg) shadow-(--shadow) overflow-hidden">
+        {loading ? (
+          <div className="p-8 text-center text-(--secondary)">Loading food types...</div>
+        ) : types.length === 0 ? (
+          <div className="p-8 text-center text-(--secondary)">No food types yet. Add one above!</div>
+        ) : (
+          <ul className="divide-y divide-(--border)">
+            {types.map((type) => (
+              <li key={type.id} className="p-4 hover:bg-(--secondary)/5 transition-colors">
+                <FoodTypeBox foodType={type} onDelete={deleteType} />
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
     </div>
   );
 }

@@ -1,8 +1,22 @@
-import { clearJwt, getJwt } from '../util.ts';
 import { jwtDecode } from 'jwt-decode';
 import type { JwtFields } from '@stocked/backend/src/variables.ts';
 
+const TOKEN_KEY = 'token';
+
+export function saveJwt(token: string): void {
+  localStorage.setItem(TOKEN_KEY, token);
+}
+
+export function getJwt(): string | null {
+  return localStorage.getItem(TOKEN_KEY);
+}
+
+export function clearJwt(): void {
+  localStorage.removeItem(TOKEN_KEY);
+}
+
 export function titleCase(str: string): string {
+  if (!str) return '';
   return str
     .toLowerCase()
     .split(' ')
@@ -10,7 +24,7 @@ export function titleCase(str: string): string {
     .join(' ');
 }
 
-export function getAuthentication() {
+export function getAuthentication(): JwtFields | null {
   const token = getJwt();
 
   if (!token) {
@@ -22,9 +36,8 @@ export function getAuthentication() {
     if (!model.exp || model.exp * 1000 <= Date.now()) {
       clearJwt();
       return null;
-    } else {
-      return model;
     }
+    return model;
   } catch {
     clearJwt();
     return null;
