@@ -1,10 +1,10 @@
 import * as React from 'react';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
-import { getClient } from '../client';
-import { saveJwt } from '../util';
-import { APP_NAME } from '../constants';
-import ErrorMessage from './ErrorMessage';
+import { getClient } from '../../client.ts';
+import { saveJwt } from '../../util.ts';
+import { APP_NAME } from '../../constants.ts';
+import ErrorMessage from '../ErrorMessage.tsx';
 import { type DetailedError, parseResponse } from 'hono/client';
 
 export default function SignupForm() {
