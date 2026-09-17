@@ -50,7 +50,7 @@ export default function LoginForm() {
   }
 
   return (
-    <div className="w-full max-w-md p-8 space-y-6 bg-(--bg) border border-(--border) rounded-2xl shadow-(--shadow)">
+    <div className="w-full max-w-md card flex flex-col gap-6 p-6">
       <div className="space-y-2 text-center">
         <h1 className="text-2xl font-bold text-(--text-h)">Welcome back</h1>
         <p className="text-(--text) text-sm">

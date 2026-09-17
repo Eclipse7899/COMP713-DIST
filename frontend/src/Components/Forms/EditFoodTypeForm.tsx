@@ -29,7 +29,7 @@ export function EditFoodTypeForm(
   };
 
   return (
-    <div className="rounded-2xl p-6 border border-(--border) bg-(--bg) flex flex-col gap-4">
+    <div className="card flex flex-col gap-4">
       <h2 className="text-xl font-semibold text-(--text-h)">Edit food type</h2>
       <form onSubmit={addFoodType} className="flex flex-col gap-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

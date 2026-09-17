@@ -92,7 +92,7 @@ export default function FoodTypes() {
 
       <ErrorMessage message={error} />
 
-      <div className="rounded-2xl border border-(--border) bg-(--bg) shadow-(--shadow) overflow-hidden">
+      <div className="card">
         {loading ? (
           <div className="p-8 text-center text-(--secondary)">Loading food types...</div>
         ) : types.length === 0 ? (

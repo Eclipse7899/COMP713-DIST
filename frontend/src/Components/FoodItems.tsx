@@ -193,7 +193,7 @@ export default function FoodItems() {
       </div>
 
       <div
-        className="rounded-2xl border border-(--border) bg-(--bg) p-4 shadow-(--shadow) space-y-3">
+        className="card flex flex-col gap-6 p-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           <div className="flex flex-col gap-1.5">
             <label htmlFor="search-items"
@@ -278,7 +278,7 @@ export default function FoodItems() {
 
       <ErrorMessage message={error} />
 
-      <div className="rounded-2xl border border-(--border) bg-(--bg) shadow-(--shadow) overflow-hidden">
+      <div className="card">
         {loading ? (
           <div className="p-8 text-center text-(--secondary)">Loading stocked items...</div>
         ) : items.length === 0 ? (

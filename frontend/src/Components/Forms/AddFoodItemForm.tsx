@@ -81,7 +81,7 @@ export default function AddFoodItemForm({
   }
 
   return (
-    <div className="rounded-2xl border border-(--border) bg-(--bg) p-6 shadow-(--shadow) space-y-4">
+    <div className="card flex flex-col gap-6 p-4">
       <h2 className="text-xl font-semibold text-(--text-h)">
         Add stocked item
       </h2>

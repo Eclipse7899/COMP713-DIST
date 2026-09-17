@@ -34,7 +34,7 @@ export default function EditFoodItemForm(
   }
 
   return (
-    <div className="flex flex-col gap-4 rounded-2xl border border-(--border) bg-(--bg) p-6">
+    <div className="card flex flex-col gap-4">
       <h2 className="text-xl font-semibold text-(--text-h)">
         Editing item
       </h2>
