@@ -38,7 +38,12 @@ export function createFoodRoute(foodService: FoodService) {
         category: category as FoodCategory,
         createdByUserId: userId,
       });
-      return c.json(created, 201);
+      return c.json({
+        id: created.id,
+        name: created.name,
+        category: created.category,
+        createdByUserId: created.createdByUserId,
+      }, 201);
     })
     .put(
       '/:id',
@@ -48,28 +53,38 @@ export function createFoodRoute(foodService: FoodService) {
         const id = c.req.valid('param').id;
         const userId = c.get('jwtPayload').sub;
         const body = c.req.valid('json');
-        const existing = await foodService.getFoodById(id);
-        if (!existing) {
-          return c.json({ error: 'Food not found' }, 404);
+
+        const result = await foodService.updateFood(id, body, userId);
+        if (!result.success) {
+          switch (result.error) {
+            case 'NOT_FOUND':
+              return c.json({ error: 'Food not found' }, 404);
+            case 'UNAUTHORIZED':
+              return c.json({ error: 'Unauthorized' }, 403);
+          }
         }
-        const updated = await foodService.updateFood(id, body, userId);
-        if (!updated) {
-          return c.json({ error: 'Food not found or not authorized' }, 404);
-        }
-        return c.json(updated);
+
+        const updated = result.data;
+        return c.json({
+          id: updated.id,
+          name: updated.name,
+          category: updated.category,
+          createdByUserId: updated.createdByUserId,
+        });
       },
     )
     .delete('/:id', zValidator('param', foodIdParamSchema), async (c) => {
       const id = c.req.valid('param').id;
       const userId = c.get('jwtPayload').sub;
-      const existing = await foodService.getFoodById(id);
-      if (!existing) {
-        return c.json({ error: 'Food not found' }, 404);
-      }
+
       const deleted = await foodService.deleteFood(id, userId);
-      if (!deleted) {
-        return c.json({ error: 'Food not found or not authorized' }, 404);
+      if (!deleted.success) {
+        if (deleted.error === 'NOT_FOUND') {
+          return c.json({ error: 'Food not found' }, 404);
+        } else if (deleted.error === 'UNAUTHORIZED') {
+          return c.json({ error: 'Unauthorized' }, 403);
+        }
       }
-      return c.json(deleted);
+      return c.status(204);
     });
 }

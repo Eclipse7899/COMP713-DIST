@@ -28,11 +28,11 @@ export class ItemsRepo {
     });
   }
 
-  findAllByUser(userId: string) {
+  listByUser(userId: string, sort: 'asc' | 'desc' = 'asc') {
     return this.prisma.foodItem.findMany({
       where: { userId },
       include: { food: { select: { id: true, name: true, category: true } } },
-      orderBy: { expiryDate: 'asc' },
+      orderBy: { expiryDate: sort },
     })
   }
 
@@ -46,17 +46,15 @@ export class ItemsRepo {
       expiryDate: Date | null;
     },
   ) {
-    const batch = await this.prisma.foodItem.updateMany({
+    const batch = await this.prisma.foodItem.updateManyAndReturn({
       where: { id, userId },
       data: data,
-    });
-    if (batch.count === 0) {
-      return null;
-    }
-    return this.prisma.foodItem.findUnique({
-      where: { id },
       include: { food: { select: { id: true, name: true, category: true } } },
     });
+    if (batch.length === 0) {
+      return null;
+    }
+    return batch[0];
   }
 
   async deleteByUser(id: string, userId: string) {

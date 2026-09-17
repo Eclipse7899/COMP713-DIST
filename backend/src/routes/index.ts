@@ -21,7 +21,7 @@ export function createApi(
   const users = createUsersRoute(deps.userService);
   const food = createFoodRoute(deps.foodService);
   const items = createItemsRoute(deps.itemsService);
-  const auth = createAuthRoute(jwtSecret, deps.authService);
+  const auth = createAuthRoute(deps.authService);
 
   const jwtMiddleware = getJwtMiddleware(jwtSecret);
 

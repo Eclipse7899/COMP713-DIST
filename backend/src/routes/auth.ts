@@ -2,8 +2,7 @@ import { AuthService } from '../services/auth.service';
 import { z } from 'zod';
 import { zValidator } from '@hono/zod-validator';
 import { Hono } from 'hono';
-import { sign } from 'hono/jwt';
-import type { JwtFields, Variables } from '../variables';
+import type { Variables } from '../variables';
 
 const loginSchema = z.object({
   email: z.email(),
@@ -20,46 +19,16 @@ const registerSchema = z.object({
     .regex(/^[a-zA-Z0-9_-]+$/),
 });
 
-async function createAccessToken(
-  jwt_secret: string,
-  user: {
-    id: string;
-    email: string;
-    username: string;
-  },
-) {
-  const payload: JwtFields = {
-    sub: user.id,
-    email: user.email,
-    username: user.username,
-    exp: Math.floor(Date.now() / 1000) + 60 * 60,
-  };
-  return sign(payload, jwt_secret);
-}
-
-export function createAuthRoute(jwt_secret: string, authService: AuthService) {
+export function createAuthRoute(authService: AuthService) {
   {
     return new Hono<{ Variables: Variables }>()
       .post('/login', zValidator('json', loginSchema), async (c) => {
         const { email, password } = c.req.valid('json');
-        const result = await authService.validateUser(email, password);
-
+        const result = await authService.signInUser(email, password);
         if (!result.success) {
           return c.json({ message: 'Invalid credentials' }, 401);
         }
-
-        const token = await createAccessToken(jwt_secret, result.data);
-
-        return c.json(
-          {
-            accessToken: token,
-            user: {
-              id: result.data.id,
-              email: result.data.email,
-              username: result.data.username,
-            },
-          },
-          200,
+        return c.json(result.data, 200,
         );
       })
       .post('/register', zValidator('json', registerSchema), async (c) => {
@@ -77,18 +46,7 @@ export function createAuthRoute(jwt_secret: string, authService: AuthService) {
               return c.json({ message: 'Username is already taken' }, 409);
           }
         }
-        const token = await createAccessToken(jwt_secret, result.data);
-        return c.json(
-          {
-            accessToken: token,
-            user: {
-              id: result.data.id,
-              email: result.data.email,
-              username: result.data.username,
-            },
-          },
-          201,
-        );
+        return c.json(result.data, 201);
       });
   }
 }

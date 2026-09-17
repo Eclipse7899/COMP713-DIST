@@ -1,5 +1,6 @@
 import { type Food, PrismaClient } from '../generated/prisma/client';
 import type { FoodCategory } from '../generated/prisma/enums';
+import type { Result } from '../util';
 
 export class FoodRepo {
   constructor(private readonly prisma: PrismaClient) {}
@@ -35,7 +36,7 @@ export class FoodRepo {
       category: FoodCategory;
     }>,
     userId: string,
-  ): Promise<Food | null> {
+  ): Promise<Result<Food, 'NOT_FOUND'>> {
     const result = await this.prisma.food.updateManyAndReturn({
       where: {
         id,
@@ -44,17 +45,36 @@ export class FoodRepo {
       data: data,
     });
 
-    return result[0] ?? null;
+    if (result.length === 0) {
+      return {
+        success: false,
+        error: 'NOT_FOUND',
+      };
+    }
+
+    return {
+      success: true,
+      data: result[0],
+    };
   }
 
-  async deleteForUser(id: string, userId: string): Promise<boolean> {
+  async deleteForUser(id: string, userId: string): Promise<Result<void, 'NOT_FOUND' | 'UNAUTHORIZED'>> {
     const deleted = await this.prisma.food.deleteMany({
       where: {
         id,
         createdByUserId: userId,
       },
     });
-    return deleted.count !== 0;
+    if (deleted.count === 0) {
+      return {
+        success: false,
+        error: 'NOT_FOUND',
+      };
+    }
+    return {
+      success: true,
+      data: undefined,
+    };
   }
 
   async findById(id: string) {

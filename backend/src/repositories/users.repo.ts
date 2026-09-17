@@ -1,15 +1,6 @@
 import { type PrismaClient, type User } from '../generated/prisma/client';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
-
-export type CreateUserResult =
-  | {
-      success: true;
-      data: User;
-    }
-  | {
-      success: false;
-      error: 'USERNAME_TAKEN' | 'EMAIL_TAKEN';
-    };
+import type { Result } from '../util';
 
 class UserRepo {
   constructor(private readonly prisma: PrismaClient) {}
@@ -24,7 +15,7 @@ class UserRepo {
     email: string,
     hashed_password: string,
     username: string,
-  ): Promise<CreateUserResult> {
+  ): Promise<Result<User, 'USERNAME_TAKEN' | 'EMAIL_TAKEN'>> {
     try {
       return {
         success: true,

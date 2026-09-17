@@ -5,21 +5,17 @@ import type { FoodCategory, FoodUnit } from '../generated/prisma/enums';
 export class ItemsService {
   constructor(private readonly itemsRepo: ItemsRepo) {}
 
-  createItem(data: {
+  async createItem(data: {
     userId: string;
     foodId: string;
     quantity: number;
     unit: FoodUnit;
     expiryDate: Date | null;
   }): Promise<FoodItem> {
-    return this.itemsRepo.create(data);
+    return await this.itemsRepo.create(data);
   }
 
-  listUserItems(userId: string) {
-    return this.itemsRepo.findAllByUser(userId);
-  }
-
-  filterItems(
+  async getItems(
     userId: string,
     data: {
       categories?: FoodCategory[];
@@ -28,10 +24,19 @@ export class ItemsService {
       sort?: 'asc' | 'desc';
     },
   ) {
-    return this.itemsRepo.filterByUser(
-      userId,
-      data,
-    );
+    if (data.categories || data.expiresBefore || data.name_contains || data.sort) {
+      return await this.itemsRepo.filterByUser(
+        userId,
+        {
+          categories: data.categories,
+          expiresBefore: data.expiresBefore,
+          name_contains: data.name_contains,
+          sort: data.sort,
+        },
+      );
+    } else {
+      return await this.itemsRepo.listByUser(userId);
+    }
   }
 
   updateItem(
