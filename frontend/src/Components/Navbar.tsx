@@ -1,10 +1,18 @@
-import { Link } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import { APP_NAME } from '../constants';
 import logo from '../assets/logo.png';
-import { checkAuthentication } from '../util.ts';
+import { getAuthentication } from '../util.ts';
+import { clearJwt } from '../../util.ts';
 
 export default function Navbar() {
-  const authenticated = checkAuthentication();
+  const authenticated = getAuthentication();
+  const navigate = useNavigate();
+
+  const logout = () => {
+    clearJwt();
+    navigate("/", { replace: true });
+  }
+
   return (
     <nav
       className="border-b border-(--border) bg-(--bg)/80 backdrop-blur-md sticky top-0 z-50">
@@ -20,32 +28,34 @@ export default function Navbar() {
           {(authenticated ? (
                 <div className="flex items-center space-x-4">
                   <div>
-
+                    <span className="px-4 py-2 text-(--text-h) font-medium transition-colors">
+                      Welcome, {authenticated.username}
+                    </span>
                   </div>
                   <Link
                     to="/dashboard"
-                    className="px-4 py-2 text-(--text-h) font-medium transition-colors"
+                    className="px-4 py-2 text-(--text-h) rounded-lg border border-(--secondary) hover:bg-(--secondary)/10 font-medium transition-colors active:scale-95 shadow-sm"
                   >
                     Dashboard
                   </Link>
-                  <Link
-                    to="/logout"
-                    className="px-4 py-2 bg-(--primary) rounded-lg text-(--text-h) font-medium transition-colors hover:shadow-(--primary)/20 active:scale-95 shadow-sm"
+                  <button
+                    onClick={logout}
+                    className="px-4 py-2 bg-(--primary) rounded-lg text-(--text-h) font-medium transition-colors hover:shadow-(--primary)/10 active:scale-95 shadow-sm"
                   >
                     Logout
-                  </Link>
+                  </button>
                 </div>
               ) :
               <div className="flex items-center space-x-4">
                 <Link
                   to="/login"
-                  className="px-4 py-2 bg-(--primary) rounded-lg text-(--text-h) font-medium transition-colors"
+                  className="px-4 py-2 bg-(--primary) rounded-lg text-(--text-h) font-medium transition-colors hover:bg-(--primary)/80"
                 >
                   Login
                 </Link>
                 <Link
                   to="/signup"
-                  className="px-5 py-2 bg-(--primary) text-white font-semibold rounded-lg hover:shadow-lg hover:shadow-(--primary)/20 transition-all active:scale-95 shadow-sm"
+                  className="px-4 py-2 text-(--text-h) rounded-lg border border-(--secondary) hover:bg-(--secondary)/10 hover:shadow-(--primary)/10 transition-colors hover:bg-(--primary)/80 active:scale-95 shadow-sm"
                 >
                   Sign Up
                 </Link>
