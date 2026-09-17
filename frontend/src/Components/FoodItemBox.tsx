@@ -1,13 +1,10 @@
-import type { InferResponseType } from 'hono';
-import { client } from '../client.ts';
 import * as React from 'react';
 import { useEffect, useState } from 'react';
 import { titleCase } from '../util.ts';
+import type { StockedItem } from '../models.ts';
 
-type StockedItem = InferResponseType<typeof client.api.items.$get, 200>[number];
 
-
-export default function FoodItemDisplay({ item, onDelete }: {
+export default function FoodItemBox({ item, onDelete }: {
   item: StockedItem,
   onDelete: (id: string) => Promise<void>
 }) {
@@ -15,9 +12,7 @@ export default function FoodItemDisplay({ item, onDelete }: {
   const [isDeleting, setIsDeleting] = React.useState(false);
   const [now, setNow] = useState(Date.now());
 
-  console.log(item.expiryDate, item.addedAt, now, Date.parse(item.addedAt), item.expiryDate ? Date.parse(item.expiryDate) : null);
   const progressValue = item.expiryDate ? Math.min(1, (now - Date.parse(item.addedAt)) / (Date.parse(item.expiryDate) - Date.parse(item.addedAt))) : null;
-
   const isExpired = item.expiryDate ? now > Date.parse(item.expiryDate) : false;
 
   useEffect(() => {
