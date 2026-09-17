@@ -1,8 +1,8 @@
 import * as React from 'react';
 import { useState } from 'react';
-import { useNavigate } from 'react-router';
-import { saveJwt } from '../../util.ts';
+import { Link, useNavigate } from 'react-router';
 import { getClient } from '../client.ts';
+import { type DetailedError, parseResponse } from 'hono/client';
 
 export default function LoginForm() {
   const [email, setEmail] = useState('');
@@ -14,30 +14,27 @@ export default function LoginForm() {
     e.preventDefault();
     setError('');
 
-    try {
-      const result = await client.api.auth.login.$post({
-        'json': {
-          email,
-          password,
-        },
-      });
-      switch (result.status) {
-        case 200:
-          const data = await result.json();
-          saveJwt(data.accessToken);
-          console.log('Logged in:', data.user.email);
-          navigate('/dashboard', { state: { updated: true } });
-          break;
+    const result = await parseResponse(await client.api.auth.login.$post({
+      'json': {
+        email,
+        password,
+      },
+    })).catch((err: DetailedError) => {
+      switch (err.statusCode) {
         case 401:
-          throw new Error('Invalid email or password');
+          setError('Invalid credentials');
+          break;
         case 400:
-          throw new Error('Account is disabled');
+          setError('Invalid request');
+          break;
         default:
-          const _exhaustiveCheck: never = result;
-          return _exhaustiveCheck;
+          setError('An error occurred');
       }
-    } catch (err: any) {
-      setError(err.message);
+    });
+
+    if (result) {
+      localStorage.setItem('jwt', result.accessToken);
+      navigate('/');
     }
   }
 
@@ -108,10 +105,12 @@ export default function LoginForm() {
       <div className="text-center text-sm">
         <p className="text-(--text)">
           Don't have an account?{' '}
-          <a href="#"
-             className="font-medium text-(--primary) hover:underline">
+          <Link
+            to="/signup"
+            className="font-medium text-(--primary) hover:underline"
+          >
             Sign up
-          </a>
+          </Link>
         </p>
       </div>
     </div>

@@ -62,24 +62,25 @@ export function createAuthRoute(jwt_secret: string, authService: AuthService) {
         const { email, password, username } = c.req.valid('json');
         const result = await authService.registerUser(email, password, username);
         if (!result.success) {
-          if (result.error === 'EMAIL_TAKEN') {
-            return c.json({ message: 'Email is already taken' }, 409);
-          } else if (result.error === 'USERNAME_TAKEN') {
-            return c.json({ message: 'Username is already taken' }, 409);
+          switch (result.error) {
+            case 'EMAIL_TAKEN':
+              return c.json({ message: 'Email is already taken' }, 409);
+            case 'USERNAME_TAKEN':
+              return c.json({ message: 'Username is already taken' }, 409);
           }
         }
-        else{
-          return c.json(
-            {
-              user: {
-                id: result.data.id,
-                email: result.data.email,
-                username: result.data.username,
-              },
+        const token = await createAccessToken(jwt_secret, result.data);
+        return c.json(
+          {
+            accessToken: token,
+            user: {
+              id: result.data.id,
+              email: result.data.email,
+              username: result.data.username,
             },
-            201,
-          );
-        }
+          },
+          201,
+        );
       });
   }
 }

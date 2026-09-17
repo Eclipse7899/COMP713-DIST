@@ -1,3 +1,4 @@
+import { Link } from 'react-router';
 import { APP_NAME } from '../constants';
 
 export default function HomePage() {
@@ -17,16 +18,16 @@ export default function HomePage() {
           </p>
         </div>
         <div className="flex flex-col sm:flex-row gap-4">
-          <a
-            href="/signup"
+          <Link
+            to="/signup"
             className="px-8 py-3 bg-(--primary) text-white font-semibold rounded-lg hover:shadow-lg hover:bg-(--primary-soft) transition-all">
             Sign Up
-          </a>
-          <a
-            href="/login"
+          </Link>
+          <Link
+            to="/login"
             className="px-8 py-3 bg-transparent border border-(--border) text-(--text-h) font-semibold rounded-lg hover:bg-(--background) hover:border-(--primary) transition-all">
             Login
-          </a>
+          </Link>
         </div>
       </section>
     </div>
