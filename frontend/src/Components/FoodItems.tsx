@@ -2,15 +2,15 @@ import * as React from 'react';
 import { useCallback, useMemo, useState } from 'react';
 import { type DetailedError, parseResponse } from 'hono/client';
 import { FoodCategory } from '@stocked/backend/src/generated/prisma/enums';
-import type { FoodItemResp } from '../models';
 import { getClient } from '../client';
 import { titleCase } from '../util';
 import FoodItemBox from './FoodItemBox';
-import AddFoodItemPage from './AddFoodItemPage';
+import AddFoodItemForm from './Forms/AddFoodItemForm.tsx';
 import ErrorMessage from './ErrorMessage';
+import type { EditFoodItem, FoodType, StockedItem } from '../models.ts';
 
 export default function FoodItems() {
-  const [items, setItems] = useState<FoodItemResp[]>([]);
+  const [items, setItems] = useState<StockedItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [addItemModalOpen, setAddItemModalOpen] = useState(false);
@@ -26,13 +26,30 @@ export default function FoodItems() {
     search.trim() || category || expiresBefore || sort !== 'asc',
   );
 
+  const loadFoodTypes = useCallback(async () => {
+    const res = await parseResponse(client.api.food.$get()).catch(
+      (e: DetailedError) => {
+        console.error(e);
+      },
+    );
+
+    if (!res) {
+      setError('Failed to load food types.');
+      return;
+    }
+
+    setFoodTypes(res);
+  }, [client]);
+
   const loadItems = useCallback(
-    async ({
-             searchValue = search,
-             categoryValue = category,
-             sortValue = sort,
-             expiresBeforeValue = expiresBefore,
-           } = {}) => {
+    async (
+      {
+        searchValue = search,
+        categoryValue = category,
+        sortValue = sort,
+        expiresBeforeValue = expiresBefore,
+      } = {},
+    ) => {
       setLoading(true);
       setError('');
 
@@ -75,7 +92,7 @@ export default function FoodItems() {
       setItems(res);
       setLoading(false);
     },
-    [client, search, category, sort, expiresBefore],
+    [client],
   );
 
   const clearFilters = useCallback(async () => {
@@ -91,10 +108,20 @@ export default function FoodItems() {
       expiresBeforeValue: '',
     });
   }, [loadItems]);
-
+  const [foodTypes, setFoodTypes] = useState<FoodType[]>([]);
   const loadItemsOnMount = useCallback(() => {
     loadItems();
+    loadFoodTypes();
   }, [loadItems]);
+
+  const filterItems = async () => {
+    await loadItems({
+      searchValue: search,
+      categoryValue: category,
+      sortValue: sort,
+      expiresBeforeValue: expiresBefore,
+    });
+  }
 
   React.useEffect(() => {
     loadItemsOnMount();
@@ -116,7 +143,7 @@ export default function FoodItems() {
 
   if (addItemModalOpen) {
     return (
-      <AddFoodItemPage
+      <AddFoodItemForm
         onCancel={() => setAddItemModalOpen(false)}
         onDone={() => {
           setAddItemModalOpen(false);
@@ -125,6 +152,32 @@ export default function FoodItems() {
       />
     );
   }
+
+  const editItem = async (id: string, form: EditFoodItem) => {
+    const res = await parseResponse(
+      client.api.items[':id'].$put({
+        param: {
+          id
+        },
+        json: {
+          foodId: form.foodId,
+          quantity: Number(form.quantity),
+          unit: form.unit,
+          expiryDate: form.expiryDate
+            ? new Date(form.expiryDate).toISOString()
+            : null,
+        },
+      }),
+    ).catch((e: DetailedError) => {
+      console.error(e);
+    });
+
+    if (!res) {
+      setError('Failed to edit item.');
+      return;
+    }
+    setItems((current) => current.map((item) => (item.id === id ? res : item)));
+  };
 
   return (
     <div className="flex flex-col gap-4 items-stretch">
@@ -217,7 +270,7 @@ export default function FoodItems() {
               Clear
             </button>
           )}
-          <button type="button" className="btn" onClick={() => loadItems()}>
+          <button type="button" className="btn" onClick={() => filterItems()}>
             Search
           </button>
         </div>
@@ -242,7 +295,7 @@ export default function FoodItems() {
           <ul className="divide-y divide-(--border)">
             {items.map((item) => (
               <li key={item.id} className="p-4 hover:bg-(--secondary)/5 transition-colors">
-                <FoodItemBox item={item} onDelete={deleteItem} />
+                <FoodItemBox item={item} foodTypes={foodTypes} onDelete={deleteItem} onEdit={editItem} />
               </li>
             ))}
           </ul>
