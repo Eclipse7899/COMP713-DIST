@@ -1,11 +1,14 @@
 import * as React from 'react';
 import { FoodUnit } from '@stocked/backend/src/generated/prisma/enums.ts';
 import type { AddFoodItem, FoodType } from '../models.ts';
-import { parseResponse, hc, type DetailedError } from 'hono/client';
-import type { AppType } from '@stocked/backend/src';
+import { type DetailedError, parseResponse } from 'hono/client';
+import { getClient } from '../client.ts';
 
 
-export default function AddFoodItemForm(client : ReturnType<typeof hc<AppType>>) {
+export default function AddFoodItemPage({ onCancel, onDone }: {
+  onCancel: () => void,
+  onDone: () => void
+}) {
   const initialFormState: AddFoodItem = {
     foodId: '',
     quantity: 1,
@@ -14,6 +17,22 @@ export default function AddFoodItemForm(client : ReturnType<typeof hc<AppType>>)
   };
   const [form, setForm] = React.useState(initialFormState);
   const [isDisabled, setIsDisabled] = React.useState(false);
+  const [error, setError] = React.useState('');
+  const [foodTypes, setFoodTypes] = React.useState<FoodType[]>([]);
+  const client = React.useMemo(() => getClient(), []);
+
+  const loadFoodTypes = async () => {
+    const res = await parseResponse(client.api.food.$get()).catch((e: DetailedError) => {
+      console.error(e);
+    });
+
+    if (!res) {
+      setError('Failed to load food types.');
+      return;
+    }
+
+    setFoodTypes(res);
+  };
 
   const clearForm = () => {
     setForm(initialFormState);
@@ -37,7 +56,12 @@ export default function AddFoodItemForm(client : ReturnType<typeof hc<AppType>>)
     }
 
     clearForm();
+    onDone();
   };
+
+  React.useEffect(() => {
+    loadFoodTypes();
+  }, []);
 
   async function submit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -45,8 +69,18 @@ export default function AddFoodItemForm(client : ReturnType<typeof hc<AppType>>)
     await addItem();
     setIsDisabled(false);
   }
+
+  function cancel() {
+    onCancel();
+  }
   return (
-    <div className="bg-(--bg)">
+    <div>
+      {error && (
+        <div
+          className="p-3 text-sm text-red-600 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/30 rounded-lg">
+          {error}
+        </div>
+      )}
       <form onSubmit={submit}
             className="flex flex-col gap-4 p-6 rounded-2xl">
         <h2 className="text-xl font-semibold text-(--text-h)">
@@ -80,11 +114,14 @@ export default function AddFoodItemForm(client : ReturnType<typeof hc<AppType>>)
           <select
             className="px-4 py-3 rounded-lg border border-(--border) "
             value={form.unit}
+            defaultValue=""
             onChange={(e) => setForm({
               ...form,
               unit: e.target.value as FoodUnit,
             })}
+            required
           >
+            <option value="">Select unit</option>
             {Object.values(FoodUnit).map((unit) => (
               <option key={unit} value={unit}>
                 {unit}
@@ -94,7 +131,8 @@ export default function AddFoodItemForm(client : ReturnType<typeof hc<AppType>>)
           <input
             className="px-4 py-3 rounded-lg border border-(--border) "
             type="datetime-local"
-            value={form.expiryDate}
+            placeholder="Expiry date"
+            value={form.expiryDate ? undefined : ''}
             onChange={(e) => setForm({ ...form, expiryDate: e.target.value })}
           />
         </div>
@@ -104,6 +142,13 @@ export default function AddFoodItemForm(client : ReturnType<typeof hc<AppType>>)
             className="w-fit px-5 py-3 rounded-lg bg-(--primary) text-white font-semibold disabled:opacity-60"
           >
             {isDisabled ? 'Adding...' : 'Add item'}
+          </button>
+          <button
+            type="button"
+            onClick={cancel}
+            className="w-fit px-5 py-3 rounded-lg bg-(--secondary)/60 text-white font-semibold disabled:opacity-60"
+          >
+            Cancel
           </button>
         </div>
       </form>
