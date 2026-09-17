@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { useEffect, useState } from 'react';
 import { titleCase } from '../util';
-import type { EditFoodItem, FoodType, StockedItem } from '../models.ts';
+import type { EditFoodItem, FoodType, FoodItem } from '../models.ts';
 import EditFoodItemForm from './Forms/EditFoodItemForm.tsx';
 
 export default function FoodItemBox({
@@ -10,7 +10,7 @@ export default function FoodItemBox({
   onDelete,
   onEdit,
 }: {
-  item: StockedItem;
+  item: FoodItem;
   foodTypes: FoodType[];
   onDelete: (id: string) => Promise<void>;
   onEdit: (id: string, item: EditFoodItem) => Promise<void>;

@@ -34,7 +34,7 @@ export default function LoginForm() {
           case 400:
             throw new Error('Invalid request. Please check your inputs.');
           default:
-            throw new Error('Failed to sign in. Please try again.');
+            throw new Error('Failed to log in. Please try again.');
         }
       });
 

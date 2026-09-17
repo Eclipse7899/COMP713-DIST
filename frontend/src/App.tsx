@@ -4,7 +4,7 @@ import LoginPage from './Pages/LoginPage';
 import SignupPage from './Pages/SignupPage';
 import Navbar from './Components/Navbar';
 import DashboardPage from './Pages/DashboardPage';
-import ProtectedRoute from './Components/AuthenticatedRoute';
+import AuthenticatedRoute from './Components/AuthenticatedRoute';
 
 function App() {
   return (
@@ -14,7 +14,7 @@ function App() {
         <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
-        <Route element={<ProtectedRoute />}>
+        <Route element={<AuthenticatedRoute />}>
           <Route path="/dashboard" element={<DashboardPage />} />
         </Route>
       </Routes>

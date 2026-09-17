@@ -1,5 +1,5 @@
 import * as React from 'react';
-import type { EditFoodItem, FoodType, StockedItem } from '../../models.ts';
+import type { EditFoodItem, FoodType, FoodItem } from '../../models.ts';
 import { titleCase } from '../../util.ts';
 import { FoodUnit } from '@stocked/backend/src/generated/prisma/enums.ts';
 
@@ -10,7 +10,7 @@ export default function EditFoodItemForm(
     onCancel,
     onEdit,
   }: {
-    item: StockedItem;
+    item: FoodItem;
     foodTypes: FoodType[];
     onCancel: () => void;
     onEdit: (id: string, item: EditFoodItem) => Promise<void>;

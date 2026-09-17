@@ -7,10 +7,10 @@ import { titleCase } from '../util';
 import FoodItemBox from './FoodItemBox';
 import AddFoodItemForm from './Forms/AddFoodItemForm.tsx';
 import ErrorMessage from './ErrorMessage';
-import type { EditFoodItem, FoodType, StockedItem } from '../models.ts';
+import type { EditFoodItem, FoodType, FoodItem } from '../models.ts';
 
 export default function FoodItems() {
-  const [items, setItems] = useState<StockedItem[]>([]);
+  const [items, setItems] = useState<FoodItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [addItemModalOpen, setAddItemModalOpen] = useState(false);
