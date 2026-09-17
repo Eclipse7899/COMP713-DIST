@@ -105,7 +105,7 @@ async function main() {
     data: foodTypes.map((food) => ({
       name: food.name,
       category: food.category,
-      createdByUserId: user.id,
+      createdByUserId: null,
     })),
   });
 

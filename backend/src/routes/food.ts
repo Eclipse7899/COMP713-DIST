@@ -48,15 +48,10 @@ export function createFoodRoute(foodService: FoodService) {
     .get('/', async (c) => {
     const userId = c.get('jwtPayload').sub;
     const category = c.req.query('category');
-    const foods = await foodService.listAccessibleFoods(
+    const foods = await foodService.getFood(
       userId,
       category ? (category as FoodCategory) : undefined,
     );
-    return c.json(foods);
-    })
-    .get('/created', async (c) => {
-    const userId = c.get('jwtPayload').sub;
-    const foods = await foodService.listCreatedByUser(userId);
     return c.json(foods);
     })
     .post('/', zValidator('json', createFoodSchema), async (c) => {
@@ -69,32 +64,36 @@ export function createFoodRoute(foodService: FoodService) {
     });
     return c.json(created, 201);
     })
-    .get('/:id', zValidator('param', foodIdParamSchema), async (c) => {
-    const id = c.req.valid('param').id;
-    const food = await foodService.getFoodById(id);
-    if (!food) {
-      return c.json({ error: 'Food not found' }, 404);
-    }
-    return c.json(food);
-    })
     .patch(
       '/:id',
       zValidator('param', foodIdParamSchema),
       zValidator('json', updateFoodSchema),
       async (c) => {
       const id = c.req.valid('param').id;
+      const userId = c.get('jwtPayload').sub;
       const body = c.req.valid('json');
-      const food = await foodService.getFoodById(id);
-      if (!food) {
+      const existing = await foodService.getFoodById(id);
+      if (!existing) {
         return c.json({ error: 'Food not found' }, 404);
       }
-      const updated = await foodService.updateFood(id, body as any);
+      const updated = await foodService.updateFood(id, body, userId);
+      if (!updated) {
+        return c.json({ error: 'Food not found or not authorized' }, 404);
+      }
       return c.json(updated);
       },
     )
     .delete('/:id', zValidator('param', foodIdParamSchema), async (c) => {
       const id = c.req.valid('param').id;
-      const deleted = await foodService.deleteFood(id);
+      const userId = c.get('jwtPayload').sub;
+      const existing = await foodService.getFoodById(id);
+      if (!existing) {
+        return c.json({ error: 'Food not found' }, 404);
+      }
+      const deleted = await foodService.deleteFood(id, userId);
+      if (!deleted) {
+        return c.json({ error: 'Food not found or not authorized' }, 404);
+      }
       return c.json(deleted);
     });
 }

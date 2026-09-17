@@ -2,9 +2,6 @@ import { FoodRepo } from '../repositories/food.repo';
 import type { Food } from '../generated/prisma/client';
 import type { FoodCategory } from '../generated/prisma/enums';
 
-/**
- * FoodService handles business logic for Food operations
- */
 export class FoodService {
   constructor(private readonly foodRepo: FoodRepo) {}
 
@@ -16,27 +13,11 @@ export class FoodService {
     return this.foodRepo.create(data);
   }
 
-  async listAllFoods(): Promise<Food[]> {
-    return this.foodRepo.findAll();
-  }
-
-  async getFoodById(id: string): Promise<Food | null> {
-    return this.foodRepo.findById(id);
-  }
-
-  async listByCategory(category: FoodCategory): Promise<Food[]> {
-    return this.foodRepo.findByCategory(category);
-  }
-
-  async listCreatedByUser(userId: string): Promise<Food[]> {
-    return this.foodRepo.findByCreator(userId);
-  }
-
-  async listAccessibleFoods(
+  async getFood(
     userId: string,
     category?: FoodCategory,
   ): Promise<Food[]> {
-    return this.foodRepo.findAccessible(userId, category);
+    return this.foodRepo.findForUser(userId, category);
   }
 
   async updateFood(
@@ -45,11 +26,16 @@ export class FoodService {
       name: string;
       category: FoodCategory;
     }>,
-  ): Promise<Food> {
-    return this.foodRepo.update(id, data);
+    userId: string,
+  ): Promise<Food | null> {
+    return this.foodRepo.updateForUser(id, data, userId);
   }
 
-  async deleteFood(id: string): Promise<Food> {
-    return this.foodRepo.delete(id);
+  async deleteFood(id: string, userId: string): Promise<boolean> {
+    return this.foodRepo.deleteForUser(id, userId);
+  }
+
+  async getFoodById(id: string): Promise<Food | null> {
+    return this.foodRepo.findById(id);
   }
 }
