@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 import { type DetailedError, parseResponse } from 'hono/client';
 import type { FoodType } from '../models';
 import { getClient } from '../client';
-import { AddFoodTypePage } from './AddFoodTypePage';
+import { AddFoodTypeForm } from './Forms/AddFoodTypeForm.tsx';
 import FoodTypeBox from './FoodTypeBox';
 import ErrorMessage from './ErrorMessage';
 
@@ -51,7 +51,7 @@ export default function FoodTypes() {
 
   if (addTypeModalOpen) {
     return (
-      <AddFoodTypePage
+      <AddFoodTypeForm
         onCancel={() => setAddTypeModalOpen(false)}
         onDone={() => {
           setAddTypeModalOpen(false);

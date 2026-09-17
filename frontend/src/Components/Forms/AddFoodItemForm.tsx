@@ -1,12 +1,12 @@
 import * as React from 'react';
 import { FoodUnit } from '@stocked/backend/src/generated/prisma/enums.ts';
-import type { AddFoodItem, FoodType } from '../models';
+import type { AddFoodItem, FoodType } from '../../models.ts';
 import { type DetailedError, parseResponse } from 'hono/client';
-import { getClient } from '../client';
-import { titleCase } from '../util';
-import ErrorMessage from './ErrorMessage';
+import { getClient } from '../../client.ts';
+import { titleCase } from '../../util.ts';
+import ErrorMessage from '../ErrorMessage.tsx';
 
-export default function AddFoodItemPage({
+export default function AddFoodItemForm({
   onCancel,
   onDone,
 }: {
