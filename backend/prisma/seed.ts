@@ -7,8 +7,10 @@ const adapter = new PrismaPg(connectionString);
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
-  const user = await prisma.user.create({
-    data: {
+  const user = await prisma.user.upsert({
+    where: { email: 'jon@example.com' },
+    update: {},
+    create: {
       email: 'jon@example.com',
       username: 'jon',
       hashed_password: await hashPassword('123'),
@@ -101,13 +103,16 @@ async function main() {
     { name: 'Jam', category: FoodCategory.OTHER },
   ];
 
-  await prisma.food.createMany({
-    data: foodTypes.map((food) => ({
-      name: food.name,
-      category: food.category,
-      createdByUserId: null,
-    })),
-  });
+  const existingFoodCount = await prisma.food.count();
+  if (existingFoodCount === 0) {
+    await prisma.food.createMany({
+      data: foodTypes.map((food) => ({
+        name: food.name,
+        category: food.category,
+        createdByUserId: null,
+      })),
+    });
+  }
 
   console.log('Seeded food types.');
 }
