@@ -18,7 +18,7 @@ export function createApp(jwt_secret: string, database: PrismaClient) {
 
   const userService = new UserService(userRepo);
   const foodService = new FoodService(foodRepo);
-  const itemsService = new ItemsService(itemsRepo);
+  const itemsService = new ItemsService(itemsRepo, foodRepo);
   const authService = new AuthService(jwt_secret, userRepo);
 
   const api = createApi(jwt_secret, {
