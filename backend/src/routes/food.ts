@@ -70,6 +70,6 @@ export function createFoodRoute(foodService: FoodService) {
           return c.json({ error: 'Unauthorized' }, 403);
         }
       }
-      return c.status(204);
+      return c.body(null, 204);
     });
 }

@@ -4,7 +4,7 @@ import type { Result } from '../util';
 export class UserService {
   constructor(private userRepo: UserRepo) {}
 
-  async getCurrentUser(userId: string): Promise<Result<{ id: string, email: string, username: string }, 'NOT_FOUND'> | null> {
+  async getCurrentUser(userId: string): Promise<Result<{ id: string, email: string, username: string }, 'NOT_FOUND'>> {
     const user = await this.userRepo.findById(userId);
     if (!user) {
       return {

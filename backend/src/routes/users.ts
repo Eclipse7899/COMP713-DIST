@@ -6,9 +6,9 @@ export function createUsersRoute(userService: UserService) {
   return new Hono<{ Variables: Variables }>().get('/me', async (c) => {
     const userId = c.get('jwtPayload').sub;
     const user = await userService.getCurrentUser(userId);
-    if (!user) {
+    if (!user || !user.success) {
       return c.json({ message: 'User not found' }, 404);
     }
-    return c.json(user);
+    return c.json(user.data);
   });
 }
