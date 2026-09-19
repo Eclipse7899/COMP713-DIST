@@ -36,7 +36,6 @@ model FoodItem {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   food Food @relation(fields: [foodId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, foodId])
   @@index([userId])
   @@index([expiryDate])
 }
