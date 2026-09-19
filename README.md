@@ -191,8 +191,9 @@ The item endpoint supports these optional query parameters:
 | `sort`       | Sort by expiry date using `asc` or `desc`           |
 | `expiryDate` | Return items expiring before the specified ISO date |
 
-## Known Issues
-- None
+## Known Issues or Limitations
+- JWT token are basic, do not offer refresh tokens or revocation
+- Integration tests rely on docker, to create test containers
 
 ## Future Features
 - Notifications for items nearing expiration
