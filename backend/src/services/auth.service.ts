@@ -7,6 +7,10 @@ export class AuthService {
   constructor(private readonly jwtSecret: string, private readonly userRepo: UserRepo) {
   }
 
+  normalizeEmail(email: string): string {
+    return email.trim().toLowerCase();
+  }
+
   async registerUser(email: string, password: string, username: string,
   ): Promise<Result<{
     user: {
@@ -17,7 +21,8 @@ export class AuthService {
     accessToken: string
   }, 'USERNAME_TAKEN' | 'EMAIL_TAKEN'>> {
     const hashedPassword = await hashPassword(password);
-    const result = await this.userRepo.createUser(email, hashedPassword, username);
+    const normalizedEmail = this.normalizeEmail(email);
+    const result = await this.userRepo.createUser(normalizedEmail, hashedPassword, username);
     if (!result.success) {
       return {
         success: false,
@@ -56,7 +61,8 @@ export class AuthService {
     email: string,
     password: string,
   ): Promise<Result<{ accessToken: string, user: { id: string; email: string; username: string } }, void>> {
-    const user = await this.userRepo.findUserByEmail(email);
+    const normalizedEmail = this.normalizeEmail(email);
+    const user = await this.userRepo.findUserByEmail(normalizedEmail);
     if (!user) {
       return {
         success: false,
