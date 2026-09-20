@@ -1,8 +1,24 @@
-import { Injectable } from '@nestjs/common';
+import type { UserRepository } from '../repositories/users.repo';
+import type { Result } from '../util';
 
-@Injectable()
 export class UserService {
-  getHello(): string {
-    return 'Hello World!';
+  constructor(private userRepo: UserRepository) {}
+
+  async getCurrentUser(userId: string): Promise<Result<{ id: string, email: string, username: string }, 'NOT_FOUND'>> {
+    const user = await this.userRepo.findById(userId);
+    if (!user) {
+      return {
+        success: false,
+        error: 'NOT_FOUND',
+      }
+    }
+    return {
+      success: true,
+      data: {
+        id: user.id,
+        email: user.email,
+        username: user.username,
+      },
+    }
   }
 }

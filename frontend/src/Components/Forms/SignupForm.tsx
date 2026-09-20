@@ -1,0 +1,155 @@
+import * as React from 'react';
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router';
+import { getClient } from '../../client.ts';
+import { saveJwt } from '../../util.ts';
+import { APP_NAME } from '../../constants.ts';
+import ErrorMessage from '../ErrorMessage.tsx';
+import { parseResponse } from 'hono/client';
+import { getApiErrorMessage } from '../../apiError.ts';
+
+export default function SignupForm() {
+  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const client = React.useMemo(() => getClient(), []);
+  const navigate = useNavigate();
+
+  async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setError('');
+
+    if (password !== confirmPassword) {
+      setError('Passwords do not match.');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const result = await parseResponse(
+        await client.api.auth.register.$post({
+          json: {
+            username,
+            email,
+            password,
+          },
+        }),
+      ).catch((err: unknown) => {
+        throw new Error(getApiErrorMessage(err, 'signup'));
+      });
+
+      if (result?.accessToken) {
+        saveJwt(result.accessToken);
+        navigate('/dashboard');
+      }
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : getApiErrorMessage(err, 'signup'));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="w-full max-w-md card flex flex-col gap-6 p-6">
+      <div className="space-y-2 text-center">
+        <h1 className="text-2xl font-bold text-(--text-h)">Create an
+          account</h1>
+        <p className="text-(--text) text-sm">
+          Sign up to get started with {APP_NAME}
+        </p>
+      </div>
+
+      <ErrorMessage message={error}/>
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="text-left space-y-1.5">
+          <label className="text-sm font-medium text-(--text-h)"
+                 htmlFor="username">
+            Username
+          </label>
+          <input
+            id="username"
+            type="text"
+            placeholder="myusername"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            required
+            minLength={3}
+            maxLength={20}
+            className="w-full text-input"
+          />
+        </div>
+
+        <div className="text-left space-y-1.5">
+          <label className="text-sm font-medium text-(--text-h)"
+                 htmlFor="email">
+            Email address
+          </label>
+          <input
+            id="email"
+            type="email"
+            placeholder="name@example.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            className="w-full text-input"
+          />
+        </div>
+
+        <div className="text-left space-y-1.5">
+          <label className="text-sm font-medium text-(--text-h)"
+                 htmlFor="password">
+            Password
+          </label>
+          <input
+            id="password"
+            type="password"
+            placeholder="••••••••"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            className="w-full text-input"
+          />
+        </div>
+
+        <div className="text-left space-y-1.5">
+          <label className="text-sm font-medium text-(--text-h)"
+                 htmlFor="confirmPassword">
+            Confirm Password
+          </label>
+          <input
+            id="confirmPassword"
+            type="password"
+            placeholder="••••••••"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            required
+            className="w-full text-input"
+          />
+        </div>
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full btn"
+        >
+          {loading ? 'Creating account...' : 'Sign up'}
+        </button>
+      </form>
+
+      <div className="text-center text-sm">
+        <p className="text-(--text)">
+          Already have an account?{' '}
+          <Link to="/login"
+                className="font-medium text-(--primary) hover:underline">
+            Sign in
+          </Link>
+        </p>
+      </div>
+    </div>
+  );
+}
