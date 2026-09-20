@@ -14,7 +14,7 @@ export async function setupTestDatabase() {
 
   process.env.DATABASE_URL = databaseUrl;
 
-  execSync('npx prisma migrate deploy', {
+  execSync('bunx prisma migrate deploy', {
     env: {
       ...process.env,
       DATABASE_URL: databaseUrl,
