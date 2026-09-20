@@ -14,7 +14,7 @@ describe('Hashing', () => {
     const compare = await comparePasswords('wrongpassword', hashed);
     expect(compare).toBe(false);
   });
-  it ('hashes different passwords to different hashes', async () => {
+  it('hashes different passwords to different hashes', async () => {
     const password1 = 'password1';
     const password2 = 'password2';
     const hashed1 = await hashPassword(password1);

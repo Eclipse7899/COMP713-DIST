@@ -71,22 +71,28 @@ describe('Items Endpoints', () => {
     });
 
     it('should reject PUT /api/items/:id without authorization header', async () => {
-      const response = await app.request('/api/items/clh0000000000000000000000', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          foodId: 'clh0000000000000000000000',
-          quantity: 3,
-          unit: 'KG',
-        }),
-      });
+      const response = await app.request(
+        '/api/items/clh0000000000000000000000',
+        {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            foodId: 'clh0000000000000000000000',
+            quantity: 3,
+            unit: 'KG',
+          }),
+        },
+      );
       expect(response.status).toBe(401);
     });
 
     it('should reject DELETE /api/items/:id without authorization header', async () => {
-      const response = await app.request('/api/items/clh0000000000000000000000', {
-        method: 'DELETE',
-      });
+      const response = await app.request(
+        '/api/items/clh0000000000000000000000',
+        {
+          method: 'DELETE',
+        },
+      );
       expect(response.status).toBe(401);
     });
 
@@ -213,25 +219,38 @@ describe('Items Endpoints', () => {
 
     it('should return 400 when querying items with invalid sort or category', async () => {
       const { token } = await createTestUser('user1', 'user1@example.com');
-      const invalidSortResponse = await app.request('/api/items?sort=invalid_sort', {
-        method: 'GET',
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const invalidSortResponse = await app.request(
+        '/api/items?sort=invalid_sort',
+        {
+          method: 'GET',
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
       expect(invalidSortResponse.status).toBe(400);
 
-      const invalidCategoryResponse = await app.request('/api/items?categories=NOT_A_CATEGORY', {
-        method: 'GET',
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const invalidCategoryResponse = await app.request(
+        '/api/items?categories=NOT_A_CATEGORY',
+        {
+          method: 'GET',
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
       expect(invalidCategoryResponse.status).toBe(400);
     });
   });
 
   describe('POST /api/items', () => {
     it('should successfully create an item with global food and persist to database', async () => {
-      const { user, token } = await createTestUser('itemuser1', 'itemuser1@example.com');
+      const { user, token } = await createTestUser(
+        'itemuser1',
+        'itemuser1@example.com',
+      );
       const globalFood = await db.food.create({
-        data: { name: 'Milk', category: FoodCategory.DAIRY, createdByUserId: null },
+        data: {
+          name: 'Milk',
+          category: FoodCategory.DAIRY,
+          createdByUserId: null,
+        },
       });
 
       const response = await app.request('/api/items', {
@@ -268,9 +287,16 @@ describe('Items Endpoints', () => {
     });
 
     it('should successfully create an item with user own custom food', async () => {
-      const { user, token } = await createTestUser('itemuser2', 'itemuser2@example.com');
+      const { user, token } = await createTestUser(
+        'itemuser2',
+        'itemuser2@example.com',
+      );
       const customFood = await db.food.create({
-        data: { name: 'Custom Homemade Sauce', category: FoodCategory.SAUCES, createdByUserId: user.id },
+        data: {
+          name: 'Custom Homemade Sauce',
+          category: FoodCategory.SAUCES,
+          createdByUserId: user.id,
+        },
       });
 
       const response = await app.request('/api/items', {
@@ -294,7 +320,10 @@ describe('Items Endpoints', () => {
     });
 
     it('should return 404 if foodId does not exist', async () => {
-      const { token } = await createTestUser('itemuser3', 'itemuser3@example.com');
+      const { token } = await createTestUser(
+        'itemuser3',
+        'itemuser3@example.com',
+      );
       const nonExistentFoodId = 'clh0000000000000000000000';
 
       const response = await app.request('/api/items', {
@@ -316,11 +345,21 @@ describe('Items Endpoints', () => {
     });
 
     it('should return 403 if foodId belongs to another user', async () => {
-      const { user: userA } = await createTestUser('userA', 'usera@example.com');
-      const { token: tokenB } = await createTestUser('userB', 'userb@example.com');
+      const { user: userA } = await createTestUser(
+        'userA',
+        'usera@example.com',
+      );
+      const { token: tokenB } = await createTestUser(
+        'userB',
+        'userb@example.com',
+      );
 
       const userAFood = await db.food.create({
-        data: { name: 'User A Secret Bread', category: FoodCategory.GRAINS, createdByUserId: userA.id },
+        data: {
+          name: 'User A Secret Bread',
+          category: FoodCategory.GRAINS,
+          createdByUserId: userA.id,
+        },
       });
 
       const response = await app.request('/api/items', {
@@ -348,19 +387,39 @@ describe('Items Endpoints', () => {
 
   describe('GET /api/items', () => {
     it('should only return items belonging to current user', async () => {
-      const { user: userA, token: tokenA } = await createTestUser('userA', 'usera@example.com');
-      const { user: userB } = await createTestUser('userB', 'userb@example.com');
+      const { user: userA, token: tokenA } = await createTestUser(
+        'userA',
+        'usera@example.com',
+      );
+      const { user: userB } = await createTestUser(
+        'userB',
+        'userb@example.com',
+      );
 
       const food = await db.food.create({
-        data: { name: 'Apples', category: FoodCategory.FRUIT, createdByUserId: null },
+        data: {
+          name: 'Apples',
+          category: FoodCategory.FRUIT,
+          createdByUserId: null,
+        },
       });
 
       const itemA = await db.foodItem.create({
-        data: { userId: userA.id, foodId: food.id, quantity: 5, unit: FoodUnit.ITEM },
+        data: {
+          userId: userA.id,
+          foodId: food.id,
+          quantity: 5,
+          unit: FoodUnit.ITEM,
+        },
       });
 
       await db.foodItem.create({
-        data: { userId: userB.id, foodId: food.id, quantity: 10, unit: FoodUnit.ITEM },
+        data: {
+          userId: userB.id,
+          foodId: food.id,
+          quantity: 10,
+          unit: FoodUnit.ITEM,
+        },
       });
 
       const response = await app.request('/api/items', {
@@ -376,20 +435,41 @@ describe('Items Endpoints', () => {
     });
 
     it('should filter items by name_contains (case-insensitive)', async () => {
-      const { user, token } = await createTestUser('searchuser', 'search@example.com');
+      const { user, token } = await createTestUser(
+        'searchuser',
+        'search@example.com',
+      );
 
       const food1 = await db.food.create({
-        data: { name: 'Organic Strawberry Yogurt', category: FoodCategory.DAIRY, createdByUserId: null },
+        data: {
+          name: 'Organic Strawberry Yogurt',
+          category: FoodCategory.DAIRY,
+          createdByUserId: null,
+        },
       });
       const food2 = await db.food.create({
-        data: { name: 'Fresh Blueberries', category: FoodCategory.FRUIT, createdByUserId: null },
+        data: {
+          name: 'Fresh Blueberries',
+          category: FoodCategory.FRUIT,
+          createdByUserId: null,
+        },
       });
 
       await db.foodItem.create({
-        data: { userId: user.id, foodId: food1.id, quantity: 1, unit: FoodUnit.PACK },
+        data: {
+          userId: user.id,
+          foodId: food1.id,
+          quantity: 1,
+          unit: FoodUnit.PACK,
+        },
       });
       await db.foodItem.create({
-        data: { userId: user.id, foodId: food2.id, quantity: 2, unit: FoodUnit.PACK },
+        data: {
+          userId: user.id,
+          foodId: food2.id,
+          quantity: 2,
+          unit: FoodUnit.PACK,
+        },
       });
 
       const response = await app.request('/api/items?contains=STRAWBERRY', {
@@ -404,26 +484,56 @@ describe('Items Endpoints', () => {
     });
 
     it('should filter items by categories', async () => {
-      const { user, token } = await createTestUser('catuser', 'cat@example.com');
+      const { user, token } = await createTestUser(
+        'catuser',
+        'cat@example.com',
+      );
 
       const fruit = await db.food.create({
-        data: { name: 'Orange', category: FoodCategory.FRUIT, createdByUserId: null },
+        data: {
+          name: 'Orange',
+          category: FoodCategory.FRUIT,
+          createdByUserId: null,
+        },
       });
       const meat = await db.food.create({
-        data: { name: 'Chicken Breast', category: FoodCategory.MEAT, createdByUserId: null },
+        data: {
+          name: 'Chicken Breast',
+          category: FoodCategory.MEAT,
+          createdByUserId: null,
+        },
       });
       const drink = await db.food.create({
-        data: { name: 'Cola', category: FoodCategory.DRINKS, createdByUserId: null },
+        data: {
+          name: 'Cola',
+          category: FoodCategory.DRINKS,
+          createdByUserId: null,
+        },
       });
 
       await db.foodItem.create({
-        data: { userId: user.id, foodId: fruit.id, quantity: 3, unit: FoodUnit.ITEM },
+        data: {
+          userId: user.id,
+          foodId: fruit.id,
+          quantity: 3,
+          unit: FoodUnit.ITEM,
+        },
       });
       await db.foodItem.create({
-        data: { userId: user.id, foodId: meat.id, quantity: 1, unit: FoodUnit.KG },
+        data: {
+          userId: user.id,
+          foodId: meat.id,
+          quantity: 1,
+          unit: FoodUnit.KG,
+        },
       });
       await db.foodItem.create({
-        data: { userId: user.id, foodId: drink.id, quantity: 6, unit: FoodUnit.ITEM },
+        data: {
+          userId: user.id,
+          foodId: drink.id,
+          quantity: 6,
+          unit: FoodUnit.ITEM,
+        },
       });
 
       // Filter by single category
@@ -437,26 +547,44 @@ describe('Items Endpoints', () => {
       expect(dataFruit[0].food.category).toBe(FoodCategory.FRUIT);
 
       // Filter by multiple categories
-      const resMulti = await app.request('/api/items?categories=FRUIT&categories=MEAT', {
-        method: 'GET',
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const resMulti = await app.request(
+        '/api/items?categories=FRUIT&categories=MEAT',
+        {
+          method: 'GET',
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
       expect(resMulti.status).toBe(200);
       const dataMulti = await resMulti.json();
       expect(dataMulti).toHaveLength(2);
     });
 
     it('should filter items by expiresBefore and sort asc/desc', async () => {
-      const { user, token } = await createTestUser('filteruser', 'filter@example.com');
+      const { user, token } = await createTestUser(
+        'filteruser',
+        'filter@example.com',
+      );
 
       const food1 = await db.food.create({
-        data: { name: 'Item 1', category: FoodCategory.OTHER, createdByUserId: null },
+        data: {
+          name: 'Item 1',
+          category: FoodCategory.OTHER,
+          createdByUserId: null,
+        },
       });
       const food2 = await db.food.create({
-        data: { name: 'Item 2', category: FoodCategory.OTHER, createdByUserId: null },
+        data: {
+          name: 'Item 2',
+          category: FoodCategory.OTHER,
+          createdByUserId: null,
+        },
       });
       const food3 = await db.food.create({
-        data: { name: 'Item 3', category: FoodCategory.OTHER, createdByUserId: null },
+        data: {
+          name: 'Item 3',
+          category: FoodCategory.OTHER,
+          createdByUserId: null,
+        },
       });
 
       // item 1: expires 2026-06-01
@@ -507,18 +635,31 @@ describe('Items Endpoints', () => {
       expect(resDesc.status).toBe(200);
       const dataDesc = await resDesc.json();
       expect(dataDesc).toHaveLength(3);
-      expect(new Date(dataDesc[0].expiryDate).getTime()).toBeGreaterThan(new Date(dataDesc[2].expiryDate).getTime());
+      expect(new Date(dataDesc[0].expiryDate).getTime()).toBeGreaterThan(
+        new Date(dataDesc[2].expiryDate).getTime(),
+      );
     });
   });
 
   describe('PUT /api/items/:id', () => {
     it('should successfully update item quantity, unit, and expiryDate and verify database', async () => {
-      const { user, token } = await createTestUser('updateuser', 'update@example.com');
+      const { user, token } = await createTestUser(
+        'updateuser',
+        'update@example.com',
+      );
       const food1 = await db.food.create({
-        data: { name: 'Initial Food', category: FoodCategory.OTHER, createdByUserId: null },
+        data: {
+          name: 'Initial Food',
+          category: FoodCategory.OTHER,
+          createdByUserId: null,
+        },
       });
       const food2 = await db.food.create({
-        data: { name: 'Replacement Food', category: FoodCategory.OTHER, createdByUserId: null },
+        data: {
+          name: 'Replacement Food',
+          category: FoodCategory.OTHER,
+          createdByUserId: null,
+        },
       });
 
       const item = await db.foodItem.create({
@@ -562,9 +703,16 @@ describe('Items Endpoints', () => {
     });
 
     it('should return 404 when updating non-existent item', async () => {
-      const { token } = await createTestUser('updateuser2', 'update2@example.com');
+      const { token } = await createTestUser(
+        'updateuser2',
+        'update2@example.com',
+      );
       const food = await db.food.create({
-        data: { name: 'Some Food', category: FoodCategory.OTHER, createdByUserId: null },
+        data: {
+          name: 'Some Food',
+          category: FoodCategory.OTHER,
+          createdByUserId: null,
+        },
       });
       const nonExistentItemId = 'clh0000000000000000000000';
 
@@ -585,14 +733,29 @@ describe('Items Endpoints', () => {
     });
 
     it('should return 404 when updating another user item', async () => {
-      const { user: userA } = await createTestUser('userA', 'usera4@example.com');
-      const { token: tokenB } = await createTestUser('userB', 'userb4@example.com');
+      const { user: userA } = await createTestUser(
+        'userA',
+        'usera4@example.com',
+      );
+      const { token: tokenB } = await createTestUser(
+        'userB',
+        'userb4@example.com',
+      );
       const food = await db.food.create({
-        data: { name: 'Food', category: FoodCategory.OTHER, createdByUserId: null },
+        data: {
+          name: 'Food',
+          category: FoodCategory.OTHER,
+          createdByUserId: null,
+        },
       });
 
       const itemA = await db.foodItem.create({
-        data: { userId: userA.id, foodId: food.id, quantity: 1, unit: FoodUnit.ITEM },
+        data: {
+          userId: userA.id,
+          foodId: food.id,
+          quantity: 1,
+          unit: FoodUnit.ITEM,
+        },
       });
 
       const response = await app.request(`/api/items/${itemA.id}`, {
@@ -616,18 +779,37 @@ describe('Items Endpoints', () => {
     });
 
     it('should return 404 when updating item with non-existent foodId or food belonging to another user', async () => {
-      const { user: userA, token: tokenA } = await createTestUser('userA5', 'usera5@example.com');
-      const { user: userB } = await createTestUser('userB5', 'userb5@example.com');
+      const { user: userA, token: tokenA } = await createTestUser(
+        'userA5',
+        'usera5@example.com',
+      );
+      const { user: userB } = await createTestUser(
+        'userB5',
+        'userb5@example.com',
+      );
 
       const foodA = await db.food.create({
-        data: { name: 'Food A', category: FoodCategory.OTHER, createdByUserId: userA.id },
+        data: {
+          name: 'Food A',
+          category: FoodCategory.OTHER,
+          createdByUserId: userA.id,
+        },
       });
       const foodB = await db.food.create({
-        data: { name: 'Private Food B', category: FoodCategory.OTHER, createdByUserId: userB.id },
+        data: {
+          name: 'Private Food B',
+          category: FoodCategory.OTHER,
+          createdByUserId: userB.id,
+        },
       });
 
       const itemA = await db.foodItem.create({
-        data: { userId: userA.id, foodId: foodA.id, quantity: 1, unit: FoodUnit.ITEM },
+        data: {
+          userId: userA.id,
+          foodId: foodA.id,
+          quantity: 1,
+          unit: FoodUnit.ITEM,
+        },
       });
 
       // Update with foodId belonging to user B
@@ -666,13 +848,25 @@ describe('Items Endpoints', () => {
 
   describe('DELETE /api/items/:id', () => {
     it('should successfully delete own item and verify database removal', async () => {
-      const { user, token } = await createTestUser('deluser', 'del@example.com');
+      const { user, token } = await createTestUser(
+        'deluser',
+        'del@example.com',
+      );
       const food = await db.food.create({
-        data: { name: 'To Delete Item Food', category: FoodCategory.OTHER, createdByUserId: null },
+        data: {
+          name: 'To Delete Item Food',
+          category: FoodCategory.OTHER,
+          createdByUserId: null,
+        },
       });
 
       const item = await db.foodItem.create({
-        data: { userId: user.id, foodId: food.id, quantity: 1, unit: FoodUnit.ITEM },
+        data: {
+          userId: user.id,
+          foodId: food.id,
+          quantity: 1,
+          unit: FoodUnit.ITEM,
+        },
       });
 
       const response = await app.request(`/api/items/${item.id}`, {
@@ -702,14 +896,29 @@ describe('Items Endpoints', () => {
     });
 
     it('should return 404 when deleting item belonging to another user', async () => {
-      const { user: userA } = await createTestUser('userA6', 'usera6@example.com');
-      const { token: tokenB } = await createTestUser('userB6', 'userb6@example.com');
+      const { user: userA } = await createTestUser(
+        'userA6',
+        'usera6@example.com',
+      );
+      const { token: tokenB } = await createTestUser(
+        'userB6',
+        'userb6@example.com',
+      );
       const food = await db.food.create({
-        data: { name: 'Food Protected', category: FoodCategory.OTHER, createdByUserId: null },
+        data: {
+          name: 'Food Protected',
+          category: FoodCategory.OTHER,
+          createdByUserId: null,
+        },
       });
 
       const itemA = await db.foodItem.create({
-        data: { userId: userA.id, foodId: food.id, quantity: 1, unit: FoodUnit.ITEM },
+        data: {
+          userId: userA.id,
+          foodId: food.id,
+          quantity: 1,
+          unit: FoodUnit.ITEM,
+        },
       });
 
       const response = await app.request(`/api/items/${itemA.id}`, {

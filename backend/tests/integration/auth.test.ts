@@ -179,17 +179,20 @@ describe('Auth Endpoints', () => {
 
         expect(registerResponse.status).toBe(201);
 
-        const repeatedRegisterResponse = await app.request('/api/auth/register', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
+        const repeatedRegisterResponse = await app.request(
+          '/api/auth/register',
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              username: 'newtestuser3',
+              password: 'testpassword',
+              email: 'testuser3@example.com',
+            }),
           },
-          body: JSON.stringify({
-            username: 'newtestuser3',
-            password: 'testpassword',
-            email: 'testuser3@example.com',
-          }),
-        });
+        );
 
         expect(repeatedRegisterResponse.status).toBe(409);
         const data = await repeatedRegisterResponse.json();
@@ -211,17 +214,20 @@ describe('Auth Endpoints', () => {
 
         expect(registerResponse.status).toBe(201);
 
-        const repeatedRegisterResponse = await app.request('/api/auth/register', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
+        const repeatedRegisterResponse = await app.request(
+          '/api/auth/register',
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              username: 'testuser4',
+              password: 'testpassword',
+              email: 'newtestuser4@example.com',
+            }),
           },
-          body: JSON.stringify({
-            username: 'testuser4',
-            password: 'testpassword',
-            email: 'newtestuser4@example.com',
-          }),
-        });
+        );
 
         expect(repeatedRegisterResponse.status).toBe(409);
         const data = await repeatedRegisterResponse.json();
@@ -266,7 +272,10 @@ describe('Auth Endpoints', () => {
         // Ensure raw password is NOT stored in plain text
         expect(dbUser?.hashed_password).not.toBe(rawPassword);
         // Ensure password is correctly hashed
-        const isPasswordMatch = await bcrypt.compare(rawPassword, dbUser!.hashed_password);
+        const isPasswordMatch = await bcrypt.compare(
+          rawPassword,
+          dbUser!.hashed_password,
+        );
         expect(isPasswordMatch).toBe(true);
       });
 

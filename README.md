@@ -1,4 +1,4 @@
-# Stocked - Food Management System
+# Stocked – Food Management System
 > Developed by Eclipse7899 
 
 ## Brief
@@ -18,7 +18,7 @@ The system allows users to add, update and delete food items and find items that
 - Track expiry dates and quantity of food items
 - Deleting food items
 - Viewing a list of all food items
-- Separate users do not have access to eachothers food items
+- Separate users do not have access to each other's food items
 
 ### Food Types
 - Categorizing food types by categories, fruits, vegetables, dairy, etc.
@@ -26,7 +26,7 @@ The system allows users to add, update and delete food items and find items that
 - Viewing a list of all food types
 - Editing user-defined food types
 - Deleting user-defined food types
-- Separate users do not have access to eachothers custom food types
+- Separate users do not have access to each other's custom food types
 
 ## Tech Stack
 
@@ -192,8 +192,8 @@ The item endpoint supports these optional query parameters:
 | `expiryDate` | Return items expiring before the specified ISO date |
 
 ## Known Issues or Limitations
-- JWT token are basic, do not offer refresh tokens or revocation
-- Integration tests rely on docker, to create test containers
+- JWT tokens are basic, do not offer refresh tokens or revocation
+- Integration tests rely on docker to create test containers
 
 ## Future Features
 - Notifications for items nearing expiration

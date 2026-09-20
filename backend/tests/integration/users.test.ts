@@ -26,7 +26,11 @@ beforeEach(async () => {
   await db.user.deleteMany();
 });
 
-async function registerUser(username: string, email: string, password = 'password123') {
+async function registerUser(
+  username: string,
+  email: string,
+  password = 'password123',
+) {
   const response = await app.request('/api/auth/register', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -71,7 +75,11 @@ describe('Users Endpoints (/api/users)', () => {
 
       it('should return 401 when JWT token is signed with wrong secret', async () => {
         const invalidToken = await sign(
-          { sub: 'some-user-id', email: 'test@example.com', username: 'testuser' },
+          {
+            sub: 'some-user-id',
+            email: 'test@example.com',
+            username: 'testuser',
+          },
           'wrong-secret',
           'HS256',
         );
@@ -89,7 +97,11 @@ describe('Users Endpoints (/api/users)', () => {
       it('should return 404 when user in valid JWT does not exist in database', async () => {
         const nonExistentUserId = 'non-existent-user-id';
         const token = await sign(
-          { sub: nonExistentUserId, email: 'ghost@example.com', username: 'ghost' },
+          {
+            sub: nonExistentUserId,
+            email: 'ghost@example.com',
+            username: 'ghost',
+          },
           jwtSecret,
           'HS256',
         );
@@ -169,7 +181,10 @@ describe('Users Endpoints (/api/users)', () => {
       });
 
       it('should reflect current database state if user profile was updated', async () => {
-        const { token } = await registerUser('initialname', 'initial@example.com');
+        const { token } = await registerUser(
+          'initialname',
+          'initial@example.com',
+        );
 
         // Fetch initial profile
         const initialRes = await app.request('/api/users/me', {

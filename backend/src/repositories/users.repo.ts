@@ -2,7 +2,17 @@ import { type PrismaClient, type User } from '../generated/prisma/client';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
 import type { Result } from '../util';
 
-class UserRepo {
+export interface UserRepository {
+  findById(userId: string): Promise<User | null>;
+  createUser(
+    email: string,
+    hashed_password: string,
+    username: string,
+  ): Promise<Result<User, 'USERNAME_TAKEN' | 'EMAIL_TAKEN'>>;
+  findUserByEmail(email: string): Promise<User | null>;
+}
+
+class UserRepo implements UserRepository {
   constructor(private readonly prisma: PrismaClient) {}
 
   async findById(userId: string) {

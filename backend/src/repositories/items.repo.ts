@@ -7,7 +7,40 @@ import { FoodUnit } from '../generated/prisma/enums';
 import type { Result } from '../util';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
 
-export class ItemsRepo {
+type FoodItemWithFood = FoodItem & { food: Food };
+
+export interface ItemsRepository {
+  create(data: {
+    userId: string;
+    foodId: string;
+    quantity: number;
+    unit: FoodUnit;
+    expiryDate: Date | null;
+  }): Promise<Result<FoodItemWithFood, 'FOOD_NOT_FOUND'>>;
+  listByUser(userId: string, sort?: 'asc' | 'desc'): Promise<FoodItemWithFood[]>;
+  updateByUser(
+    id: string,
+    userId: string,
+    data: {
+      foodId: string;
+      quantity: number;
+      unit: FoodUnit;
+      expiryDate: Date | null;
+    },
+  ): Promise<Result<FoodItemWithFood, 'ITEM_NOT_FOUND' | 'FOOD_NOT_FOUND'>>;
+  deleteByUser(id: string, userId: string): Promise<boolean>;
+  filterByUser(
+    userId: string,
+    data: {
+      categories?: FoodCategory[];
+      expiresBefore?: Date | null;
+      name_contains?: string | null;
+      sort?: 'asc' | 'desc';
+    },
+  ): Promise<FoodItemWithFood[]>;
+}
+
+export class ItemsRepo implements ItemsRepository {
   constructor(private readonly prisma: PrismaClient) {}
 
   async create(

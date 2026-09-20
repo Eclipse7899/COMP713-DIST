@@ -1,10 +1,10 @@
 import { comparePasswords, hashPassword, type Result } from '../util';
-import UserRepo from '../repositories/users.repo';
+import type { UserRepository } from '../repositories/users.repo';
 import type { JwtFields } from '../variables';
 import { sign } from 'hono/jwt';
 
 export class AuthService {
-  constructor(private readonly jwtSecret: string, private readonly userRepo: UserRepo) {
+  constructor(private readonly jwtSecret: string, private readonly userRepo: UserRepository) {
   }
 
   normalizeEmail(email: string): string {

@@ -1,10 +1,10 @@
-import { FoodRepo } from '../repositories/food.repo';
+import type { FoodRepository } from '../repositories/food.repo';
 import type { FoodCategory } from '../generated/prisma/enums';
 import type { Result } from '../util';
 import type { FoodDto } from '../dtos';
 
 export class FoodService {
-  constructor(private readonly foodRepo: FoodRepo) {}
+  constructor(private readonly foodRepo: FoodRepository) {}
 
   async createFood(
     userId: string,
