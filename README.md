@@ -1,5 +1,5 @@
 # Stocked – Food Management System
-> Developed by Eclipse7899 
+> Developed by Eclipse7899 for AUT COMP713 - Individual Project
 
 ## Brief
 
