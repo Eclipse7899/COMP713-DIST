@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { User } from '../../src/generated/prisma/client';
-import type { UserRepository } from '../../src/repositories/users.repo';
-import { AuthService } from '../../src/services/auth.service';
-import { hashPassword } from '../../src/util';
+import type { User } from '../../../src/generated/prisma/client';
+import type { UserRepository } from '../../../src/repositories/users.repo';
+import { AuthService } from '../../../src/services/auth.service';
+import { hashPassword } from '../../../src/util';
 
 const PASSWORD = 'password';
 const WRONG_PASSWORD = 'wrong-password';

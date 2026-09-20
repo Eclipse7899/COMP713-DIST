@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Food, FoodItem } from '../../src/generated/prisma/client';
-import { FoodCategory, FoodUnit } from '../../src/generated/prisma/enums';
-import type { FoodRepository } from '../../src/repositories/food.repo';
-import type { ItemsRepository } from '../../src/repositories/items.repo';
-import { ItemsService } from '../../src/services/items.service';
+import type { Food, FoodItem } from '../../../src/generated/prisma/client';
+import { FoodCategory, FoodUnit } from '../../../src/generated/prisma/enums';
+import type { FoodRepository } from '../../../src/repositories/food.repo';
+import type { ItemsRepository } from '../../../src/repositories/items.repo';
+import { ItemsService } from '../../../src/services/items.service';
 
 const USER_ID = 'user-1';
 const OTHER_USER_ID = 'other-user';

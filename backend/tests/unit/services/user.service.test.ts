@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { User } from '../../src/generated/prisma/client';
-import type { UserRepository } from '../../src/repositories/users.repo';
-import { UserService } from '../../src/services/user.service';
+import type { User } from '../../../src/generated/prisma/client';
+import type { UserRepository } from '../../../src/repositories/users.repo';
+import { UserService } from '../../../src/services/user.service';
 
 const USER_ID = 'user-1';
 const USER_EMAIL = 'user@example.com';
