@@ -65,7 +65,6 @@ Client → HTTP → Route → Handler → Service → Repository → Database
 
 ### Prerequisites
 - Bun
-- Git
 - Docker
 
 ### Steps
@@ -75,22 +74,27 @@ Client → HTTP → Route → Handler → Service → Repository → Database
    git clone https://github.com/Eclipse7899/COMP713-DIST.git
    cd COMP713-DIST
    ```
-2. Install the required dependencies:
-   ```bash
-   bun install
-   ```
    
-3. Start the application
+2. Start the application
    ```bash
    docker-compose up -d
    ```
 
+3. Open the application in your browser at `http://localhost`
+
 ## Tests
+
+### Pre-requisites
+- Bun
+- Docker
 
 ### Backend Tests
 
 ```
 cd backend
+cp .env.example .env
+bun install
+bun prisma:generate
 bun run test
 ```
 
