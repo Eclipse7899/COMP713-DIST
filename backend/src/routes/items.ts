@@ -9,21 +9,21 @@ const createItemSchema = z.object({
   foodId: z.cuid2(),
   quantity: z.number().positive(),
   unit: z.enum(FoodUnit),
-  expiryDate: z.iso.date().optional().nullable().transform((val => val ? new Date(val) : null)),
+  expiryDate: z.iso.datetime().optional().nullable().transform((val => val ? new Date(val) : null)),
 });
 
 const updateItemSchema = z.object({
   foodId: z.cuid2(),
   quantity: z.number().positive(),
   unit: z.enum(FoodUnit),
-  expiryDate: z.iso.date().optional().nullable().transform((val => val ? new Date(val) : null)),
+  expiryDate: z.iso.datetime().optional().nullable().transform((val => val ? new Date(val) : null)),
 });
 
 const filterSchema = z.object({
   contains: z.string().optional(),
   categories: z.preprocess((val) => (Array.isArray(val) ? val : [val]), z.array(z.enum(FoodCategory)).optional()),
   sort: z.enum(['asc', 'desc']).optional(),
-  expiryDate: z.iso.date().optional().nullable().transform((val => val ? new Date(val) : null)),
+  expiryDate: z.iso.datetime().optional().nullable().transform((val => val ? new Date(val) : null)),
 }).optional();
 
 const idParamSchema = z.object({
