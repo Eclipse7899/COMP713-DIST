@@ -263,7 +263,7 @@ describe('Items Endpoints', () => {
           foodId: globalFood.id,
           quantity: 2.5,
           unit: FoodUnit.L,
-          expiryDate: '2026-12-31',
+          expiryDate: new Date('2026-12-31').toISOString(),
         }),
       });
 
@@ -619,7 +619,7 @@ describe('Items Endpoints', () => {
       });
 
       // Filter items expiring before 2026-08-01
-      const resExpiry = await app.request('/api/items?expiryDate=2026-08-01', {
+      const resExpiry = await app.request('/api/items?expiryDate=' + new Date('2026-08-01').toISOString(), {
         method: 'GET',
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -682,7 +682,7 @@ describe('Items Endpoints', () => {
           foodId: food2.id,
           quantity: 4.5,
           unit: FoodUnit.KG,
-          expiryDate: '2026-11-20',
+          expiryDate: new Date('2026-11-20').toISOString(),
         }),
       });
 

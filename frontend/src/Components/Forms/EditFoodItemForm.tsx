@@ -117,7 +117,7 @@ export default function EditFoodItemForm(
             <input
               id="expiryDate"
               className="w-full text-input"
-              type="datetime-local"
+              type="date"
               value={form.expiryDate ?? ''}
               onChange={(e) => setForm({ ...form, expiryDate: e.target.value })}
             />
