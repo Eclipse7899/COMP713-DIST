@@ -12,6 +12,8 @@ import { UserService } from './services/user.service';
 export function createApp(jwt_secret: string, database: PrismaClient) {
   const app = new Hono();
 
+  app.get('/health', (context) => context.json({ status: 'ok' }));
+
   const userRepo = new UserRepo(database);
   const foodRepo = new FoodRepo(database);
   const itemsRepo = new ItemsRepo(database);

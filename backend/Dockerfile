@@ -1,4 +1,5 @@
-FROM oven/bun:latest AS base
+FROM oven/bun:alpine as base
+
 WORKDIR /app
 
 FROM base AS build
@@ -17,6 +18,8 @@ RUN bun run prisma:generate
 RUN bun build ./src/index.ts --outdir ./dist --target bun
 
 FROM base AS release
+
+RUN apk add --no-cache curl
 
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/package.json ./
