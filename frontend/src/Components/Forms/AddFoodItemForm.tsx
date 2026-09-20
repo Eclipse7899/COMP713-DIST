@@ -1,15 +1,16 @@
 import * as React from 'react';
 import { FoodUnit } from '@stocked/backend/src/generated/prisma/enums.ts';
 import type { AddFoodItem, FoodType } from '../../models.ts';
-import { type DetailedError, parseResponse } from 'hono/client';
+import { parseResponse } from 'hono/client';
 import { getClient } from '../../client.ts';
 import { titleCase } from '../../util.ts';
 import ErrorMessage from '../ErrorMessage.tsx';
+import { getApiErrorMessage } from '../../apiError.ts';
 
 export default function AddFoodItemForm({
-  onCancel,
-  onDone,
-}: {
+                                          onCancel,
+                                          onDone,
+                                        }: {
   onCancel: () => void;
   onDone: () => void;
 }) {
@@ -27,13 +28,12 @@ export default function AddFoodItemForm({
 
   const loadFoodTypes = async () => {
     const res = await parseResponse(client.api.food.$get()).catch(
-      (e: DetailedError) => {
-        console.error(e);
+      (error: unknown) => {
+        setError(getApiErrorMessage(error, 'load food types'));
       },
     );
 
     if (!res) {
-      setError('Failed to load food types.');
       return;
     }
 
@@ -56,12 +56,11 @@ export default function AddFoodItemForm({
             : null,
         },
       }),
-    ).catch((e: DetailedError) => {
-      console.error(e);
+    ).catch((error: unknown) => {
+      setError(getApiErrorMessage(error, 'add item'));
     });
 
     if (!res) {
-      setError('Failed to add item. Please try again.');
       return;
     }
 
@@ -85,11 +84,12 @@ export default function AddFoodItemForm({
       <h2 className="text-xl font-semibold text-(--text-h)">
         Add stocked item
       </h2>
-      <ErrorMessage message={error} />
+      <ErrorMessage message={error}/>
       <form onSubmit={submit} className="flex flex-col gap-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-(--text-h)" htmlFor="foodId">
+            <label className="text-sm font-medium text-(--text-h)"
+                   htmlFor="foodId">
               Food Type
             </label>
             <select
@@ -109,7 +109,8 @@ export default function AddFoodItemForm({
           </div>
 
           <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-(--text-h)" htmlFor="quantity">
+            <label className="text-sm font-medium text-(--text-h)"
+                   htmlFor="quantity">
               Quantity
             </label>
             <input
@@ -131,7 +132,8 @@ export default function AddFoodItemForm({
           </div>
 
           <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-(--text-h)" htmlFor="unit">
+            <label className="text-sm font-medium text-(--text-h)"
+                   htmlFor="unit">
               Unit
             </label>
             <select
@@ -155,7 +157,8 @@ export default function AddFoodItemForm({
           </div>
 
           <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-(--text-h)" htmlFor="expiryDate">
+            <label className="text-sm font-medium text-(--text-h)"
+                   htmlFor="expiryDate">
               Expiry Date
             </label>
             <input

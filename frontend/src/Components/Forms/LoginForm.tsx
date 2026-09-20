@@ -4,7 +4,8 @@ import { Link, useNavigate } from 'react-router';
 import { getClient } from '../../client.ts';
 import { saveJwt } from '../../util.ts';
 import ErrorMessage from '../ErrorMessage.tsx';
-import { type DetailedError, parseResponse } from 'hono/client';
+import { parseResponse } from 'hono/client';
+import { getApiErrorMessage } from '../../apiError.ts';
 
 export default function LoginForm() {
   const [email, setEmail] = useState('');
@@ -27,23 +28,16 @@ export default function LoginForm() {
             password,
           },
         }),
-      ).catch((err: DetailedError) => {
-        switch (err.statusCode) {
-          case 401:
-            throw new Error('Invalid email or password.');
-          case 400:
-            throw new Error('Invalid request. Please check your inputs.');
-          default:
-            throw new Error('Failed to log in. Please try again.');
-        }
+      ).catch((err: unknown) => {
+        throw new Error(getApiErrorMessage(err, 'login'));
       });
 
       if (result?.accessToken) {
         saveJwt(result.accessToken);
         navigate('/dashboard');
       }
-    } catch (err: any) {
-      setError(err.message || 'An error occurred');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : getApiErrorMessage(err, 'login'));
     } finally {
       setLoading(false);
     }
@@ -58,11 +52,12 @@ export default function LoginForm() {
         </p>
       </div>
 
-      <ErrorMessage message={error} />
+      <ErrorMessage message={error}/>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="text-left space-y-1.5">
-          <label className="text-sm font-medium text-(--text-h)" htmlFor="email">
+          <label className="text-sm font-medium text-(--text-h)"
+                 htmlFor="email">
             Email address
           </label>
           <input
@@ -78,7 +73,8 @@ export default function LoginForm() {
 
         <div className="text-left space-y-1.5">
           <div className="flex items-center justify-between">
-            <label className="text-sm font-medium text-(--text-h)" htmlFor="password">
+            <label className="text-sm font-medium text-(--text-h)"
+                   htmlFor="password">
               Password
             </label>
           </div>
@@ -105,7 +101,8 @@ export default function LoginForm() {
       <div className="text-center text-sm">
         <p className="text-(--text)">
           Don't have an account?{' '}
-          <Link to="/signup" className="font-medium text-(--primary) hover:underline">
+          <Link to="/signup"
+                className="font-medium text-(--primary) hover:underline">
             Sign up
           </Link>
         </p>

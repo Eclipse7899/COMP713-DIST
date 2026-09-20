@@ -5,7 +5,8 @@ import { getClient } from '../../client.ts';
 import { saveJwt } from '../../util.ts';
 import { APP_NAME } from '../../constants.ts';
 import ErrorMessage from '../ErrorMessage.tsx';
-import { type DetailedError, parseResponse } from 'hono/client';
+import { parseResponse } from 'hono/client';
+import { getApiErrorMessage } from '../../apiError.ts';
 
 export default function SignupForm() {
   const [username, setUsername] = useState('');
@@ -37,23 +38,16 @@ export default function SignupForm() {
             password,
           },
         }),
-      ).catch((err: DetailedError) => {
-        switch (err.statusCode) {
-          case 400:
-            throw new Error('Please check your inputs and try again.');
-          case 409:
-            throw new Error('Email or username already exists');
-          default:
-            throw new Error('Failed to create account. Please try again.');
-        }
+      ).catch((err: unknown) => {
+        throw new Error(getApiErrorMessage(err, 'signup'));
       });
 
       if (result?.accessToken) {
         saveJwt(result.accessToken);
         navigate('/dashboard');
       }
-    } catch (err: any) {
-      setError(err.message || 'Something went wrong');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : getApiErrorMessage(err, 'signup'));
     } finally {
       setLoading(false);
     }
@@ -62,17 +56,19 @@ export default function SignupForm() {
   return (
     <div className="w-full max-w-md card flex flex-col gap-6 p-6">
       <div className="space-y-2 text-center">
-        <h1 className="text-2xl font-bold text-(--text-h)">Create an account</h1>
+        <h1 className="text-2xl font-bold text-(--text-h)">Create an
+          account</h1>
         <p className="text-(--text) text-sm">
           Sign up to get started with {APP_NAME}
         </p>
       </div>
 
-      <ErrorMessage message={error} />
+      <ErrorMessage message={error}/>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="text-left space-y-1.5">
-          <label className="text-sm font-medium text-(--text-h)" htmlFor="username">
+          <label className="text-sm font-medium text-(--text-h)"
+                 htmlFor="username">
             Username
           </label>
           <input
@@ -89,7 +85,8 @@ export default function SignupForm() {
         </div>
 
         <div className="text-left space-y-1.5">
-          <label className="text-sm font-medium text-(--text-h)" htmlFor="email">
+          <label className="text-sm font-medium text-(--text-h)"
+                 htmlFor="email">
             Email address
           </label>
           <input
@@ -104,7 +101,8 @@ export default function SignupForm() {
         </div>
 
         <div className="text-left space-y-1.5">
-          <label className="text-sm font-medium text-(--text-h)" htmlFor="password">
+          <label className="text-sm font-medium text-(--text-h)"
+                 htmlFor="password">
             Password
           </label>
           <input
@@ -119,7 +117,8 @@ export default function SignupForm() {
         </div>
 
         <div className="text-left space-y-1.5">
-          <label className="text-sm font-medium text-(--text-h)" htmlFor="confirmPassword">
+          <label className="text-sm font-medium text-(--text-h)"
+                 htmlFor="confirmPassword">
             Confirm Password
           </label>
           <input
@@ -145,7 +144,8 @@ export default function SignupForm() {
       <div className="text-center text-sm">
         <p className="text-(--text)">
           Already have an account?{' '}
-          <Link to="/login" className="font-medium text-(--primary) hover:underline">
+          <Link to="/login"
+                className="font-medium text-(--primary) hover:underline">
             Sign in
           </Link>
         </p>

@@ -1,11 +1,12 @@
 import * as React from 'react';
 import { useEffect } from 'react';
-import { type DetailedError, parseResponse } from 'hono/client';
+import { parseResponse } from 'hono/client';
 import type { EditFoodType, FoodType } from '../models';
 import { getClient } from '../client';
 import { AddFoodTypeForm } from './Forms/AddFoodTypeForm.tsx';
 import FoodTypeBox from './FoodTypeBox';
 import ErrorMessage from './ErrorMessage';
+import { getApiErrorMessage } from '../apiError';
 
 export default function FoodTypes() {
   const [types, setTypes] = React.useState<FoodType[]>([]);
@@ -18,12 +19,11 @@ export default function FoodTypes() {
     setLoading(true);
     setError('');
     const res = await parseResponse(client.api.food.$get()).catch(
-      (e: DetailedError) => {
-        console.error(e);
+      (error: unknown) => {
+        setError(getApiErrorMessage(error, 'load food types'));
       },
     );
     if (!res) {
-      setError('Failed to load food types.');
       setLoading(false);
       return;
     }
@@ -35,11 +35,10 @@ export default function FoodTypes() {
     setError('');
     const res = await parseResponse(
       client.api.food[':id'].$delete({ param: { id } }),
-    ).catch((e: DetailedError) => {
-      console.error(e);
+    ).catch((error: unknown) => {
+      setError(getApiErrorMessage(error, 'delete food type'));
     });
     if (!res) {
-      setError('Failed to delete food type.');
       return;
     }
     setTypes((current) => current.filter((type) => type.id !== id));
@@ -49,11 +48,10 @@ export default function FoodTypes() {
     setError('');
     const res = await parseResponse(
       client.api.food[':id'].$put({ param: { id }, json: form }),
-    ).catch((e: DetailedError) => {
-      console.error(e);
+    ).catch((error: unknown) => {
+      setError(getApiErrorMessage(error, 'update food type'));
     });
     if (!res) {
-      setError('Failed to update food type.');
       return;
     }
     setTypes((current) =>
@@ -90,18 +88,22 @@ export default function FoodTypes() {
         </button>
       </div>
 
-      <ErrorMessage message={error} />
+      <ErrorMessage message={error}/>
 
       <div className="card">
         {loading ? (
-          <div className="p-8 text-center text-(--secondary)">Loading food types...</div>
+          <div className="p-8 text-center text-(--secondary)">Loading food
+            types...</div>
         ) : types.length === 0 ? (
-          <div className="p-8 text-center text-(--secondary)">No food types yet. Add one above!</div>
+          <div className="p-8 text-center text-(--secondary)">No food types yet.
+            Add one above!</div>
         ) : (
           <ul className="divide-y divide-(--border)">
             {types.map((type) => (
-              <li key={type.id} className="p-4 hover:bg-(--secondary)/5 transition-colors">
-                <FoodTypeBox foodType={type} onDelete={deleteType} onEdit={editType} />
+              <li key={type.id}
+                  className="p-4 hover:bg-(--secondary)/5 transition-colors">
+                <FoodTypeBox foodType={type} onDelete={deleteType}
+                             onEdit={editType}/>
               </li>
             ))}
           </ul>

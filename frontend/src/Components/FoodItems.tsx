@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { useCallback, useMemo, useState } from 'react';
-import { type DetailedError, parseResponse } from 'hono/client';
+import { parseResponse } from 'hono/client';
 import { FoodCategory } from '@stocked/backend/src/generated/prisma/enums';
 import { getClient } from '../client';
 import { titleCase } from '../util';
@@ -8,6 +8,7 @@ import FoodItemBox from './FoodItemBox';
 import AddFoodItemForm from './Forms/AddFoodItemForm.tsx';
 import ErrorMessage from './ErrorMessage';
 import type { EditFoodItem, FoodType, FoodItem } from '../models.ts';
+import { getApiErrorMessage } from '../apiError';
 
 export default function FoodItems() {
   const [items, setItems] = useState<FoodItem[]>([]);
@@ -28,13 +29,12 @@ export default function FoodItems() {
 
   const loadFoodTypes = useCallback(async () => {
     const res = await parseResponse(client.api.food.$get()).catch(
-      (e: DetailedError) => {
-        console.error(e);
+      (error: unknown) => {
+        setError(getApiErrorMessage(error, 'load food types'));
       },
     );
 
     if (!res) {
-      setError('Failed to load food types.');
       return;
     }
 
@@ -79,12 +79,11 @@ export default function FoodItems() {
         client.api.items.$get({
           query,
         }),
-      ).catch((e: DetailedError) => {
-        console.error(e);
+      ).catch((error: unknown) => {
+        setError(getApiErrorMessage(error, 'load stocked items'));
       });
 
       if (!res) {
-        setError('Failed to load stocked items.');
         setLoading(false);
         return;
       }
@@ -121,7 +120,7 @@ export default function FoodItems() {
       sortValue: sort,
       expiresBeforeValue: expiresBefore,
     });
-  }
+  };
 
   React.useEffect(() => {
     loadItemsOnMount();
@@ -131,11 +130,10 @@ export default function FoodItems() {
     setError('');
     const res = await parseResponse(
       client.api.items[':id'].$delete({ param: { id } }),
-    ).catch((e: DetailedError) => {
-      console.error(e);
+    ).catch((error: unknown) => {
+      setError(getApiErrorMessage(error, 'delete item'));
     });
     if (!res) {
-      setError('Failed to delete item.');
       return;
     }
     setItems((current) => current.filter((item) => item.id !== id));
@@ -157,7 +155,7 @@ export default function FoodItems() {
     const res = await parseResponse(
       client.api.items[':id'].$put({
         param: {
-          id
+          id,
         },
         json: {
           foodId: form.foodId,
@@ -168,12 +166,11 @@ export default function FoodItems() {
             : null,
         },
       }),
-    ).catch((e: DetailedError) => {
-      console.error(e);
+    ).catch((error: unknown) => {
+      setError(getApiErrorMessage(error, 'update item'));
     });
 
     if (!res) {
-      setError('Failed to edit item.');
       return;
     }
     setItems((current) => current.map((item) => (item.id === id ? res : item)));
@@ -276,11 +273,12 @@ export default function FoodItems() {
         </div>
       </div>
 
-      <ErrorMessage message={error} />
+      <ErrorMessage message={error}/>
 
       <div className="card">
         {loading ? (
-          <div className="p-8 text-center text-(--secondary)">Loading stocked items...</div>
+          <div className="p-8 text-center text-(--secondary)">Loading stocked
+            items...</div>
         ) : items.length === 0 ? (
           <div className="p-8 text-center text-(--secondary)">
             {hasActiveFilters ? (
@@ -294,8 +292,10 @@ export default function FoodItems() {
         ) : (
           <ul className="divide-y divide-(--border)">
             {items.map((item) => (
-              <li key={item.id} className="p-4 hover:bg-(--secondary)/5 transition-colors">
-                <FoodItemBox item={item} foodTypes={foodTypes} onDelete={deleteItem} onEdit={editItem} />
+              <li key={item.id}
+                  className="p-4 hover:bg-(--secondary)/5 transition-colors">
+                <FoodItemBox item={item} foodTypes={foodTypes}
+                             onDelete={deleteItem} onEdit={editItem}/>
               </li>
             ))}
           </ul>

@@ -1,14 +1,15 @@
 import * as React from 'react';
 import { FoodCategory } from '@stocked/backend/src/generated/prisma/enums.ts';
-import { type DetailedError, parseResponse } from 'hono/client';
+import { parseResponse } from 'hono/client';
 import { getClient } from '../../client.ts';
 import { titleCase } from '../../util.ts';
 import ErrorMessage from '../ErrorMessage.tsx';
+import { getApiErrorMessage } from '../../apiError.ts';
 
 export function AddFoodTypeForm({
-  onCancel,
-  onDone,
-}: {
+                                  onCancel,
+                                  onDone,
+                                }: {
   onCancel: () => void;
   onDone: () => void;
 }) {
@@ -29,12 +30,11 @@ export function AddFoodTypeForm({
       client.api.food.$post({
         json: newFoodType,
       }),
-    ).catch((e: DetailedError) => {
-      console.error(e);
+    ).catch((error: unknown) => {
+      setError(getApiErrorMessage(error, 'add food type'));
     });
 
     if (!res) {
-      setError('Failed to add food type. Please try again.');
       setAddingType(false);
       return;
     }
@@ -51,12 +51,13 @@ export function AddFoodTypeForm({
     <div className="card flex flex-col gap-6 p-4">
       <h2 className="text-xl font-semibold text-(--text-h)">Add food type</h2>
 
-      <ErrorMessage message={error} />
+      <ErrorMessage message={error}/>
 
       <form onSubmit={addFoodType} className="flex flex-col gap-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-(--text-h)" htmlFor="foodTypeName">
+            <label className="text-sm font-medium text-(--text-h)"
+                   htmlFor="foodTypeName">
               Food Name
             </label>
             <input
@@ -75,7 +76,8 @@ export function AddFoodTypeForm({
           </div>
 
           <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-(--text-h)" htmlFor="foodCategory">
+            <label className="text-sm font-medium text-(--text-h)"
+                   htmlFor="foodCategory">
               Category
             </label>
             <select
