@@ -1,0 +1,1767 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Stocked API",
+    "description": "REST API for managing a personal food inventory: authentication, foods, and food items.",
+    "version": "1.0.0"
+  },
+  "tags": [
+    {
+      "name": "Health",
+      "description": "Service health checks"
+    },
+    {
+      "name": "Auth",
+      "description": "Registration and login"
+    },
+    {
+      "name": "Users",
+      "description": "Authenticated user profile"
+    },
+    {
+      "name": "Food",
+      "description": "Food catalog management"
+    },
+    {
+      "name": "Items",
+      "description": "Food inventory management"
+    }
+  ],
+  "servers": [
+    {
+      "url": "http://localhost:3000",
+      "description": "Local development server"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "operationId": "getHealth",
+        "tags": [
+          "Health"
+        ],
+        "summary": "Health check",
+        "description": "Returns a static status payload. Does not touch the database or require authentication.",
+        "responses": {
+          "200": {
+            "description": "Service is running",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "const": "ok"
+                    }
+                  },
+                  "required": [
+                    "status"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/users/me": {
+      "get": {
+        "operationId": "getApiUsersMe",
+        "tags": [
+          "Users"
+        ],
+        "summary": "Get the authenticated user",
+        "description": "Returns the profile of the user identified by the JWT supplied in the Authorization header.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The authenticated user profile",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "User CUID2 identifier"
+                    },
+                    "email": {
+                      "type": "string",
+                      "description": "User email address"
+                    },
+                    "username": {
+                      "type": "string",
+                      "description": "Unique username"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "email",
+                    "username"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, malformed, or invalid access token",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string",
+                  "example": "Unauthorized"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The user referenced by the token no longer exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "description": "Human readable message"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/food": {
+      "get": {
+        "operationId": "getApiFood",
+        "tags": [
+          "Food"
+        ],
+        "summary": "List foods available to the user",
+        "description": "Returns globally available foods plus the foods created by the authenticated user.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Foods visible to the authenticated user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "description": "Food CUID2 identifier"
+                      },
+                      "name": {
+                        "type": "string",
+                        "description": "Display name of the food"
+                      },
+                      "category": {
+                        "type": "string",
+                        "enum": [
+                          "FRUIT",
+                          "VEGETABLE",
+                          "MEAT",
+                          "DAIRY",
+                          "GRAINS",
+                          "DRINKS",
+                          "SNACKS",
+                          "SAUCES",
+                          "FROZEN",
+                          "OTHER"
+                        ],
+                        "description": "Category the food belongs to"
+                      },
+                      "createdByUserId": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ],
+                        "description": "Owner user id, or null for a globally available food"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "name",
+                      "category",
+                      "createdByUserId"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, malformed, or invalid access token",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string",
+                  "example": "Unauthorized"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "postApiFood",
+        "tags": [
+          "Food"
+        ],
+        "summary": "Create a food",
+        "description": "Creates a food owned by the authenticated user.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "category": {
+                    "type": "string",
+                    "enum": [
+                      "FRUIT",
+                      "VEGETABLE",
+                      "MEAT",
+                      "DAIRY",
+                      "GRAINS",
+                      "DRINKS",
+                      "SNACKS",
+                      "SAUCES",
+                      "FROZEN",
+                      "OTHER"
+                    ]
+                  }
+                },
+                "required": [
+                  "name",
+                  "category"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Food created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "Food CUID2 identifier"
+                    },
+                    "name": {
+                      "type": "string",
+                      "description": "Display name of the food"
+                    },
+                    "category": {
+                      "type": "string",
+                      "enum": [
+                        "FRUIT",
+                        "VEGETABLE",
+                        "MEAT",
+                        "DAIRY",
+                        "GRAINS",
+                        "DRINKS",
+                        "SNACKS",
+                        "SAUCES",
+                        "FROZEN",
+                        "OTHER"
+                      ],
+                      "description": "Category the food belongs to"
+                    },
+                    "createdByUserId": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Owner user id, or null for a globally available food"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "category",
+                    "createdByUserId"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "description": "Zod validation issues"
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, malformed, or invalid access token",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string",
+                  "example": "Unauthorized"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/food/{id}": {
+      "put": {
+        "operationId": "putApiFoodById",
+        "tags": [
+          "Food"
+        ],
+        "summary": "Update a food",
+        "description": "Updates the name and/or category of a food owned by the authenticated user.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Resource CUID2 identifier",
+            "schema": {
+              "type": "string",
+              "example": "clh0000000000000000000000"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "category": {
+                    "type": "string",
+                    "enum": [
+                      "FRUIT",
+                      "VEGETABLE",
+                      "MEAT",
+                      "DAIRY",
+                      "GRAINS",
+                      "DRINKS",
+                      "SNACKS",
+                      "SAUCES",
+                      "FROZEN",
+                      "OTHER"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Food updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "Food CUID2 identifier"
+                    },
+                    "name": {
+                      "type": "string",
+                      "description": "Display name of the food"
+                    },
+                    "category": {
+                      "type": "string",
+                      "enum": [
+                        "FRUIT",
+                        "VEGETABLE",
+                        "MEAT",
+                        "DAIRY",
+                        "GRAINS",
+                        "DRINKS",
+                        "SNACKS",
+                        "SAUCES",
+                        "FROZEN",
+                        "OTHER"
+                      ],
+                      "description": "Category the food belongs to"
+                    },
+                    "createdByUserId": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Owner user id, or null for a globally available food"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "category",
+                    "createdByUserId"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "description": "Zod validation issues"
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, malformed, or invalid access token",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string",
+                  "example": "Unauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The food does not belong to the authenticated user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "description": "Human readable error code or message"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Food not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "description": "Human readable error code or message"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteApiFoodById",
+        "tags": [
+          "Food"
+        ],
+        "summary": "Delete a food",
+        "description": "Deletes a food owned by the authenticated user.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Resource CUID2 identifier",
+            "schema": {
+              "type": "string",
+              "example": "clh0000000000000000000000"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Food deleted"
+          },
+          "400": {
+            "description": "Request validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "description": "Zod validation issues"
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, malformed, or invalid access token",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string",
+                  "example": "Unauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The food does not belong to the authenticated user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "description": "Human readable error code or message"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Food not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "description": "Human readable error code or message"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/items": {
+      "get": {
+        "operationId": "getApiItems",
+        "tags": [
+          "Items"
+        ],
+        "summary": "List the authenticated user food items",
+        "description": "Returns the food items owned by the authenticated user, optionally filtered by name, category, and expiry date, and sorted by expiry date.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "contains",
+            "in": "query",
+            "required": false,
+            "description": "Case-insensitive substring match on the food name",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "categories",
+            "in": "query",
+            "required": false,
+            "description": "Only return items whose food is in one of these categories",
+            "style": "form",
+            "explode": true,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "FRUIT",
+                  "VEGETABLE",
+                  "MEAT",
+                  "DAIRY",
+                  "GRAINS",
+                  "DRINKS",
+                  "SNACKS",
+                  "SAUCES",
+                  "FROZEN",
+                  "OTHER"
+                ]
+              }
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "Sort results by expiry date",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ]
+            }
+          },
+          {
+            "name": "expiryDate",
+            "in": "query",
+            "required": false,
+            "description": "Only return items whose expiry date is on or before this ISO 8601 timestamp",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Food items owned by the authenticated user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "description": "Food item CUID2 identifier"
+                      },
+                      "foodId": {
+                        "type": "string",
+                        "description": "Referenced food CUID2 identifier"
+                      },
+                      "quantity": {
+                        "type": "number",
+                        "description": "Quantity currently on hand"
+                      },
+                      "unit": {
+                        "type": "string",
+                        "enum": [
+                          "ITEM",
+                          "KG",
+                          "G",
+                          "L",
+                          "ML",
+                          "PACK"
+                        ],
+                        "description": "Unit the quantity is expressed in"
+                      },
+                      "expiryDate": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ],
+                        "description": "Expiry timestamp (ISO 8601) or null when it does not expire"
+                      },
+                      "addedAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+                        "description": "Timestamp the item was added (ISO 8601)"
+                      },
+                      "food": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "description": "Food CUID2 identifier"
+                          },
+                          "name": {
+                            "type": "string",
+                            "description": "Display name of the food"
+                          },
+                          "category": {
+                            "type": "string",
+                            "enum": [
+                              "FRUIT",
+                              "VEGETABLE",
+                              "MEAT",
+                              "DAIRY",
+                              "GRAINS",
+                              "DRINKS",
+                              "SNACKS",
+                              "SAUCES",
+                              "FROZEN",
+                              "OTHER"
+                            ],
+                            "description": "Category the food belongs to"
+                          },
+                          "createdByUserId": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Owner user id, or null for a globally available food"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "category",
+                          "createdByUserId"
+                        ],
+                        "description": "Food this item refers to"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "foodId",
+                      "quantity",
+                      "unit",
+                      "expiryDate",
+                      "addedAt",
+                      "food"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "description": "Zod validation issues"
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, malformed, or invalid access token",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string",
+                  "example": "Unauthorized"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "postApiItems",
+        "tags": [
+          "Items"
+        ],
+        "summary": "Create a food item",
+        "description": "Adds a food item to the authenticated user's inventory. The referenced food must be global or owned by the user.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "foodId": {
+                    "type": "string",
+                    "format": "cuid2",
+                    "pattern": "^[0-9a-z]+$"
+                  },
+                  "quantity": {
+                    "type": "number",
+                    "exclusiveMinimum": 0
+                  },
+                  "unit": {
+                    "type": "string",
+                    "enum": [
+                      "ITEM",
+                      "KG",
+                      "G",
+                      "L",
+                      "ML",
+                      "PACK"
+                    ]
+                  },
+                  "expiryDate": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "date-time",
+                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "foodId",
+                  "quantity",
+                  "unit"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Food item created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "const": true,
+                      "description": "Always true when the item was created"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "description": "Food item CUID2 identifier"
+                        },
+                        "foodId": {
+                          "type": "string",
+                          "description": "Referenced food CUID2 identifier"
+                        },
+                        "quantity": {
+                          "type": "number",
+                          "description": "Quantity currently on hand"
+                        },
+                        "unit": {
+                          "type": "string",
+                          "enum": [
+                            "ITEM",
+                            "KG",
+                            "G",
+                            "L",
+                            "ML",
+                            "PACK"
+                          ],
+                          "description": "Unit the quantity is expressed in"
+                        },
+                        "expiryDate": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "format": "date-time",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "Expiry timestamp (ISO 8601) or null when it does not expire"
+                        },
+                        "addedAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+                          "description": "Timestamp the item was added (ISO 8601)"
+                        },
+                        "food": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "description": "Food CUID2 identifier"
+                            },
+                            "name": {
+                              "type": "string",
+                              "description": "Display name of the food"
+                            },
+                            "category": {
+                              "type": "string",
+                              "enum": [
+                                "FRUIT",
+                                "VEGETABLE",
+                                "MEAT",
+                                "DAIRY",
+                                "GRAINS",
+                                "DRINKS",
+                                "SNACKS",
+                                "SAUCES",
+                                "FROZEN",
+                                "OTHER"
+                              ],
+                              "description": "Category the food belongs to"
+                            },
+                            "createdByUserId": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ],
+                              "description": "Owner user id, or null for a globally available food"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name",
+                            "category",
+                            "createdByUserId"
+                          ],
+                          "description": "Food this item refers to"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "foodId",
+                        "quantity",
+                        "unit",
+                        "expiryDate",
+                        "addedAt",
+                        "food"
+                      ],
+                      "description": "The newly created food item"
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "description": "Zod validation issues"
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, malformed, or invalid access token",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string",
+                  "example": "Unauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The referenced food belongs to another user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "description": "Human readable error code or message"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The referenced food does not exist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "description": "Human readable error code or message"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/items/{id}": {
+      "put": {
+        "operationId": "putApiItemsById",
+        "tags": [
+          "Items"
+        ],
+        "summary": "Update a food item",
+        "description": "Updates a food item owned by the authenticated user. The referenced food must be global or owned by the user.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Resource CUID2 identifier",
+            "schema": {
+              "type": "string",
+              "example": "clh0000000000000000000000"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "foodId": {
+                    "type": "string",
+                    "format": "cuid2",
+                    "pattern": "^[0-9a-z]+$"
+                  },
+                  "quantity": {
+                    "type": "number",
+                    "exclusiveMinimum": 0
+                  },
+                  "unit": {
+                    "type": "string",
+                    "enum": [
+                      "ITEM",
+                      "KG",
+                      "G",
+                      "L",
+                      "ML",
+                      "PACK"
+                    ]
+                  },
+                  "expiryDate": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "date-time",
+                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "foodId",
+                  "quantity",
+                  "unit"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Food item updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "Food item CUID2 identifier"
+                    },
+                    "foodId": {
+                      "type": "string",
+                      "description": "Referenced food CUID2 identifier"
+                    },
+                    "quantity": {
+                      "type": "number",
+                      "description": "Quantity currently on hand"
+                    },
+                    "unit": {
+                      "type": "string",
+                      "enum": [
+                        "ITEM",
+                        "KG",
+                        "G",
+                        "L",
+                        "ML",
+                        "PACK"
+                      ],
+                      "description": "Unit the quantity is expressed in"
+                    },
+                    "expiryDate": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Expiry timestamp (ISO 8601) or null when it does not expire"
+                    },
+                    "addedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+                      "description": "Timestamp the item was added (ISO 8601)"
+                    },
+                    "food": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "description": "Food CUID2 identifier"
+                        },
+                        "name": {
+                          "type": "string",
+                          "description": "Display name of the food"
+                        },
+                        "category": {
+                          "type": "string",
+                          "enum": [
+                            "FRUIT",
+                            "VEGETABLE",
+                            "MEAT",
+                            "DAIRY",
+                            "GRAINS",
+                            "DRINKS",
+                            "SNACKS",
+                            "SAUCES",
+                            "FROZEN",
+                            "OTHER"
+                          ],
+                          "description": "Category the food belongs to"
+                        },
+                        "createdByUserId": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "Owner user id, or null for a globally available food"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "category",
+                        "createdByUserId"
+                      ],
+                      "description": "Food this item refers to"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "foodId",
+                    "quantity",
+                    "unit",
+                    "expiryDate",
+                    "addedAt",
+                    "food"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "description": "Zod validation issues"
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, malformed, or invalid access token",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string",
+                  "example": "Unauthorized"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The item or the referenced food was not found, or the food does not belong to the user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "description": "Human readable error code or message"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteApiItemsById",
+        "tags": [
+          "Items"
+        ],
+        "summary": "Delete a food item",
+        "description": "Deletes a food item owned by the authenticated user.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Resource CUID2 identifier",
+            "schema": {
+              "type": "string",
+              "example": "clh0000000000000000000000"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Food item deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "description": "Whether the operation succeeded"
+                    }
+                  },
+                  "required": [
+                    "success"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "description": "Zod validation issues"
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, malformed, or invalid access token",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string",
+                  "example": "Unauthorized"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Item not found or not owned by the user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "description": "Human readable error code or message"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "operationId": "postApiAuthLogin",
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Log in with email and password",
+        "description": "Exchanges valid credentials for a JWT access token.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+                  },
+                  "password": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "email",
+                  "password"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Authentication succeeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "user": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "description": "User CUID2 identifier"
+                        },
+                        "email": {
+                          "type": "string",
+                          "description": "User email address"
+                        },
+                        "username": {
+                          "type": "string",
+                          "description": "Unique username"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "email",
+                        "username"
+                      ],
+                      "description": "The authenticated user"
+                    },
+                    "accessToken": {
+                      "type": "string",
+                      "description": "JWT access token, valid for one hour"
+                    }
+                  },
+                  "required": [
+                    "user",
+                    "accessToken"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "description": "Zod validation issues"
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid email or password",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "description": "Human readable message"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/register": {
+      "post": {
+        "operationId": "postApiAuthRegister",
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Register a new account",
+        "description": "Creates a user, hashes the password, and returns a JWT access token.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 8
+                  },
+                  "username": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 20,
+                    "pattern": "^[a-zA-Z0-9_-]+$"
+                  }
+                },
+                "required": [
+                  "email",
+                  "password",
+                  "username"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Account created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "user": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "description": "User CUID2 identifier"
+                        },
+                        "email": {
+                          "type": "string",
+                          "description": "User email address"
+                        },
+                        "username": {
+                          "type": "string",
+                          "description": "Unique username"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "email",
+                        "username"
+                      ],
+                      "description": "The authenticated user"
+                    },
+                    "accessToken": {
+                      "type": "string",
+                      "description": "JWT access token, valid for one hour"
+                    }
+                  },
+                  "required": [
+                    "user",
+                    "accessToken"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "description": "Zod validation issues"
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The email or username is already taken",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "description": "Human readable message"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
