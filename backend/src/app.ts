@@ -1,5 +1,7 @@
 import type { PrismaClient } from '@prisma/client/extension';
 import { Hono } from 'hono';
+import { describeRoute, resolver } from 'hono-openapi';
+import { z } from 'zod';
 import UserRepo from './repositories/users.repo';
 import { FoodRepo } from './repositories/food.repo';
 import { ItemsRepo } from './repositories/items.repo';
@@ -12,7 +14,26 @@ import { UserService } from './services/user.service';
 export function createApp(jwt_secret: string, database: PrismaClient) {
   const app = new Hono();
 
-  app.get('/health', (context) => context.json({ status: 'ok' }));
+  app.get(
+    '/health',
+    describeRoute({
+      tags: ['Health'],
+      summary: 'Health check',
+      description:
+        'Returns a static status payload. Does not touch the database or require authentication.',
+      responses: {
+        200: {
+          description: 'Service is running',
+          content: {
+            'application/json': {
+              schema: resolver(z.object({ status: z.literal('ok') })),
+            },
+          },
+        },
+      },
+    }),
+    (context) => context.json({ status: 'ok' }),
+  );
 
   const userRepo = new UserRepo(database);
   const foodRepo = new FoodRepo(database);
