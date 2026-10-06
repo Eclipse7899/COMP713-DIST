@@ -1,5 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="black">#FF000000</color>
-    <color name="white">#FFFFFFFF</color>
+
+    <!-- Stocked dark theme -->
+    <color name="stocked_background">#0F172A</color>
+    <color name="stocked_text">#CBD5E1</color>
+    <color name="stocked_heading">#F8FAFC</color>
+    <color name="stocked_secondary">#94A3B8</color>
+
+    <color name="stocked_primary">#3B82F6</color>
+    <color name="stocked_primary_soft">#2563EB</color>
+
+    <color name="stocked_border">#1E293B</color>
+
+    <color name="stocked_accent">#10B981</color>
+    <color name="stocked_danger">#EF4444</color>
+
 </resources>

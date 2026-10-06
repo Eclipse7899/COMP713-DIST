@@ -1,6 +1,8 @@
 package nz.ac.aut.stocked;
 
 import android.os.Bundle;
+import android.widget.Button;
+import android.widget.EditText;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -19,145 +21,197 @@ public class MainActivity extends AppCompatActivity {
     private static final String LOGIN_URL =
             "http://10.0.2.2:3000/api/auth/login";
 
+    private static final String USER_URL =
+            "http://10.0.2.2:3000/api/users/me";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        TextView textView = findViewById(R.id.textView);
-        textView.setText("Logging in...");
+        EditText emailInput = findViewById(R.id.emailInput);
+        EditText passwordInput = findViewById(R.id.passwordInput);
+        Button loginButton = findViewById(R.id.loginButton);
+        TextView statusText = findViewById(R.id.statusText);
 
-        new Thread(() -> {
-            try {
-                URL url = new URL(LOGIN_URL);
-                HttpURLConnection connection =
-                        (HttpURLConnection) url.openConnection();
+        loginButton.setOnClickListener(v -> {
 
-                connection.setRequestMethod("POST");
-                connection.setRequestProperty(
-                        "Content-Type",
-                        "application/json"
-                );
-                connection.setDoOutput(true);
+            String email = emailInput.getText().toString().trim();
+            String password = passwordInput.getText().toString();
 
-                JSONObject loginBody = new JSONObject();
-                loginBody.put("email", "jon@example.com");
-                loginBody.put("password", "123");
+            // Basic client-side validation
+            if (email.isEmpty() || password.isEmpty()) {
+                statusText.setText("Please enter your email and password.");
+                return;
+            }
 
-                byte[] body = loginBody.toString()
-                        .getBytes(StandardCharsets.UTF_8);
+            statusText.setText("Logging in...");
+            loginButton.setEnabled(false);
 
-                try (OutputStream outputStream =
-                             connection.getOutputStream()) {
-                    outputStream.write(body);
-                }
+            new Thread(() ->
+                    login(email, password, statusText, loginButton)
+            ).start();
+        });
+    }
 
-                int responseCode = connection.getResponseCode();
+    private void login(
+            String email,
+            String password,
+            TextView statusText,
+            Button loginButton
+    ) {
 
-                if (responseCode == 200) {
+        HttpURLConnection connection = null;
 
-                    BufferedReader reader = new BufferedReader(
-                            new InputStreamReader(
-                                    connection.getInputStream()
-                            )
-                    );
+        try {
+            URL url = new URL(LOGIN_URL);
+            connection = (HttpURLConnection) url.openConnection();
 
-                    StringBuilder response = new StringBuilder();
-                    String line;
+            connection.setRequestMethod("POST");
+            connection.setRequestProperty(
+                    "Content-Type",
+                    "application/json"
+            );
+            connection.setDoOutput(true);
 
-                    while ((line = reader.readLine()) != null) {
-                        response.append(line);
-                    }
+            JSONObject loginBody = new JSONObject();
+            loginBody.put("email", email);
+            loginBody.put("password", password);
 
-                    reader.close();
+            byte[] body = loginBody.toString()
+                    .getBytes(StandardCharsets.UTF_8);
 
-                    JSONObject json =
-                            new JSONObject(response.toString());
+            try (OutputStream outputStream =
+                         connection.getOutputStream()) {
+                outputStream.write(body);
+            }
 
-                    String accessToken =
-                            json.getString("accessToken");
+            int responseCode = connection.getResponseCode();
 
-                    URL userUrl = new URL(
-                            "http://10.0.2.2:3000/api/users/me"
-                    );
+            if (responseCode == 200) {
 
-                    HttpURLConnection userConnection =
-                            (HttpURLConnection) userUrl.openConnection();
-
-                    userConnection.setRequestMethod("GET");
-                    userConnection.setRequestProperty(
-                            "Authorization",
-                            "Bearer " + accessToken
-                    );
-
-                    int userResponseCode =
-                            userConnection.getResponseCode();
-
-                    if (userResponseCode == 200) {
-
-                        BufferedReader userReader = new BufferedReader(
-                                new InputStreamReader(
-                                        userConnection.getInputStream()
-                                )
-                        );
-
-                        StringBuilder userResponse =
-                                new StringBuilder();
-
-                        String userLine;
-
-                        while ((userLine = userReader.readLine()) != null) {
-                            userResponse.append(userLine);
-                        }
-
-                        userReader.close();
-
-                        JSONObject currentUser =
-                                new JSONObject(userResponse.toString());
-
-                        String currentUsername =
-                                currentUser.getString("username");
-
-                        String currentEmail =
-                                currentUser.getString("email");
-
-                        runOnUiThread(() ->
-                                textView.setText(
-                                        "Authenticated!\n\n" +
-                                                "Username: " + currentUsername + "\n" +
-                                                "Email: " + currentEmail
-                                )
-                        );
-
-                    } else {
-                        runOnUiThread(() ->
-                                textView.setText(
-                                        "Authenticated request failed\nHTTP " +
-                                                userResponseCode
-                                )
-                        );
-                    }
-
-                    userConnection.disconnect();
-
-                } else {
-                    runOnUiThread(() ->
-                            textView.setText(
-                                    "Login failed\nHTTP " +
-                                            responseCode
-                            )
-                    );
-                }
-
-                connection.disconnect();
-
-            } catch (Exception e) {
-                runOnUiThread(() ->
-                        textView.setText(
-                                "Login error:\n" + e.getMessage()
+                BufferedReader reader = new BufferedReader(
+                        new InputStreamReader(
+                                connection.getInputStream()
                         )
                 );
+
+                StringBuilder response = new StringBuilder();
+                String line;
+
+                while ((line = reader.readLine()) != null) {
+                    response.append(line);
+                }
+
+                reader.close();
+
+                JSONObject json =
+                        new JSONObject(response.toString());
+
+                String accessToken =
+                        json.getString("accessToken");
+
+                loadCurrentUser(
+                        accessToken,
+                        statusText,
+                        loginButton
+                );
+
+            } else {
+                runOnUiThread(() -> {
+                    statusText.setText(
+                            "Invalid email or password."
+                    );
+                    loginButton.setEnabled(true);
+                });
             }
-        }).start();
+
+        } catch (Exception e) {
+            runOnUiThread(() -> {
+                statusText.setText(
+                        "Unable to connect to Stocked."
+                );
+                loginButton.setEnabled(true);
+            });
+
+        } finally {
+            if (connection != null) {
+                connection.disconnect();
+            }
+        }
+    }
+
+    private void loadCurrentUser(
+            String accessToken,
+            TextView statusText,
+            Button loginButton
+    ) {
+
+        HttpURLConnection connection = null;
+
+        try {
+            URL url = new URL(USER_URL);
+            connection = (HttpURLConnection) url.openConnection();
+
+            connection.setRequestMethod("GET");
+            connection.setRequestProperty(
+                    "Authorization",
+                    "Bearer " + accessToken
+            );
+
+            int responseCode = connection.getResponseCode();
+
+            if (responseCode == 200) {
+
+                BufferedReader reader = new BufferedReader(
+                        new InputStreamReader(
+                                connection.getInputStream()
+                        )
+                );
+
+                StringBuilder response = new StringBuilder();
+                String line;
+
+                while ((line = reader.readLine()) != null) {
+                    response.append(line);
+                }
+
+                reader.close();
+
+                JSONObject currentUser =
+                        new JSONObject(response.toString());
+
+                String username =
+                        currentUser.getString("username");
+
+                runOnUiThread(() -> {
+                    statusText.setText(
+                            "Welcome, " + username + "!"
+                    );
+                    loginButton.setEnabled(true);
+                });
+
+            } else {
+                runOnUiThread(() -> {
+                    statusText.setText(
+                            "Could not load user account."
+                    );
+                    loginButton.setEnabled(true);
+                });
+            }
+
+        } catch (Exception e) {
+            runOnUiThread(() -> {
+                statusText.setText(
+                        "Could not load user account."
+                );
+                loginButton.setEnabled(true);
+            });
+
+        } finally {
+            if (connection != null) {
+                connection.disconnect();
+            }
+        }
     }
 }
