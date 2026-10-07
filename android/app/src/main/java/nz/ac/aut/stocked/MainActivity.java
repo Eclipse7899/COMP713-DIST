@@ -16,6 +16,8 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 
+import android.content.Intent;
+
 public class MainActivity extends AppCompatActivity {
 
     private static final String LOGIN_URL =
@@ -185,10 +187,15 @@ public class MainActivity extends AppCompatActivity {
                         currentUser.getString("username");
 
                 runOnUiThread(() -> {
-                    statusText.setText(
-                            "Welcome, " + username + "!"
+                    Intent intent = new Intent(
+                            MainActivity.this,
+                            HomeActivity.class
                     );
-                    loginButton.setEnabled(true);
+
+                    intent.putExtra("username", username);
+                    intent.putExtra("accessToken", accessToken);
+                    startActivity(intent);
+                    finish();
                 });
 
             } else {
