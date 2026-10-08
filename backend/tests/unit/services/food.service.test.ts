@@ -3,6 +3,7 @@ import type { Food } from '../../../src/generated/prisma/client';
 import { FoodCategory } from '../../../src/generated/prisma/enums';
 import type { FoodRepository } from '../../../src/repositories/food.repo';
 import { FoodService } from '../../../src/services/food.service';
+import type { RealtimeHub } from '../../../src/realtime/realtime-hub';
 
 const USER_ID = 'user-1';
 const OTHER_USER_ID = 'other-user';
@@ -24,6 +25,7 @@ const food = {
 describe('FoodService', () => {
   let foodRepo: FoodRepository;
   let service: FoodService;
+  let realtime: RealtimeHub;
 
   beforeEach(() => {
     foodRepo = {
@@ -33,7 +35,12 @@ describe('FoodService', () => {
       deleteForUser: vi.fn(),
       findById: vi.fn(),
     };
-    service = new FoodService(foodRepo);
+    realtime = {
+      broadcast: vi.fn(),
+      subscribe: vi.fn(),
+      unsubscribe: vi.fn(),
+    } as unknown as RealtimeHub;
+    service = new FoodService(foodRepo, realtime);
   });
 
   it('creates food owned by the current user', async () => {

@@ -116,7 +116,10 @@ export class ItemsService {
     };
   }
 
-  async removeItem(id: string, userId: string) {
+  async removeItem(
+    id: string,
+    userId: string,
+  ): Promise<Result<boolean, 'ITEM_NOT_FOUND' | 'UNAUTHORIZED'>> {
     const item = await this.itemsRepo.findById(id);
     if (!item) {
       return {
@@ -130,10 +133,20 @@ export class ItemsService {
         error: 'UNAUTHORIZED',
       };
     }
+    const deleted = await this.itemsRepo.deleteByUser(id, userId);
+    if (!deleted) {
+      return {
+        success: false,
+        error: 'ITEM_NOT_FOUND',
+      };
+    }
     this.realtime.broadcast(userId, {
       type: 'item.deleted',
       data: item,
     });
-    return this.itemsRepo.deleteByUser(id, userId);
+    return {
+      success: true,
+      data: true,
+    };
   }
 }

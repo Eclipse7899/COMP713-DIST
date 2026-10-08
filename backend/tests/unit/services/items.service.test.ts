@@ -3,6 +3,7 @@ import type { Food, FoodItem } from '../../../src/generated/prisma/client';
 import { FoodCategory, FoodUnit } from '../../../src/generated/prisma/enums';
 import type { FoodRepository } from '../../../src/repositories/food.repo';
 import type { ItemsRepository } from '../../../src/repositories/items.repo';
+import type { RealtimeHub } from '../../../src/realtime/realtime-hub';
 import { ItemsService } from '../../../src/services/items.service';
 
 const USER_ID = 'user-1';
@@ -36,6 +37,7 @@ const item = {
 describe('ItemsService', () => {
   let itemsRepo: ItemsRepository;
   let foodRepo: FoodRepository;
+  let realtime: RealtimeHub;
   let service: ItemsService;
 
   beforeEach(() => {
@@ -45,6 +47,7 @@ describe('ItemsService', () => {
       updateByUser: vi.fn(),
       deleteByUser: vi.fn(),
       filterByUser: vi.fn(),
+      findById: vi.fn(),
     };
     foodRepo = {
       create: vi.fn(),
@@ -53,7 +56,12 @@ describe('ItemsService', () => {
       deleteForUser: vi.fn(),
       findById: vi.fn(),
     };
-    service = new ItemsService(itemsRepo, foodRepo);
+    realtime = {
+      broadcast: vi.fn(),
+      subscribe: vi.fn(),
+      unsubscribe: vi.fn(),
+    } as unknown as RealtimeHub;
+    service = new ItemsService(itemsRepo, foodRepo, realtime);
   });
 
   it('creates an item for accessible food', async () => {
@@ -153,9 +161,13 @@ describe('ItemsService', () => {
   });
 
   it('delegates item deletion to the repository', async () => {
+    vi.mocked(itemsRepo.findById).mockResolvedValue(item);
     vi.mocked(itemsRepo.deleteByUser).mockResolvedValue(true);
 
-    await expect(service.removeItem(item.id, item.userId)).resolves.toBe(true);
+    await expect(service.removeItem(item.id, item.userId)).resolves.toEqual({
+      success: true,
+      data: true,
+    });
     expect(itemsRepo.deleteByUser).toHaveBeenCalledWith(item.id, item.userId);
   });
 });
