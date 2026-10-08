@@ -1,6 +1,7 @@
 import { createDb } from './db';
 import { getConfig } from './config';
 import { createApp } from './app';
+import { websocket } from '@hono/bun';
 
 const config = getConfig();
 
@@ -12,5 +13,6 @@ export type AppType = typeof routes;
 
 export default {
   fetch: app.fetch,
+  websocket,
   port: config.PORT,
 };
