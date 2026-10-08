@@ -2,7 +2,7 @@ import * as React from 'react';
 import { useCallback, useMemo, useState } from 'react';
 import { parseResponse } from 'hono/client';
 import { FoodCategory } from '@stocked/backend/src/generated/prisma/enums';
-import { getClient } from '../client';
+import { getClient, getWebSocketClient } from '../client';
 import { titleCase } from '../util';
 import FoodItemBox from './FoodItemBox';
 import AddFoodItemForm from './Forms/AddFoodItemForm.tsx';
@@ -42,34 +42,28 @@ export default function FoodItems() {
   }, [client]);
 
   const connectWs = useCallback(async () => {
-    const res = await parseResponse(client.api.ws.token.$get()).catch(
-      (error: unknown) => {
-        setError(getApiErrorMessage(error, 'ws token'));
-      },
-    );
-    if (!res) {
-      return;
-    }
+    getWebSocketClient(client).then((ws) => {
+      if (ws instanceof WebSocket) {
+        ws.onmessage = (event) => {
+          const raw = JSON.parse(event.data)
+          const type = raw.type
+          const data = raw.data
 
-    const token = res.token;
-    if (!token) {
-      throw new Error('Token is required');
-    }
-    const ws = new WebSocket(client.api.ws.$url()+`?token=${token}`);
-    ws.onmessage = (event) => {
-      const raw = JSON.parse(event.data)
-      const type = raw.type
-      const data = raw.data
+          if (type === 'item.created') {
+            setItems((current) => [...current, data])
+          } else if (type === 'item.updated') {
+            setItems((current) => current.map((item) => item.id === data.id ? data : item))
+          } else if (type === 'item.deleted') {
+            setItems((current) => current.filter((item) => item.id !== data.id))
+          }
 
-      if (type === 'item.created') {
-        setItems((current) => [...current, data])
-      } else if (type === 'item.updated') {
-        setItems((current) => current.map((item) => item.id === data.id ? data : item))
-      } else if (type === 'item.deleted') {
-        setItems((current) => current.filter((item) => item.id !== data.id))
+        };
       }
-
-    };
+      if (typeof ws === 'string') {
+        setError(ws);
+        return;
+      }
+    });
   }, []);
 
   const loadItems = useCallback(
