@@ -3,9 +3,10 @@ import type { FoodCategory, FoodUnit } from '../generated/prisma/enums';
 import type { FoodRepository } from '../repositories/food.repo';
 import type { Result } from '../util';
 import type { FoodItemDto } from '../dtos';
+import type { RealtimeHub } from '../realtime/realtime-hub';
 
 export class ItemsService {
-  constructor(private readonly itemsRepo: ItemsRepository, private readonly foodRepo: FoodRepository) {
+  constructor(private readonly itemsRepo: ItemsRepository, private readonly foodRepo: FoodRepository, private realtime: RealtimeHub) {
   }
 
   async createItem(data: {
@@ -36,6 +37,10 @@ export class ItemsService {
       };
     }
     const item = result.data;
+    this.realtime.broadcast(data.userId, {
+      type: 'item.created',
+      data: item,
+    });
     return {
       success: true,
       data: {
@@ -157,7 +162,24 @@ export class ItemsService {
     };
   }
 
-  removeItem(id: string, userId: string) {
+  async removeItem(id: string, userId: string) {
+    const item = await this.itemsRepo.findById(id);
+    if (!item) {
+      return {
+        success: false,
+        error: 'ITEM_NOT_FOUND',
+      };
+    }
+    if (item.userId !== userId) {
+      return {
+        success: false,
+        error: 'UNAUTHORIZED',
+      };
+    }
+    this.realtime.broadcast(userId, {
+      type: 'item.deleted',
+      data: item,
+    });
     return this.itemsRepo.deleteByUser(id, userId);
   }
 }

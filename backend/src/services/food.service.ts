@@ -2,9 +2,10 @@ import type { FoodRepository } from '../repositories/food.repo';
 import type { FoodCategory } from '../generated/prisma/enums';
 import type { Result } from '../util';
 import type { FoodDto } from '../dtos';
+import type { RealtimeHub } from '../realtime/realtime-hub';
 
 export class FoodService {
-  constructor(private readonly foodRepo: FoodRepository) {}
+  constructor(private readonly foodRepo: FoodRepository, private readonly realtime: RealtimeHub) {}
 
   async createFood(
     userId: string,
@@ -18,7 +19,10 @@ export class FoodService {
       category: data.category,
       createdByUserId: userId,
     });
-
+    this.realtime.broadcast(userId, {
+      type: 'food.created',
+      data: food,
+    });
     return {
       id: food.id,
       name: food.name,
@@ -67,6 +71,10 @@ export class FoodService {
       };
     }
     const updatedFood = updateResult.data;
+    this.realtime.broadcast(userId, {
+      type: 'food.updated',
+      data: updatedFood,
+    });
     return {
       success: true,
       data: {
@@ -93,6 +101,10 @@ export class FoodService {
         error: 'UNAUTHORIZED',
       };
     }
+    this.realtime.broadcast(userId, {
+      type: 'food.deleted',
+      data: existing,
+    });
     return await this.foodRepo.deleteForUser(id, userId);
   }
 

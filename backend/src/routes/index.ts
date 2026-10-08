@@ -8,6 +8,8 @@ import type { UserService } from '../services/user.service';
 import type { FoodService } from '../services/food.service';
 import type { ItemsService } from '../services/items.service';
 import type { AuthService } from '../services/auth.service';
+import type { RealtimeHub } from '../realtime/realtime-hub';
+import { createWsRoute } from './ws';
 
 export function createApi(
   jwtSecret: string,
@@ -16,11 +18,13 @@ export function createApi(
     foodService: FoodService;
     itemsService: ItemsService;
     authService: AuthService;
+    realtime: RealtimeHub;
   },
 ) {
   const users = createUsersRoute(deps.userService);
   const food = createFoodRoute(deps.foodService);
   const items = createItemsRoute(deps.itemsService);
+  const ws = createWsRoute(deps.realtime);
   const auth = createAuthRoute(deps.authService);
 
   const jwtMiddleware = getJwtMiddleware(jwtSecret);
@@ -32,5 +36,7 @@ export function createApi(
     .route('/food', food)
     .use('/items/*', jwtMiddleware)
     .route('/items', items)
+    .use('/ws/*', jwtMiddleware)
+    .route('/ws', ws)
     .route('/auth', auth);
 }

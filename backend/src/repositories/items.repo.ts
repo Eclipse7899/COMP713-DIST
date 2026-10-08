@@ -38,10 +38,19 @@ export interface ItemsRepository {
       sort?: 'asc' | 'desc';
     },
   ): Promise<FoodItemWithFood[]>;
+
+  findById(id: string): Promise<FoodItemWithFood | null>;
 }
 
 export class ItemsRepo implements ItemsRepository {
   constructor(private readonly prisma: PrismaClient) {}
+
+  findById(id: string): Promise<FoodItemWithFood | null> {
+    return this.prisma.foodItem.findUnique({
+      where: { id },
+      include: { food: true },
+    });
+  }
 
   async create(
     data: {

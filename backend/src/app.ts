@@ -10,6 +10,7 @@ import { AuthService } from './services/auth.service';
 import { ItemsService } from './services/items.service';
 import { FoodService } from './services/food.service';
 import { UserService } from './services/user.service';
+import { RealtimeHub } from './realtime/realtime-hub';
 
 export function createApp(jwt_secret: string, database: PrismaClient) {
   const app = new Hono();
@@ -35,16 +36,19 @@ export function createApp(jwt_secret: string, database: PrismaClient) {
     (context) => context.json({ status: 'ok' }),
   );
 
+  const realtime = new RealtimeHub();
+
   const userRepo = new UserRepo(database);
   const foodRepo = new FoodRepo(database);
   const itemsRepo = new ItemsRepo(database);
 
   const userService = new UserService(userRepo);
-  const foodService = new FoodService(foodRepo);
-  const itemsService = new ItemsService(itemsRepo, foodRepo);
+  const foodService = new FoodService(foodRepo, realtime);
+  const itemsService = new ItemsService(itemsRepo, foodRepo, realtime);
   const authService = new AuthService(jwt_secret, userRepo);
 
   const api = createApi(jwt_secret, {
+    realtime,
     userService,
     foodService,
     itemsService,
