@@ -1,4 +1,3 @@
-import { Hono } from 'hono';
 import { createUsersRoute } from './users';
 import { createFoodRoute } from './food';
 import { createItemsRoute } from './items';
@@ -10,6 +9,7 @@ import type { ItemsService } from '../services/items.service';
 import type { AuthService } from '../services/auth.service';
 import type { RealtimeHub } from '../realtime/realtime-hub';
 import { createWsRoute } from './ws';
+import { Hono } from 'hono';
 
 export function createApi(
   jwtSecret: string,
@@ -24,8 +24,8 @@ export function createApi(
   const users = createUsersRoute(deps.userService);
   const food = createFoodRoute(deps.foodService);
   const items = createItemsRoute(deps.itemsService);
-  const ws = createWsRoute(deps.realtime);
   const auth = createAuthRoute(deps.authService);
+  const ws = createWsRoute(deps.realtime);
 
   const jwtMiddleware = getJwtMiddleware(jwtSecret);
 
@@ -36,7 +36,7 @@ export function createApi(
     .route('/food', food)
     .use('/items/*', jwtMiddleware)
     .route('/items', items)
-    .use('/ws/*', jwtMiddleware)
+    .use('/ws/token', jwtMiddleware)
     .route('/ws', ws)
     .route('/auth', auth);
 }
