@@ -25,6 +25,10 @@
     {
       "name": "Items",
       "description": "Food inventory management"
+    },
+    {
+      "name": "WebSocket",
+      "description": "Realtime inventory event streaming"
     }
   ],
   "servers": [
@@ -778,20 +782,18 @@
                         "anyOf": [
                           {
                             "type": "string",
-                            "format": "date-time",
-                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                            "format": "date-time"
                           },
                           {
                             "type": "null"
                           }
                         ],
-                        "description": "Expiry timestamp (ISO 8601) or null when it does not expire"
+                        "description": "Expiry timestamp (ISO 8601)"
                       },
                       "addedAt": {
+                        "description": "Timestamp the item was added (ISO 8601)",
                         "type": "string",
-                        "format": "date-time",
-                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
-                        "description": "Timestamp the item was added (ISO 8601)"
+                        "format": "date-time"
                       },
                       "food": {
                         "type": "object",
@@ -999,20 +1001,18 @@
                           "anyOf": [
                             {
                               "type": "string",
-                              "format": "date-time",
-                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                              "format": "date-time"
                             },
                             {
                               "type": "null"
                             }
                           ],
-                          "description": "Expiry timestamp (ISO 8601) or null when it does not expire"
+                          "description": "Expiry timestamp (ISO 8601)"
                         },
                         "addedAt": {
+                          "description": "Timestamp the item was added (ISO 8601)",
                           "type": "string",
-                          "format": "date-time",
-                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
-                          "description": "Timestamp the item was added (ISO 8601)"
+                          "format": "date-time"
                         },
                         "food": {
                           "type": "object",
@@ -1270,20 +1270,18 @@
                       "anyOf": [
                         {
                           "type": "string",
-                          "format": "date-time",
-                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                          "format": "date-time"
                         },
                         {
                           "type": "null"
                         }
                       ],
-                      "description": "Expiry timestamp (ISO 8601) or null when it does not expire"
+                      "description": "Expiry timestamp (ISO 8601)"
                     },
                     "addedAt": {
+                      "description": "Timestamp the item was added (ISO 8601)",
                       "type": "string",
-                      "format": "date-time",
-                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
-                      "description": "Timestamp the item was added (ISO 8601)"
+                      "format": "date-time"
                     },
                     "food": {
                       "type": "object",
@@ -1500,6 +1498,99 @@
                   "required": [
                     "error"
                   ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ws": {
+      "get": {
+        "operationId": "getApiWs",
+        "tags": [
+          "WebSocket"
+        ],
+        "summary": "Open a realtime WebSocket connection",
+        "description": "Upgrades the request to a WebSocket connection and streams realtime inventory events to the client as JSON messages. Authenticate by passing a connection token (obtained from GET /ws/token) as the token query parameter rather than an Authorization header.",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "query",
+            "required": true,
+            "description": "Connection token previously issued by GET /ws/token",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "101": {
+            "description": "Switching Protocols: the WebSocket connection was established"
+          },
+          "400": {
+            "description": "The token query parameter is missing",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The provided connection token is invalid or expired",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ws/token": {
+      "get": {
+        "operationId": "getApiWsToken",
+        "tags": [
+          "WebSocket"
+        ],
+        "summary": "Issue a WebSocket connection token",
+        "description": "Generates a single-use connection token for the authenticated user, to be supplied as the token query parameter when opening the WebSocket connection at GET /ws.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Connection token issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "token": {
+                      "type": "string",
+                      "description": "Connection token to pass as the token query parameter of /ws"
+                    }
+                  },
+                  "required": [
+                    "token"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, malformed, or invalid access token",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string",
+                  "example": "Unauthorized"
                 }
               }
             }

@@ -28,6 +28,10 @@ async function main() {
         { name: 'Users', description: 'Authenticated user profile' },
         { name: 'Food', description: 'Food catalog management' },
         { name: 'Items', description: 'Food inventory management' },
+        {
+          name: 'WebSocket',
+          description: 'Realtime inventory event streaming',
+        },
       ],
       servers: [
         {
