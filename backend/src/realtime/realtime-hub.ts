@@ -1,5 +1,5 @@
+import type { FoodDto, FoodItemDto } from '../schemas';
 
-import type { FoodDto, FoodItemDto } from '../dtos';
 
 export type Event<T,K> = {
   type: T;
