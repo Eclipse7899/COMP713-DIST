@@ -41,6 +41,37 @@ export default function FoodItems() {
     setFoodTypes(res);
   }, [client]);
 
+  const connectWs = useCallback(async () => {
+    const res = await parseResponse(client.api.ws.token.$get()).catch(
+      (error: unknown) => {
+        setError(getApiErrorMessage(error, 'ws token'));
+      },
+    );
+    if (!res) {
+      return;
+    }
+
+    const token = res.token;
+    if (!token) {
+      throw new Error('Token is required');
+    }
+    const ws = new WebSocket(client.api.ws.$url()+`?token=${token}`);
+    ws.onmessage = (event) => {
+      const raw = JSON.parse(event.data)
+      const type = raw.type
+      const data = raw.data
+
+      if (type === 'item.created') {
+        setItems((current) => [...current, data])
+      } else if (type === 'item.updated') {
+        setItems((current) => current.map((item) => item.id === data.id ? data : item))
+      } else if (type === 'item.deleted') {
+        setItems((current) => current.filter((item) => item.id !== data.id))
+      }
+
+    };
+  }, []);
+
   const loadItems = useCallback(
     async (
       {
@@ -111,6 +142,7 @@ export default function FoodItems() {
   const loadItemsOnMount = useCallback(() => {
     loadItems();
     loadFoodTypes();
+    connectWs();
   }, [loadItems]);
 
   const filterItems = async () => {
@@ -136,7 +168,6 @@ export default function FoodItems() {
     if (!res) {
       return;
     }
-    setItems((current) => current.filter((item) => item.id !== id));
   };
 
   if (addItemModalOpen) {
@@ -145,7 +176,6 @@ export default function FoodItems() {
         onCancel={() => setAddItemModalOpen(false)}
         onDone={() => {
           setAddItemModalOpen(false);
-          loadItems();
         }}
       />
     );
@@ -173,7 +203,6 @@ export default function FoodItems() {
     if (!res) {
       return;
     }
-    setItems((current) => current.map((item) => (item.id === id ? res : item)));
   };
 
   return (
