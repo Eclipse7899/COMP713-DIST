@@ -1,8 +1,11 @@
 import type { FoodRepository } from '../repositories/food.repo';
 import type { FoodCategory } from '../generated/prisma/enums';
 import type { Result } from '../util';
-import type { FoodDto } from '../dtos';
 import type { RealtimeHub } from '../realtime/realtime-hub';
+import {
+  type FoodDto,
+  foodDtoSchema,
+} from '../schemas';
 
 export class FoodService {
   constructor(private readonly foodRepo: FoodRepository, private readonly realtime: RealtimeHub) {}
@@ -19,26 +22,18 @@ export class FoodService {
       category: data.category,
       createdByUserId: userId,
     });
+
+    const dto = foodDtoSchema.parse(food);
     this.realtime.broadcast(userId, {
       type: 'food.created',
-      data: food,
+      data: dto,
     });
-    return {
-      id: food.id,
-      name: food.name,
-      category: food.category,
-      createdByUserId: food.createdByUserId,
-    };
+    return dto;
   }
 
   async getFood(userId: string, category?: FoodCategory): Promise<FoodDto[]> {
     const food = this.foodRepo.findForUser(userId, category);
-    return (await food).map((f) => ({
-      id: f.id,
-      name: f.name,
-      category: f.category,
-      createdByUserId: f.createdByUserId,
-    }));
+    return (await food).map((f) => foodDtoSchema.parse(f));
   }
 
   async updateFood(
@@ -71,18 +66,14 @@ export class FoodService {
       };
     }
     const updatedFood = updateResult.data;
+    const dto = foodDtoSchema.parse(updatedFood);
     this.realtime.broadcast(userId, {
       type: 'food.updated',
-      data: updatedFood,
+      data: dto,
     });
     return {
       success: true,
-      data: {
-        id: updatedFood.id,
-        name: updatedFood.name,
-        category: updatedFood.category,
-        createdByUserId: updatedFood.createdByUserId,
-      },
+      data: dto,
     };
   }
 
@@ -116,14 +107,10 @@ export class FoodService {
         error: 'NOT_FOUND',
       };
     }
+    const dto = foodDtoSchema.parse(food);
     return {
       success: true,
-      data: {
-        id: food.id,
-        name: food.name,
-        category: food.category,
-        createdByUserId: food.createdByUserId,
-      },
+      data: dto,
     };
   }
 }
