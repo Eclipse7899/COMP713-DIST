@@ -14,21 +14,21 @@ export const foodDtoSchema = z.object({
     .string()
     .nullable()
     .describe('Owner user id, or null for a globally available food'),
-});
+}).brand('FoodDto');
+
+export type FoodDto = z.infer<typeof foodDtoSchema>;
 
 export const foodItemDtoSchema = z.object({
   id: z.string().describe('Food item CUID2 identifier'),
   foodId: z.string().describe('Referenced food CUID2 identifier'),
   quantity: z.number().describe('Quantity currently on hand'),
   unit: foodUnitSchema.describe('Unit the quantity is expressed in'),
-  expiryDate: z
-    .iso
-    .datetime()
-    .nullable()
-    .describe('Expiry timestamp (ISO 8601) or null when it does not expire'),
-  addedAt: z.iso.datetime().describe('Timestamp the item was added (ISO 8601)'),
+  expiryDate: z.date().nullable().describe('Expiry timestamp (ISO 8601)'),
+  addedAt: z.date().describe('Timestamp the item was added (ISO 8601)'),
   food: foodDtoSchema.describe('Food this item refers to'),
-});
+}).brand('FoodItemDto');
+
+export type FoodItemDto = z.infer<typeof foodItemDtoSchema>;
 
 export const userSchema = z.object({
   id: z.string().describe('User CUID2 identifier'),

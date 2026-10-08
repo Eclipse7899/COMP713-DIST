@@ -2,10 +2,11 @@ import type { ItemsRepository } from '../repositories/items.repo';
 import type { FoodCategory, FoodUnit } from '../generated/prisma/enums';
 import type { FoodRepository } from '../repositories/food.repo';
 import type { Result } from '../util';
-import type { FoodItemDto } from '../dtos';
+import type { RealtimeHub } from '../realtime/realtime-hub';
+import { type FoodItemDto, foodItemDtoSchema } from '../schemas';
 
 export class ItemsService {
-  constructor(private readonly itemsRepo: ItemsRepository, private readonly foodRepo: FoodRepository) {
+  constructor(private readonly itemsRepo: ItemsRepository, private readonly foodRepo: FoodRepository, private realtime: RealtimeHub) {
   }
 
   async createItem(data: {
@@ -36,23 +37,15 @@ export class ItemsService {
       };
     }
     const item = result.data;
+    const dto = foodItemDtoSchema.parse(item);
+    this.realtime.broadcast(data.userId, {
+      type: 'item.created',
+      data: dto,
+    });
     return {
       success: true,
-      data: {
-        id: item.id,
-        foodId: item.foodId,
-        quantity: item.quantity,
-        unit: item.unit,
-        expiryDate: item.expiryDate,
-        addedAt: item.addedAt,
-        food: {
-          id: item.food.id,
-          name: item.food.name,
-          category: item.food.category,
-          createdByUserId: item.food.createdByUserId,
-        }
-      },
-    };
+      data: dto,
+    }
   }
 
   async getItems(
@@ -74,36 +67,10 @@ export class ItemsService {
           sort: data.sort,
         },
       );
-      return items.map(item => ({
-        id: item.id,
-        foodId: item.foodId,
-        quantity: item.quantity,
-        unit: item.unit,
-        expiryDate: item.expiryDate,
-        addedAt: item.addedAt,
-        food: {
-          id: item.food.id,
-          name: item.food.name,
-          category: item.food.category,
-          createdByUserId: item.food.createdByUserId,
-        }
-      }));
+      return items.map(item => foodItemDtoSchema.parse(item));
     } else {
       const items = await this.itemsRepo.listByUser(userId);
-      return items.map(item => ({
-        id: item.id,
-        foodId: item.foodId,
-        quantity: item.quantity,
-        unit: item.unit,
-        expiryDate: item.expiryDate,
-        addedAt: item.addedAt,
-        food: {
-          id: item.food.id,
-          name: item.food.name,
-          category: item.food.category,
-          createdByUserId: item.food.createdByUserId,
-        }
-      }));
+      return items.map(item => (foodItemDtoSchema.parse(item)));
     }
   }
 
@@ -138,26 +105,48 @@ export class ItemsService {
       };
     }
     const updatedItem = item.data;
+    const dto = foodItemDtoSchema.parse(updatedItem);
+    this.realtime.broadcast(userId, {
+      type: 'item.updated',
+      data: dto,
+    });
     return {
       success: true,
-      data: {
-        id: updatedItem.id,
-        foodId: updatedItem.foodId,
-        quantity: updatedItem.quantity,
-        unit: updatedItem.unit,
-        expiryDate: updatedItem.expiryDate,
-        addedAt: updatedItem.addedAt,
-        food: {
-          id: updatedItem.food.id,
-          name: updatedItem.food.name,
-          category: updatedItem.food.category,
-          createdByUserId: updatedItem.food.createdByUserId,
-        }
-      },
+      data: dto
     };
   }
 
-  removeItem(id: string, userId: string) {
-    return this.itemsRepo.deleteByUser(id, userId);
+  async removeItem(
+    id: string,
+    userId: string,
+  ): Promise<Result<boolean, 'ITEM_NOT_FOUND' | 'UNAUTHORIZED'>> {
+    const item = await this.itemsRepo.findById(id);
+    if (!item) {
+      return {
+        success: false,
+        error: 'ITEM_NOT_FOUND',
+      };
+    }
+    if (item.userId !== userId) {
+      return {
+        success: false,
+        error: 'UNAUTHORIZED',
+      };
+    }
+    const deleted = await this.itemsRepo.deleteByUser(id, userId);
+    if (!deleted) {
+      return {
+        success: false,
+        error: 'ITEM_NOT_FOUND',
+      };
+    }
+    this.realtime.broadcast(userId, {
+      type: 'item.deleted',
+      data: item,
+    });
+    return {
+      success: true,
+      data: true,
+    };
   }
 }

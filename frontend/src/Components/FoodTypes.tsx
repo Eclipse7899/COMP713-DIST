@@ -1,8 +1,8 @@
 import * as React from 'react';
-import { useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
 import { parseResponse } from 'hono/client';
 import type { EditFoodType, FoodType } from '../models';
-import { getClient } from '../client';
+import { getClient, getWebSocketClient } from '../client';
 import { AddFoodTypeForm } from './Forms/AddFoodTypeForm.tsx';
 import FoodTypeBox from './FoodTypeBox';
 import ErrorMessage from './ErrorMessage';
@@ -44,6 +44,31 @@ export default function FoodTypes() {
     setTypes((current) => current.filter((type) => type.id !== id));
   };
 
+  const connectWs = useCallback(async () => {
+    getWebSocketClient(client).then((ws) => {
+      if (ws instanceof WebSocket) {
+        ws.onmessage = (event) => {
+          const raw = JSON.parse(event.data)
+          const type = raw.type
+          const data = raw.data
+
+          if (type === 'food.created') {
+            setTypes((current) => [...current, data])
+          } else if (type === 'food.updated') {
+            setTypes((current) => current.map((type) => type.id === data.id ? data : type))
+          } else if (type === 'food.deleted') {
+            setTypes((current) => current.filter((type) => type.id !== data.id))
+          }
+
+        };
+      }
+      if (typeof ws === 'string') {
+        setError(ws);
+        return;
+      }
+    });
+  }, []);
+
   const editType = async (id: string, form: EditFoodType) => {
     setError('');
     const res = await parseResponse(
@@ -54,13 +79,11 @@ export default function FoodTypes() {
     if (!res) {
       return;
     }
-    setTypes((current) =>
-      current.map((type) => (type.id === id ? { ...type, ...form } : type)),
-    );
   };
 
   useEffect(() => {
     loadTypes();
+    connectWs();
   }, []);
 
   if (addTypeModalOpen) {
@@ -69,7 +92,6 @@ export default function FoodTypes() {
         onCancel={() => setAddTypeModalOpen(false)}
         onDone={() => {
           setAddTypeModalOpen(false);
-          loadTypes();
         }}
       />
     );

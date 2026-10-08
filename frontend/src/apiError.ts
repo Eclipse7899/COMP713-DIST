@@ -10,7 +10,8 @@ type ErrorContext =
   | 'load stocked items'
   | 'add item'
   | 'update item'
-  | 'delete item';
+  | 'delete item'
+  | 'ws token';
 
 type ErrorDetails = {
   data?: {

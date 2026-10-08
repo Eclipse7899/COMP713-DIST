@@ -248,7 +248,7 @@ export function createItemsRoute(itemsService: ItemsService) {
         const userId = c.get('jwtPayload').sub;
 
         const deleted = await itemsService.removeItem(id, userId);
-        if (!deleted) {
+        if (!deleted.success) {
           return c.json(
             { error: 'Item not found or not owned by user' },
             404,
