@@ -1,14 +1,13 @@
-import { AuthService } from '../services/auth.service';
 import { z } from 'zod';
 import { zValidator } from '@hono/zod-validator';
 import { Hono } from 'hono';
 import { describeRoute, resolver } from 'hono-openapi';
-import type { Variables } from '../variables';
 import {
   authResponseSchema,
   messageSchema,
   validationErrorResponse,
 } from '../schemas';
+import type { AuthService } from '../services/auth.service';
 
 const loginSchema = z.object({
   email: z.email(),
@@ -26,7 +25,7 @@ const registerSchema = z.object({
 });
 
 export function createAuthRoute(authService: AuthService) {
-  return new Hono<{ Variables: Variables }>()
+  return new Hono()
     .post(
       '/login',
       describeRoute({
@@ -58,7 +57,7 @@ export function createAuthRoute(authService: AuthService) {
       zValidator('json', loginSchema),
       async (c) => {
         const { email, password } = c.req.valid('json');
-        const result = await authService.signInUser(email, password);
+        const result = await authService.signIn(email, password);
         if (!result.success) {
           return c.json({ message: 'Invalid credentials' }, 401);
         }
@@ -97,7 +96,7 @@ export function createAuthRoute(authService: AuthService) {
       zValidator('json', registerSchema),
       async (c) => {
         const { email, password, username } = c.req.valid('json');
-        const result = await authService.registerUser(
+        const result = await authService.register(
           email,
           password,
           username,
@@ -109,8 +108,9 @@ export function createAuthRoute(authService: AuthService) {
             case 'USERNAME_TAKEN':
               return c.json({ message: 'Username is already taken' }, 409);
           }
+        } else {
+          return c.json(result.data, 201);
         }
-        return c.json(result.data, 201);
       },
     );
 }

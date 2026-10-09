@@ -1,0 +1,58 @@
+syntax = "proto3";
+
+message RegisterRequest {
+  string email = 1;
+  string password = 2;
+  string username = 3;
+}
+
+message User {
+  string id = 1;
+  string email = 2;
+  string username = 3;
+}
+
+message RegisterSuccess{
+  User user = 1;
+  string token = 2;
+}
+
+
+message RegisterResponse{
+  oneof payload {
+    RegisterSuccess success = 1;
+    string error = 2;
+  }
+}
+
+message SignInRequest{
+  string email = 1;
+  string password = 2;
+}
+
+message SignInSuccess{
+  User user = 1;
+  string token = 2;
+}
+
+
+message SignInResponse{
+  oneof payload {
+    SignInSuccess success = 1;
+    string error = 2;
+  }
+}
+
+message TokenRequest{
+  string userId = 1;
+}
+
+message TokenResponse{
+  string token = 1;
+}
+
+service AuthService {
+  rpc Register(RegisterRequest) returns (RegisterResponse);
+  rpc SignIn(SignInRequest) returns (SignInResponse);
+  rpc GetWsToken(TokenRequest) returns (TokenResponse);
+}

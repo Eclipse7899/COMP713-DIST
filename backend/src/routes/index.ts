@@ -6,10 +6,11 @@ import { getJwtMiddleware } from '../middleware/jwt.middleware';
 import type { UserService } from '../services/user.service';
 import type { FoodService } from '../services/food.service';
 import type { ItemsService } from '../services/items.service';
-import type { AuthService } from '../services/auth.service';
 import type { RealtimeHub } from '../realtime/realtime-hub';
 import { createWsRoute } from './ws';
 import { Hono } from 'hono';
+import type { AuthService } from '../services/auth.service';
+import { createHealthRoute } from './health';
 
 export function createApi(
   jwtSecret: string,
@@ -25,7 +26,8 @@ export function createApi(
   const food = createFoodRoute(deps.foodService);
   const items = createItemsRoute(deps.itemsService);
   const auth = createAuthRoute(deps.authService);
-  const ws = createWsRoute(deps.realtime);
+  const ws = createWsRoute(deps.realtime, jwtSecret, deps.authService);
+  const health = createHealthRoute();
 
   const jwtMiddleware = getJwtMiddleware(jwtSecret);
 
@@ -38,5 +40,6 @@ export function createApi(
     .route('/items', items)
     .use('/ws/token', jwtMiddleware)
     .route('/ws', ws)
-    .route('/auth', auth);
+    .route('/auth', auth)
+    .route('/health', health)
 }

@@ -1,6 +1,6 @@
 import { type Food, PrismaClient } from '../generated/prisma/client';
 import type { FoodCategory } from '../generated/prisma/enums';
-import type { Result } from '../util';
+import type { Result } from '../util.ts';
 
 export interface FoodRepository {
   create(data: {
@@ -61,16 +61,15 @@ export class FoodRepo implements FoodRepository {
       data: data,
     });
 
-    if (result.length === 0) {
+    if (result[0] !== undefined) {
       return {
-        success: false,
-        error: 'NOT_FOUND',
+        success: true,
+        data: result[0],
       };
     }
-
     return {
-      success: true,
-      data: result[0],
+      success: false,
+      error: 'NOT_FOUND',
     };
   }
 
@@ -81,16 +80,17 @@ export class FoodRepo implements FoodRepository {
         createdByUserId: userId,
       },
     });
-    if (deleted.count === 0) {
+    if (deleted.count !== 0) {
+      return {
+        success: true,
+        data: undefined,
+      };
+    } else {
       return {
         success: false,
         error: 'NOT_FOUND',
       };
     }
-    return {
-      success: true,
-      data: undefined,
-    };
   }
 
   async findById(id: string) {

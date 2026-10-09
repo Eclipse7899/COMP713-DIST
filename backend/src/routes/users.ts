@@ -5,7 +5,7 @@ import type { Variables } from '../variables';
 import {
   messageSchema,
   unauthorizedResponse,
-  userSchema,
+  userDtoSchema,
 } from '../schemas';
 
 export function createUsersRoute(userService: UserService) {
@@ -20,7 +20,7 @@ export function createUsersRoute(userService: UserService) {
       responses: {
         200: {
           description: 'The authenticated user profile',
-          content: { 'application/json': { schema: resolver(userSchema) } },
+          content: { 'application/json': { schema: resolver(userDtoSchema) } },
         },
         401: unauthorizedResponse,
         404: {

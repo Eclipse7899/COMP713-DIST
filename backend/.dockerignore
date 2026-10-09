@@ -7,6 +7,6 @@ dist
 .git
 .gitignore
 
-Dockerfile
+../Dockerfile
 **/Dockerfile
 *.log

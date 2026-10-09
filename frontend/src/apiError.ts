@@ -78,7 +78,7 @@ export function getApiErrorMessage(error: unknown, context: ErrorContext): strin
     case 502:
     case 503:
     case 504:
-      return 'The service is temporarily unavailable. Please try again in a moment.';
+      return 'The services is temporarily unavailable. Please try again in a moment.';
     default:
       return `We couldn't ${context}. Please try again.`;
   }

@@ -4,7 +4,6 @@ import type { Variables } from '../variables';
 import { z } from 'zod';
 import { zValidator } from '@hono/zod-validator';
 import { describeRoute, resolver } from 'hono-openapi';
-import { FoodCategory, FoodUnit } from '../generated/prisma/enums';
 import {
   createdItemResponseSchema,
   errorSchema,
@@ -15,6 +14,10 @@ import {
   unauthorizedResponse,
   validationErrorResponse,
 } from '../schemas';
+import {
+  FoodCategory,
+  FoodUnit,
+} from '@stocked/shared/src/generated/prisma/enums';
 
 const createItemSchema = z.object({
   foodId: z.cuid2(),

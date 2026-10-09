@@ -1,15 +1,29 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { setupTestDatabase, teardownTestDatabase } from '../setup';
-import { createDb } from '../../src/db';
+import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  jest,
+} from 'bun:test';
+import { createDb } from '@stocked/shared/src/db';
 import { createApp } from '../../src/app';
-import type { PrismaClient } from '../../src/generated/prisma/client';
 import { sign } from 'hono/jwt';
 import type { JwtFields } from '../../src/variables';
-import { FoodCategory, FoodUnit } from '../../src/generated/prisma/enums';
+import {
+  FoodCategory,
+  FoodUnit,
+} from '@stocked/shared/src/generated/prisma/enums';
+import type { PrismaClient } from '@prisma/client/extension';
+import { setup, teardown } from '../setup';
+
+jest.setTimeout(30000);
 
 let app: ReturnType<typeof createApp>['app'];
 let db: PrismaClient;
 const jwtSecret = 'test-secret';
+const authPort = 5051;
 
 async function createTestUser(username: string, email: string) {
   const user = await db.user.create({
@@ -32,17 +46,16 @@ async function createTestUser(username: string, email: string) {
 }
 
 beforeAll(async () => {
-  const dbUrl = await setupTestDatabase();
-  db = createDb(dbUrl);
-  app = createApp(jwtSecret, db).app;
+  const { postgres, auth } = await setup(jwtSecret, authPort);
+  db = createDb(postgres);
+  app = createApp(jwtSecret, auth, db).app;
 });
 
 afterAll(async () => {
-  await teardownTestDatabase();
+  await teardown();
 });
 
 beforeEach(async () => {
-  // Ensure idempotent clean state between tests
   await db.foodItem.deleteMany();
   await db.food.deleteMany();
   await db.user.deleteMany();

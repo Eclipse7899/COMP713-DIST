@@ -1,8 +1,11 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { User } from '../../../src/generated/prisma/client';
-import type { UserRepository } from '../../../src/repositories/users.repo';
-import { AuthService } from '../../../src/services/auth.service';
-import { hashPassword } from '../../../src/util';
+import { beforeEach, describe, expect, it, vi } from 'bun:test';
+import { mocked } from './mocked';
+import { hashPassword } from '@stocked/shared/src/util.ts';
+import type {
+  UserRepository,
+} from '@stocked/shared/src/repositories/users.repo.ts';
+import type { User } from '@stocked/shared/src/generated/prisma/client.ts';
+import { AuthService } from '../src/services/service';
 
 const PASSWORD = 'password';
 const WRONG_PASSWORD = 'wrong-password';
@@ -37,7 +40,7 @@ describe('AuthService', () => {
   });
 
   it('normalizes email before registering a user and returns a token', async () => {
-    vi.mocked(userRepo.createUser).mockResolvedValue({
+    mocked(userRepo.createUser).mockResolvedValue({
       success: true,
       data: user,
     });
@@ -55,7 +58,7 @@ describe('AuthService', () => {
         email: user.email,
         username: user.username,
       });
-      expect(result.data.accessToken).toEqual(expect.any(String));
+      expect(result.data.token).toEqual(expect.any(String));
     }
     expect(userRepo.createUser).toHaveBeenCalledWith(
       USER_EMAIL,
@@ -67,7 +70,7 @@ describe('AuthService', () => {
   it.each([USERNAME_TAKEN_ERROR, EMAIL_TAKEN_ERROR] as const)(
     'returns repository registration errors (%s)',
     async (error) => {
-      vi.mocked(userRepo.createUser).mockResolvedValue({
+      mocked(userRepo.createUser).mockResolvedValue({
         success: false,
         error,
       });
@@ -82,7 +85,7 @@ describe('AuthService', () => {
   );
 
   it('rejects sign-in when the user does not exist', async () => {
-    vi.mocked(userRepo.findUserByEmail).mockResolvedValue(null);
+    mocked(userRepo.findUserByEmail).mockResolvedValue(null);
 
     await expect(
       service.signInUser(`  ${USER_EMAIL.toUpperCase()}  `, PASSWORD),
@@ -94,7 +97,7 @@ describe('AuthService', () => {
   });
 
   it('rejects sign-in when the password is incorrect', async () => {
-    vi.mocked(userRepo.findUserByEmail).mockResolvedValue(user);
+    mocked(userRepo.findUserByEmail).mockResolvedValue(user);
 
     await expect(
       service.signInUser(user.email, WRONG_PASSWORD),
@@ -106,7 +109,7 @@ describe('AuthService', () => {
 
   it('signs in with valid credentials', async () => {
     const hashedPassword = await hashPassword(PASSWORD);
-    vi.mocked(userRepo.findUserByEmail).mockResolvedValue({
+    mocked(userRepo.findUserByEmail).mockResolvedValue({
       ...user,
       hashed_password: hashedPassword,
     });
@@ -120,7 +123,7 @@ describe('AuthService', () => {
         email: user.email,
         username: user.username,
       });
-      expect(result.data.accessToken).toEqual(expect.any(String));
+      expect(result.data.token).toEqual(expect.any(String));
     }
   });
 });

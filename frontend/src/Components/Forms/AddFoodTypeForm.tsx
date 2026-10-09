@@ -1,10 +1,10 @@
 import * as React from 'react';
-import { FoodCategory } from '@stocked/backend/src/generated/prisma/enums.ts';
 import { parseResponse } from 'hono/client';
 import { getClient } from '../../client.ts';
 import { titleCase } from '../../util.ts';
 import ErrorMessage from '../ErrorMessage.tsx';
 import { getApiErrorMessage } from '../../apiError.ts';
+import { FOOD_CATEGORIES, type FoodCategory } from '../../models.ts';
 
 export function AddFoodTypeForm({
                                   onCancel,
@@ -16,7 +16,7 @@ export function AddFoodTypeForm({
   const client = React.useMemo(() => getClient(), []);
   const [newFoodType, setNewFoodType] = React.useState({
     name: '',
-    category: FoodCategory.VEGETABLE as FoodCategory,
+    category: FOOD_CATEGORIES[0] as FoodCategory,
   });
   const [addingType, setAddingType] = React.useState(false);
   const [error, setError] = React.useState('');
@@ -41,7 +41,7 @@ export function AddFoodTypeForm({
 
     setNewFoodType({
       name: '',
-      category: FoodCategory.VEGETABLE,
+      category: FOOD_CATEGORIES[0],
     });
     setAddingType(false);
     onDone();
@@ -91,7 +91,7 @@ export function AddFoodTypeForm({
                 })
               }
             >
-              {Object.values(FoodCategory).map((category) => (
+              {FOOD_CATEGORIES.map((category) => (
                 <option key={category} value={category}>
                   {titleCase(category)}
                 </option>

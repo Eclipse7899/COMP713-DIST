@@ -1,6 +1,10 @@
 import * as React from 'react';
-import { FoodUnit } from '@stocked/backend/src/generated/prisma/enums.ts';
-import type { AddFoodItem, FoodType } from '../../models.ts';
+import {
+  type AddFoodItem,
+  FOOD_UNITS,
+  type FoodType,
+  type FoodUnit,
+} from '../../models.ts';
 import { parseResponse } from 'hono/client';
 import { getClient } from '../../client.ts';
 import { titleCase } from '../../util.ts';
@@ -17,7 +21,7 @@ export default function AddFoodItemForm({
   const initialFormState: AddFoodItem = {
     foodId: '',
     quantity: 1,
-    unit: FoodUnit.ITEM as FoodUnit,
+    unit: FOOD_UNITS[0] as FoodUnit,
     expiryDate: '',
   };
   const [form, setForm] = React.useState(initialFormState);
@@ -148,7 +152,7 @@ export default function AddFoodItemForm({
               }
               required
             >
-              {Object.values(FoodUnit).map((unit) => (
+              {FOOD_UNITS.map((unit) => (
                 <option key={unit} value={unit}>
                   {titleCase(unit)}
                 </option>

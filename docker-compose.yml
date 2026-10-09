@@ -1,8 +1,21 @@
 services:
+  auth:
+    image: auth-service:latest
+    build:
+      dockerfile: ./auth-service.Dockerfile
+    ports:
+      - "5051:5051"
+    environment:
+      DATABASE_URL: postgresql://user:password@db:5432/mydb
+      JWT_SECRET: secret_that_is_at_least_32_characters_long
+    networks:
+      - webnet
+    depends_on:
+      db-init:
+        condition: service_completed_successfully
   frontend:
     build:
-      context: .
-      dockerfile: ./frontend/Dockerfile
+      dockerfile: ./frontend.Dockerfile
     ports:
       - "80:80"
     volumes:
@@ -17,35 +30,31 @@ services:
 
   backend:
     build:
-      context: ./backend
+      dockerfile: ./backend.Dockerfile
     ports:
       - "3000:3000"
     environment:
       DATABASE_URL: postgresql://user:password@db:5432/mydb
       JWT_SECRET: secret_that_is_at_least_32_characters_long
+      AUTH_HOST: auth
+      AUTH_PORT: 5051
     networks:
       - webnet
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health"]
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health" ]
       interval: 5s
       timeout: 5s
       retries: 3
       start_period: 5s
     depends_on:
-      db-init:
-        condition: service_completed_successfully
+      - auth
 
   db-init:
+    image: db-init:latest
     build:
-      context: ./backend
+      dockerfile: ./db-init.Dockerfile
     environment:
       DATABASE_URL: postgresql://user:password@db:5432/mydb
-    entrypoint: ["bun", "run"]
-    command: >
-      sh -c "
-        bunx prisma migrate deploy &&
-        bunx prisma db seed
-      "
     networks:
       - webnet
     depends_on:
