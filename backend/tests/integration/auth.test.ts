@@ -1,23 +1,34 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { setupTestDatabase, teardownTestDatabase } from '../setup';
-import { createDb } from '../../src/db';
+import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  jest,
+} from 'bun:test';
+import { setup, teardown } from '../setup';
+import { createDb } from '@stocked/shared/src/db';
 import { createApp } from '../../src/app';
-import type { PrismaClient } from '../../src/generated/prisma/client';
 import { verify } from 'hono/jwt';
 import bcrypt from 'bcrypt';
+import type { PrismaClient } from '@prisma/client/extension';
+
+jest.setTimeout(30000);
 
 let app: ReturnType<typeof createApp>['app'];
 let db: PrismaClient;
 const jwtSecret = 'test-secret';
+const authPort = 5051;
 
 beforeAll(async () => {
-  const dbUrl = await setupTestDatabase();
-  db = createDb(dbUrl);
-  app = createApp(jwtSecret, db).app;
+  const { postgres, auth } = await setup(jwtSecret, authPort);
+  db = createDb(postgres);
+  app = createApp(jwtSecret, auth, db).app;
 });
 
 afterAll(async () => {
-  await teardownTestDatabase();
+  await teardown();
 });
 
 beforeEach(async () => {
@@ -252,11 +263,11 @@ describe('Auth Endpoints', () => {
 
         expect(response.status).toBe(201);
         const data = await response.json();
-        expect(data).toHaveProperty('accessToken');
-        expect(typeof data.accessToken).toBe('string');
+        expect(data).toHaveProperty('token');
+        expect(typeof data.token).toBe('string');
 
         // Verify token payload
-        const decoded = await verify(data.accessToken, jwtSecret, 'HS256');
+        const decoded = await verify(data.token, jwtSecret, 'HS256');
         expect(decoded.email).toBe('testuser@example.com');
         expect(decoded.username).toBe('testuser');
         expect(decoded).toHaveProperty('sub');
@@ -295,7 +306,7 @@ describe('Auth Endpoints', () => {
 
           expect(response.status).toBe(201);
           const data = await response.json();
-          expect(data).toHaveProperty('accessToken');
+          expect(data).toHaveProperty('token');
         }
       });
     });
@@ -427,11 +438,11 @@ describe('Auth Endpoints', () => {
         expect(response.status).toBe(200);
 
         const data = await response.json();
-        expect(data).toHaveProperty('accessToken');
-        expect(typeof data.accessToken).toBe('string');
+        expect(data).toHaveProperty('token');
+        expect(typeof data.token).toBe('string');
 
         // Verify token payload
-        const decoded = await verify(data.accessToken, jwtSecret, 'HS256');
+        const decoded = await verify(data.token, jwtSecret, 'HS256');
         expect(decoded.email).toBe('testuser2@example.com');
         expect(decoded.username).toBe('testuser2');
       });

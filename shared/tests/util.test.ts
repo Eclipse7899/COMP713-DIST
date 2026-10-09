@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import { comparePasswords, hashPassword } from '../../src/util';
+import { describe, expect, it } from 'bun:test';
+import { comparePasswords, hashPassword } from '../src/util.ts';
 
 describe('Hashing', () => {
   it('hashes a password correctly', async () => {

@@ -1,10 +1,21 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Food, FoodItem } from '../../../src/generated/prisma/client';
-import { FoodCategory, FoodUnit } from '../../../src/generated/prisma/enums';
-import type { FoodRepository } from '../../../src/repositories/food.repo';
-import type { ItemsRepository } from '../../../src/repositories/items.repo';
+import { beforeEach, describe, expect, it, vi } from 'bun:test';
+import { mocked } from '../../mocked';
 import type { RealtimeHub } from '../../../src/realtime/realtime-hub';
 import { ItemsService } from '../../../src/services/items.service';
+import type {
+  ItemsRepository,
+} from '@stocked/shared/src/repositories/items.repo';
+import type {
+  FoodRepository,
+} from '@stocked/shared/src/repositories/food.repo';
+import {
+  FoodCategory,
+  FoodUnit,
+} from '@stocked/shared/src/generated/prisma/enums';
+import type {
+  Food,
+  FoodItem,
+} from '@stocked/shared/src/generated/prisma/client';
 
 const USER_ID = 'user-1';
 const OTHER_USER_ID = 'other-user';
@@ -65,8 +76,8 @@ describe('ItemsService', () => {
   });
 
   it('creates an item for accessible food', async () => {
-    vi.mocked(foodRepo.findById).mockResolvedValue(food);
-    vi.mocked(itemsRepo.create).mockResolvedValue({
+    mocked(foodRepo.findById).mockResolvedValue(food);
+    mocked(itemsRepo.create).mockResolvedValue({
       success: true,
       data: item,
     });
@@ -99,7 +110,7 @@ describe('ItemsService', () => {
   });
 
   it('rejects creating an item for another user’s food', async () => {
-    vi.mocked(foodRepo.findById).mockResolvedValue({
+    mocked(foodRepo.findById).mockResolvedValue({
       ...food,
       createdByUserId: OTHER_USER_ID,
     });
@@ -120,7 +131,7 @@ describe('ItemsService', () => {
   });
 
   it('uses listByUser when no filters are supplied', async () => {
-    vi.mocked(itemsRepo.listByUser).mockResolvedValue([item]);
+    mocked(itemsRepo.listByUser).mockResolvedValue([item]);
 
     await expect(service.getItems(item.userId, {})).resolves.toHaveLength(1);
     expect(itemsRepo.listByUser).toHaveBeenCalledWith(item.userId);
@@ -128,7 +139,7 @@ describe('ItemsService', () => {
   });
 
   it('uses filterByUser when filters are supplied', async () => {
-    vi.mocked(itemsRepo.filterByUser).mockResolvedValue([item]);
+    mocked(itemsRepo.filterByUser).mockResolvedValue([item]);
 
     await expect(
       service.getItems(item.userId, {
@@ -145,7 +156,7 @@ describe('ItemsService', () => {
   });
 
   it('rejects updating an item when its food is missing', async () => {
-    vi.mocked(foodRepo.findById).mockResolvedValue(null);
+    mocked(foodRepo.findById).mockResolvedValue(null);
 
     await expect(
       service.updateItem(item.id, item.userId, {
@@ -161,8 +172,8 @@ describe('ItemsService', () => {
   });
 
   it('delegates item deletion to the repository', async () => {
-    vi.mocked(itemsRepo.findById).mockResolvedValue(item);
-    vi.mocked(itemsRepo.deleteByUser).mockResolvedValue(true);
+    mocked(itemsRepo.findById).mockResolvedValue(item);
+    mocked(itemsRepo.deleteByUser).mockResolvedValue(true);
 
     await expect(service.removeItem(item.id, item.userId)).resolves.toEqual({
       success: true,

@@ -1,22 +1,33 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { setupTestDatabase, teardownTestDatabase } from '../setup';
-import { createDb } from '../../src/db';
+import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  jest,
+} from 'bun:test';
+import { setup, teardown } from '../setup';
+import { createDb } from '@stocked/shared/src/db';
 import { createApp } from '../../src/app';
-import type { PrismaClient } from '../../src/generated/prisma/client';
 import { sign } from 'hono/jwt';
+import type { PrismaClient } from '@prisma/client/extension';
+
+jest.setTimeout(30000);
 
 let app: ReturnType<typeof createApp>['app'];
 let db: PrismaClient;
 const jwtSecret = 'test-secret';
+const authPort = 5051;
 
 beforeAll(async () => {
-  const dbUrl = await setupTestDatabase();
-  db = createDb(dbUrl);
-  app = createApp(jwtSecret, db).app;
+  const { postgres, auth } = await setup(jwtSecret, authPort);
+  db = createDb(postgres);
+  app = createApp(jwtSecret, auth, db).app;
 });
 
 afterAll(async () => {
-  await teardownTestDatabase();
+  await teardown();
 });
 
 beforeEach(async () => {
@@ -37,7 +48,7 @@ async function registerUser(
     body: JSON.stringify({ username, email, password }),
   });
   const data = await response.json();
-  return { status: response.status, token: data.accessToken };
+  return { status: response.status, token: data.token };
 }
 
 describe('Users Endpoints (/api/users)', () => {

@@ -1,6 +1,9 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { User } from '../../../src/generated/prisma/client';
-import type { UserRepository } from '../../../src/repositories/users.repo';
+import { beforeEach, describe, expect, it, vi } from 'bun:test';
+import { mocked } from '../../mocked';
+import type {
+  UserRepository,
+} from '@stocked/shared/src/repositories/users.repo';
+import type { User } from '@stocked/shared/src/generated/prisma/client';
 import { UserService } from '../../../src/services/user.service';
 
 const USER_ID = 'user-1';
@@ -32,7 +35,7 @@ describe('UserService', () => {
   });
 
   it('returns the current user without the password hash', async () => {
-    vi.mocked(userRepo.findById).mockResolvedValue(user);
+    mocked(userRepo.findById).mockResolvedValue(user);
 
     await expect(service.getCurrentUser(user.id)).resolves.toEqual({
       success: true,
@@ -42,7 +45,7 @@ describe('UserService', () => {
   });
 
   it('returns NOT_FOUND when the repository has no user', async () => {
-    vi.mocked(userRepo.findById).mockResolvedValue(null);
+    mocked(userRepo.findById).mockResolvedValue(null);
 
     await expect(service.getCurrentUser(MISSING_USER_ID)).resolves.toEqual({
       success: false,
