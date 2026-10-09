@@ -1,13 +1,18 @@
 import * as React from 'react';
 import { useCallback, useMemo, useState } from 'react';
 import { parseResponse } from 'hono/client';
-import { FoodCategory } from '@stocked/backend/src/generated/prisma/enums';
 import { getClient, getWebSocketClient } from '../client';
 import { titleCase } from '../util';
 import FoodItemBox from './FoodItemBox';
 import AddFoodItemForm from './Forms/AddFoodItemForm.tsx';
 import ErrorMessage from './ErrorMessage';
-import type { EditFoodItem, FoodType, FoodItem } from '../models.ts';
+import {
+  type EditFoodItem,
+  FOOD_CATEGORIES,
+  type FoodCategory,
+  type FoodItem,
+  type FoodType,
+} from '../models.ts';
 import { getApiErrorMessage } from '../apiError';
 
 export default function FoodItems() {
@@ -242,7 +247,7 @@ export default function FoodItems() {
               className="dropdown text-sm"
             >
               <option value="">All Categories</option>
-              {Object.values(FoodCategory).map((category) => (
+              {FOOD_CATEGORIES.map((category) => (
                 <option key={category} value={category}>
                   {titleCase(category)}
                 </option>

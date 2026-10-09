@@ -1,7 +1,12 @@
 import * as React from 'react';
-import type { EditFoodItem, FoodType, FoodItem } from '../../models.ts';
+import {
+  type EditFoodItem,
+  FOOD_UNITS,
+  type FoodItem,
+  type FoodType,
+  type FoodUnit,
+} from '../../models.ts';
 import { titleCase } from '../../util.ts';
-import { FoodUnit } from '@stocked/backend/src/generated/prisma/enums.ts';
 
 export default function EditFoodItemForm(
   {
@@ -101,7 +106,7 @@ export default function EditFoodItemForm(
               }
               required
             >
-              {Object.values(FoodUnit).map((unit) => (
+              {FOOD_UNITS.map((unit) => (
                 <option key={unit} value={unit}>
                   {titleCase(unit)}
                 </option>
