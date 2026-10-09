@@ -42,8 +42,8 @@ export default function SignupForm() {
         throw new Error(getApiErrorMessage(err, 'signup'));
       });
 
-      if (result?.accessToken) {
-        saveJwt(result.accessToken);
+      if (result) {
+        saveJwt(result);
         navigate('/dashboard');
       }
     } catch (err: unknown) {
