@@ -88,14 +88,12 @@ Client → HTTP → Route → Handler → Service → Repository → Database
 - Bun
 - Docker
 
-### Backend Tests
+### Tests
 
 ```
-cd backend
-cp .env.example .env
-bun install
-bun prisma:generate
-bun run test
+bun generate
+bun docker:images
+bun test
 ```
 
 ## Api

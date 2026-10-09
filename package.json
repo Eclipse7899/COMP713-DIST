@@ -1,8 +1,14 @@
 {
   "name": "comp713",
   "private": true,
+  "scripts": {
+    "generate": "bun run --cwd shared prisma:generate && bun run --cwd shared proto:generate && bun run --cwd backend openapi:generate",
+    "docker:images": "docker build --file auth-service.Dockerfile -t auth-service:latest . && docker build --file db-init.Dockerfile -t db-init:latest ."
+  },
   "workspaces": [
     "frontend",
-    "backend"
+    "backend",
+    "shared",
+    "auth-service"
   ]
 }

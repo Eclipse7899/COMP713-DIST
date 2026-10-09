@@ -47,37 +47,6 @@
     }
   },
   "paths": {
-    "/health": {
-      "get": {
-        "operationId": "getHealth",
-        "tags": [
-          "Health"
-        ],
-        "summary": "Health check",
-        "description": "Returns a static status payload. Does not touch the database or require authentication.",
-        "responses": {
-          "200": {
-            "description": "Service is running",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "status": {
-                      "type": "string",
-                      "const": "ok"
-                    }
-                  },
-                  "required": [
-                    "status"
-                  ]
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/users/me": {
       "get": {
         "operationId": "getApiUsersMe",
@@ -202,15 +171,11 @@
                         "description": "Category the food belongs to"
                       },
                       "createdByUserId": {
-                        "anyOf": [
-                          {
-                            "type": "string"
-                          },
-                          {
-                            "type": "null"
-                          }
-                        ],
-                        "description": "Owner user id, or null for a globally available food"
+                        "description": "Owner user id, or null for a globally available food",
+                        "type": [
+                          "string",
+                          "null"
+                        ]
                       }
                     },
                     "required": [
@@ -317,15 +282,11 @@
                       "description": "Category the food belongs to"
                     },
                     "createdByUserId": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ],
-                      "description": "Owner user id, or null for a globally available food"
+                      "description": "Owner user id, or null for a globally available food",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
                     }
                   },
                   "required": [
@@ -467,15 +428,11 @@
                       "description": "Category the food belongs to"
                     },
                     "createdByUserId": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ],
-                      "description": "Owner user id, or null for a globally available food"
+                      "description": "Owner user id, or null for a globally available food",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
                     }
                   },
                   "required": [
@@ -823,15 +780,11 @@
                             "description": "Category the food belongs to"
                           },
                           "createdByUserId": {
-                            "anyOf": [
-                              {
-                                "type": "string"
-                              },
-                              {
-                                "type": "null"
-                              }
-                            ],
-                            "description": "Owner user id, or null for a globally available food"
+                            "description": "Owner user id, or null for a globally available food",
+                            "type": [
+                              "string",
+                              "null"
+                            ]
                           }
                         },
                         "required": [
@@ -940,7 +893,7 @@
                       {
                         "type": "string",
                         "format": "date-time",
-                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
                       },
                       {
                         "type": "null"
@@ -1042,15 +995,11 @@
                               "description": "Category the food belongs to"
                             },
                             "createdByUserId": {
-                              "anyOf": [
-                                {
-                                  "type": "string"
-                                },
-                                {
-                                  "type": "null"
-                                }
-                              ],
-                              "description": "Owner user id, or null for a globally available food"
+                              "description": "Owner user id, or null for a globally available food",
+                              "type": [
+                                "string",
+                                "null"
+                              ]
                             }
                           },
                           "required": [
@@ -1217,7 +1166,7 @@
                       {
                         "type": "string",
                         "format": "date-time",
-                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
                       },
                       {
                         "type": "null"
@@ -1311,15 +1260,11 @@
                           "description": "Category the food belongs to"
                         },
                         "createdByUserId": {
-                          "anyOf": [
-                            {
-                              "type": "string"
-                            },
-                            {
-                              "type": "null"
-                            }
-                          ],
-                          "description": "Owner user id, or null for a globally available food"
+                          "description": "Owner user id, or null for a globally available food",
+                          "type": [
+                            "string",
+                            "null"
+                          ]
                         }
                       },
                       "required": [
@@ -1616,7 +1561,7 @@
                   "email": {
                     "type": "string",
                     "format": "email",
-                    "pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+                    "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
                   },
                   "password": {
                     "type": "string"
@@ -1661,14 +1606,14 @@
                       ],
                       "description": "The authenticated user"
                     },
-                    "accessToken": {
+                    "token": {
                       "type": "string",
                       "description": "JWT access token, valid for one hour"
                     }
                   },
                   "required": [
                     "user",
-                    "accessToken"
+                    "token"
                   ]
                 }
               }
@@ -1740,7 +1685,7 @@
                   "email": {
                     "type": "string",
                     "format": "email",
-                    "pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+                    "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
                   },
                   "password": {
                     "type": "string",
@@ -1793,14 +1738,14 @@
                       ],
                       "description": "The authenticated user"
                     },
-                    "accessToken": {
+                    "token": {
                       "type": "string",
                       "description": "JWT access token, valid for one hour"
                     }
                   },
                   "required": [
                     "user",
-                    "accessToken"
+                    "token"
                   ]
                 }
               }
@@ -1846,6 +1791,37 @@
                   },
                   "required": [
                     "message"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/health": {
+      "get": {
+        "operationId": "getApiHealth",
+        "tags": [
+          "Health"
+        ],
+        "summary": "Health check",
+        "description": "Returns a static status payload. Does not touch the database or require authentication.",
+        "responses": {
+          "200": {
+            "description": "Service is running",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "const": "ok"
+                    }
+                  },
+                  "required": [
+                    "status"
                   ]
                 }
               }
