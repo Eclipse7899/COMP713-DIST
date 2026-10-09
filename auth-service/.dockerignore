@@ -4,9 +4,11 @@ node_modules
 dist
 **/dist
 
+src/generated
+
 .git
 .gitignore
 
-../Dockerfile
+Dockerfile
 **/Dockerfile
 *.log

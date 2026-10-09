@@ -2,22 +2,15 @@ FROM oven/bun:latest AS build
 
 WORKDIR /app
 
-COPY package.json bun.lock* ./
-COPY frontend ./frontend
-COPY backend ./backend
+COPY . .
 
 RUN bun install --frozen-lockfile
 
-WORKDIR /app/backend
-
-RUN bun run prisma:generate
-
-WORKDIR /app/frontend
+RUN bun run --cwd ./shared prisma:generate
 
 ENV NODE_ENV=production
 
-RUN bun run build
-
+RUN bun run --cwd ./frontend build
 
 FROM nginx:alpine
 

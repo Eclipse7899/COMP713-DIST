@@ -7,6 +7,10 @@ dist
 .git
 .gitignore
 
-../Dockerfile
-**/Dockerfile
+frontend.Dockerfile
+**/*.Dockerfile
 *.log
+
+.idea
+
+**/*.env
