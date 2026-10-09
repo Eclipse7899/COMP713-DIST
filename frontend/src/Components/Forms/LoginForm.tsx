@@ -32,8 +32,8 @@ export default function LoginForm() {
         throw new Error(getApiErrorMessage(err, 'login'));
       });
 
-      if (result?.accessToken) {
-        saveJwt(result.accessToken);
+      if (result?.token) {
+        saveJwt(result.token);
         navigate('/dashboard');
       }
     } catch (err: unknown) {

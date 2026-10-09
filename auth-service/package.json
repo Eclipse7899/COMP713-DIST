@@ -1,0 +1,24 @@
+{
+  "name": "auth-service",
+  "module": "src/index.ts",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "bun run --hot src/index.ts",
+    "test": "bun test --timeout 30000",
+    "test:watch": "bun test --watch --timeout 30000",
+    "test:coverage": "bun test --coverage --timeout 30000"
+  },
+  "devDependencies": {
+    "@grpc/proto-loader": "^0.8.1",
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^7"
+  },
+  "dependencies": {
+    "@stocked/shared": "workspace:*",
+    "@grpc/grpc-js": "^1.6.0",
+    "jose": "^6.2.12"
+  }
+}
