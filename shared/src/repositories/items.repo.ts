@@ -1,11 +1,14 @@
 import {
   type Food,
-  type FoodCategory, type FoodItem,
+  type FoodCategory,
+  type FoodItem,
   PrismaClient,
 } from '../generated/prisma/client';
 import { FoodUnit } from '../generated/prisma/enums';
-import type { Result } from '../util';
-import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
+import type { Result } from '../util.ts';
+import {
+  PrismaClientKnownRequestError,
+} from '../generated/prisma/internal/prismaNamespace.ts';
 
 type FoodItemWithFood = FoodItem & { food: Food };
 
@@ -113,16 +116,17 @@ export class ItemsRepo implements ItemsRepository {
         include: { food: true },
       });
 
-      if (batch.length === 0) {
+      if (batch[0] !== undefined) {
         return {
-          success: false,
-          error: 'ITEM_NOT_FOUND',
+          success: true,
+          data: batch[0],
         };
       }
       return {
-        success: true,
-        data: batch[0],
+        success: false,
+        error: 'ITEM_NOT_FOUND',
       };
+
     } catch (error: any) {
       if (error instanceof PrismaClientKnownRequestError) {
         if (error.code === 'P2003') {
