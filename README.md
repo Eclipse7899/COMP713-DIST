@@ -35,18 +35,20 @@ The system allows users to add, update and delete food items and find items that
 - Prisma ORM
 
 ### Backend
-- Bun ts/js runtime
+- Bun JavaScript/TypeScript runtime
 - Hono web framework
 - Zod validation library
+- gRPC (protobuf) for communication with the Auth service
 
 ### Frontend
 - React
-- Typescript
+- TypeScript
 - React Router
 - Tailwind CSS
 
 ### Testing and Development
-- Vitest testing framework
+- Bun's built-in test runner (`bun:test`)
+- Testcontainers for integration tests
 - Vite development server
 
 ### Tooling
@@ -57,14 +59,29 @@ The system allows users to add, update and delete food items and find items that
 - Mise for tooling and runtime management
 
 ## Architecture
-The application follows a modern web architecture, with frontend and backend components communicating via a RESTful API.
+The application follows a modern web architecture. The frontend is a React single-page application built with Vite and served by nginx, which also reverse-proxies `/api` requests to the backend. The frontend talks to the backend over a RESTful API and receives realtime inventory updates over a WebSocket.
 
 Client → HTTP → Route → Handler → Service → Repository → Database
 
+The backend is split into two services:
+
+- **API** – the Hono REST API. It validates requests with Zod, applies
+  authorisation, and handles food and inventory operations. It reads from and
+  writes to PostgreSQL directly through Prisma.
+- **Auth service** – a gRPC service that owns registration, login, password
+  hashing, and JWT issuance. The API calls it over gRPC.
+
+Both services share the same PostgreSQL database, accessed through Prisma. A
+short-lived `db-init` container applies Prisma migrations and seeds the initial
+food catalogue before the other services start.
+
+Inventory changes (items and food types being created, updated, or deleted) are
+pushed to a user's connected clients over a WebSocket, so the UI stays in sync
+without polling.
+
 ## Installation
 
-### Prerequisites
-- Bun
+### Run Prerequisites
 - Docker
 
 ### Steps
@@ -77,7 +94,7 @@ Client → HTTP → Route → Handler → Service → Repository → Database
    
 2. Start the application
    ```bash
-   docker-compose up -d
+   docker compose up -d
    ```
 
 3. Open the application in your browser at `http://localhost`
@@ -87,6 +104,7 @@ Client → HTTP → Route → Handler → Service → Repository → Database
 ### Pre-requisites
 - Bun
 - Docker
+- Protoc (Protobuf Compiler)
 
 ### Tests
 
@@ -98,7 +116,7 @@ bun test
 
 ## Api
 
-Uses a RESTful API to manage food items and food types.
+Uses a RESTful API to manage food items and food types, and a WebSocket endpoint for realtime inventory updates.
 
 ### Endpoints
 
@@ -174,24 +192,40 @@ Food item request:
 
 ```json
 {
-  "foodId": "clxxxxxxxxxxxxxxxxxxxxxxxx",
+  "foodId": "m5x9w3r1t00000abcd1234ef",
   "quantity": 2,
   "unit": "ITEM",
-  "expiryDate": "2026-12-31"
+  "expiryDate": "2026-12-31T00:00:00.000Z"
 }
 ```
 
-`expiryDate` is optional and may be `null`. Supported units are `ITEM`,
-`KG`, `G`, `L`, `ML`, and `PACK`.
+`foodId` is the CUID2 identifier of a food the user can access. `expiryDate`
+is optional and may be `null`; when provided it must be a full ISO 8601
+datetime. Supported units are `ITEM`, `KG`, `G`, `L`, `ML`, and `PACK`.
 
 The item endpoint supports these optional query parameters:
 
-| Parameter    | Description                                         |
-|--------------|-----------------------------------------------------|
-| `contains`   | Filter by food name                                 |
-| `categories` | Filter by category; may be supplied multiple times  |
-| `sort`       | Sort by expiry date using `asc` or `desc`           |
-| `expiryDate` | Return items expiring before the specified ISO date |
+| Parameter    | Description                                                         |
+|--------------|---------------------------------------------------------------------|
+| `contains`   | Filter by food name                                                 |
+| `categories` | Filter by category; may be supplied multiple times                  |
+| `sort`       | Sort by expiry date using `asc` or `desc`                           |
+| `expiryDate` | Return items expiring on or before the specified ISO 8601 timestamp |
+
+#### Realtime (WebSocket)
+
+The API also exposes a WebSocket endpoint that streams inventory changes
+(`item.created`, `item.updated`, `item.deleted`, `food.created`, `food.updated`,
+`food.deleted`) to the authenticated user.
+
+| Method | Endpoint        | Auth | Description                                       |
+|--------|-----------------|------|---------------------------------------------------|
+| `GET`  | `/api/ws/token` | Yes  | Issue a short-lived connection token              |
+| `GET`  | `/api/ws`       | No*  | Open the WebSocket connection with `?token=<jwt>` |
+
+\* The WebSocket handshake authenticates with the `token` query parameter
+instead of the `Authorization` header, because browsers cannot set custom
+headers on WebSocket connections.
 
 ## Known Issues or Limitations
 - JWT tokens are basic, do not offer refresh tokens or revocation
