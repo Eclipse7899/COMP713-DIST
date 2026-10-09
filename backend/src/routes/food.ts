@@ -2,7 +2,6 @@ import { Hono } from 'hono';
 import { FoodService } from '../services/food.service';
 import type { Variables } from '../variables';
 import { z } from 'zod';
-import { FoodCategory } from '../generated/prisma/enums';
 import { zValidator } from '@hono/zod-validator';
 import { describeRoute, resolver } from 'hono-openapi';
 import {
@@ -12,6 +11,7 @@ import {
   unauthorizedResponse,
   validationErrorResponse,
 } from '../schemas';
+import { FoodCategory } from '@stocked/shared/src/generated/prisma/enums';
 
 const createFoodSchema = z.object({
   name: z.string().min(1, 'Name is required'),

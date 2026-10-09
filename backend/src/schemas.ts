@@ -1,5 +1,8 @@
 import { z } from 'zod';
-import { FoodCategory, FoodUnit } from './generated/prisma/enums';
+import {
+  FoodCategory,
+  FoodUnit,
+} from '@stocked/shared/src/generated/prisma/enums';
 
 
 export const foodCategorySchema = z.enum(FoodCategory);
@@ -30,15 +33,25 @@ export const foodItemDtoSchema = z.object({
 
 export type FoodItemDto = z.infer<typeof foodItemDtoSchema>;
 
-export const userSchema = z.object({
+export const userDtoSchema = z.object({
   id: z.string().describe('User CUID2 identifier'),
   email: z.string().describe('User email address'),
   username: z.string().describe('Unique username'),
-});
+}).brand('UserDto');
+
+export type UserDto = z.infer<typeof userDtoSchema>;
+
+export const wsTokenResponseSchema = z.object({
+  token: z
+    .string()
+    .describe('Connection token to pass as the token query parameter of /ws'),
+}).brand('WsTokenResponse');
+
+export type WsTokenResponse = z.infer<typeof wsTokenResponseSchema>;
 
 export const authResponseSchema = z.object({
-  user: userSchema.describe('The authenticated user'),
-  accessToken: z.string().describe('JWT access token, valid for one hour'),
+  user: userDtoSchema.describe('The authenticated user'),
+  token: z.string().describe('JWT access token, valid for one hour'),
 });
 
 export const messageSchema = z.object({

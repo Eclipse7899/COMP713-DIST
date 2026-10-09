@@ -1,11 +1,10 @@
-import type { FoodRepository } from '../repositories/food.repo';
-import type { FoodCategory } from '../generated/prisma/enums';
-import type { Result } from '../util';
+import type { FoodCategory } from '@stocked/shared/src/generated/prisma/enums';
 import type { RealtimeHub } from '../realtime/realtime-hub';
-import {
-  type FoodDto,
-  foodDtoSchema,
-} from '../schemas';
+import type {
+  FoodRepository,
+} from '@stocked/shared/src/repositories/food.repo';
+import { type FoodDto, foodDtoSchema } from '../schemas';
+import type { Result } from '@stocked/shared/src/util';
 
 export class FoodService {
   constructor(private readonly foodRepo: FoodRepository, private readonly realtime: RealtimeHub) {}
@@ -22,13 +21,11 @@ export class FoodService {
       category: data.category,
       createdByUserId: userId,
     });
-
-    const dto = foodDtoSchema.parse(food);
     this.realtime.broadcast(userId, {
       type: 'food.created',
-      data: dto,
+      data: foodDtoSchema.parse(food),
     });
-    return dto;
+    return foodDtoSchema.parse(food);
   }
 
   async getFood(userId: string, category?: FoodCategory): Promise<FoodDto[]> {
@@ -66,14 +63,13 @@ export class FoodService {
       };
     }
     const updatedFood = updateResult.data;
-    const dto = foodDtoSchema.parse(updatedFood);
     this.realtime.broadcast(userId, {
       type: 'food.updated',
-      data: dto,
+      data: foodDtoSchema.parse(updatedFood),
     });
     return {
       success: true,
-      data: dto,
+      data: foodDtoSchema.parse(updatedFood),
     };
   }
 
@@ -107,10 +103,9 @@ export class FoodService {
         error: 'NOT_FOUND',
       };
     }
-    const dto = foodDtoSchema.parse(food);
     return {
       success: true,
-      data: dto,
+      data: foodDtoSchema.parse(food),
     };
   }
 }

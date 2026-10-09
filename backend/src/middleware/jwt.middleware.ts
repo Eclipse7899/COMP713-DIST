@@ -6,3 +6,4 @@ export function getJwtMiddleware(secret: string) {
     alg: 'HS256',
   });
 }
+

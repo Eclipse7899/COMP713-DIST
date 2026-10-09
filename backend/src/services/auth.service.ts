@@ -1,100 +1,87 @@
-import { comparePasswords, hashPassword, type Result } from '../util';
-import type { UserRepository } from '../repositories/users.repo';
-import type { JwtFields } from '../variables';
-import { sign } from 'hono/jwt';
+import { AuthServiceClient } from '@stocked/shared/src/generated/proto/auth';
+import { ChannelCredentials } from '@grpc/grpc-js';
+import type { Result } from '@stocked/shared/src/util';
+import {
+  type UserDto,
+  userDtoSchema,
+  type WsTokenResponse,
+  wsTokenResponseSchema,
+} from '../schemas';
+
 
 export class AuthService {
-  constructor(private readonly jwtSecret: string, private readonly userRepo: UserRepository) {
+  private client: AuthServiceClient;
+
+  constructor(authUrl: string) {
+    this.client = new AuthServiceClient(authUrl, ChannelCredentials.createInsecure());
   }
 
-  normalizeEmail(email: string): string {
-    return email.trim().toLowerCase();
+  async register(email: string, password: string, username: string): Promise<Result<{
+    token: string
+    user: UserDto
+  }, string>> {
+    return new Promise<Result<{
+      token: string,
+      user: UserDto
+    }, string>>((resolve, reject) => {
+      this.client.register({ email, password, username }, (err, response) => {
+        if (err) {
+          reject(err);
+        } else {
+          if (response.payload?.$case === 'success') {
+            resolve({
+              success: true,
+              data: {
+                token: response.payload.success.token,
+                user: userDtoSchema.parse(response.payload.success.user),
+              },
+            });
+          } else if (response.payload?.$case === 'error') {
+            resolve({ success: false, error: response.payload.error });
+          }
+        }
+      });
+    });
   }
 
-  async registerUser(email: string, password: string, username: string,
-  ): Promise<Result<{
-    user: {
-      id: string
-      email: string
-      username: string
-    }
-    accessToken: string
-  }, 'USERNAME_TAKEN' | 'EMAIL_TAKEN'>> {
-    const hashedPassword = await hashPassword(password);
-    const normalizedEmail = this.normalizeEmail(email);
-    const result = await this.userRepo.createUser(normalizedEmail, hashedPassword, username);
-    if (!result.success) {
-      return {
-        success: false,
-        error: result.error,
-      };
-    }
-    const accessToken = await this.createAccessToken(result.data);
-    return {
-      success: true,
-      data: {
-        user: {
-          id: result.data.id,
-          email: result.data.email,
-          username: result.data.username,
-        },
-        accessToken: accessToken.accessToken,
-      },
-    };
+  async signIn(email: string, password: string): Promise<Result<{
+    token: string
+    user: UserDto
+  }, string>> {
+    return new Promise<Result<{
+      token: string,
+      user: UserDto
+    }, string>>((resolve, reject) => {
+      this.client.signIn({ email, password }, (err, response) => {
+        if (err) {
+          reject(err);
+        } else {
+          if (response.payload?.$case === 'success') {
+            resolve({
+              success: true,
+              data: {
+                token: response.payload.success.token,
+                user: userDtoSchema.parse(response.payload.success.user),
+              },
+            });
+          } else if (response.payload?.$case === 'error') {
+            resolve({ success: false, error: response.payload.error });
+          }
+        }
+      });
+    });
   }
 
-  async createAccessToken(
-    user_data: { id: string; email: string; username: string },
-  ): Promise<{ accessToken: string }> {
-    const payload: JwtFields = {
-      sub: user_data.id,
-      email: user_data.email,
-      username: user_data.username,
-      exp: Math.floor(Date.now() / 1000) + 60 * 60,
-    };
-    return {
-      accessToken: await sign(payload, this.jwtSecret),
-    };
-  }
-
-  async signInUser(
-    email: string,
-    password: string,
-  ): Promise<Result<{ accessToken: string, user: { id: string; email: string; username: string } }, void>> {
-    const normalizedEmail = this.normalizeEmail(email);
-    const user = await this.userRepo.findUserByEmail(normalizedEmail);
-    if (!user) {
-      return {
-        success: false,
-        error: undefined,
-      };
-    }
-
-    const isMatch = await comparePasswords(password, user.hashed_password);
-    if (!isMatch) {
-      return {
-        success: false,
-        error: undefined,
-      };
-    }
-
-    const { accessToken } = await this.createAccessToken(
-      {
-        id: user.id,
-        email: user.email,
-        username: user.username,
-      },
-    );
-    return {
-      success: true,
-      data: {
-        user: {
-          id: user.id,
-          email: user.email,
-          username: user.username,
-        },
-        accessToken: accessToken,
-      },
-    };
+  async getWsToken(userId: string): Promise<WsTokenResponse> {
+    return new Promise((resolve, reject) => {
+      this.client.getWsToken({ userId }, (err, response) => {
+        if (err) {
+          reject(err);
+        } else {
+          const tokenResponse = wsTokenResponseSchema.parse({ token: response.token });
+          resolve(tokenResponse);
+        }
+      });
+    });
   }
 }

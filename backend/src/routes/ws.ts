@@ -2,17 +2,10 @@ import { Context, Hono } from 'hono';
 import type { Variables } from '../variables';
 import { upgradeWebSocket } from '@hono/bun';
 import type { RealtimeHub } from '../realtime/realtime-hub';
-import { z } from 'zod';
 import { describeRoute, resolver } from 'hono-openapi';
-import { unauthorizedResponse } from '../schemas';
-
-const tokens = new Map<string, string>();
-
-const wsTokenResponseSchema = z.object({
-  token: z
-    .string()
-    .describe('Connection token to pass as the token query parameter of /ws'),
-});
+import { unauthorizedResponse, wsTokenResponseSchema } from '../schemas';
+import { verify } from 'hono/jwt';
+import type { AuthService } from '../services/auth.service';
 
 const wsTokenQueryParameter = {
   name: 'token',
@@ -22,7 +15,7 @@ const wsTokenQueryParameter = {
   schema: { type: 'string' as const },
 };
 
-export function createWsRoute(realtime: RealtimeHub) {
+export function createWsRoute(realtime: RealtimeHub, jwtToken: string, authService: AuthService) {
   return new Hono<{ Variables: Variables }>().get(
     '/',
     describeRoute({
@@ -50,14 +43,18 @@ export function createWsRoute(realtime: RealtimeHub) {
         },
       },
     }),
-    upgradeWebSocket((c) => {
+    upgradeWebSocket(async (c) => {
       const token = c.req.query('token');
       if (!token) {
         throw new Error('Token is required');
       }
-      const userId = tokens.get(token);
+      const payload = await verify(token, jwtToken, 'HS256');
+      const userId = payload.sub;
       if (!userId) {
         throw new Error('Invalid token');
+      }
+      if (typeof userId !== 'string') {
+        throw new Error('Token user ID does not match');
       }
       return {
         onOpen(_, ws) {
@@ -93,8 +90,7 @@ export function createWsRoute(realtime: RealtimeHub) {
     }),
     async (c: Context<{ Variables: Variables }>) => {
       const userId = c.get('jwtPayload').sub;
-      const token = crypto.randomUUID();
-      tokens.set(token, userId);
+      const { token } = await authService.getWsToken(userId);
       return c.json({ token });
     }
   )

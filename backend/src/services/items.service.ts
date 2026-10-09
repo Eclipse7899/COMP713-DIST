@@ -1,9 +1,16 @@
-import type { ItemsRepository } from '../repositories/items.repo';
-import type { FoodCategory, FoodUnit } from '../generated/prisma/enums';
-import type { FoodRepository } from '../repositories/food.repo';
-import type { Result } from '../util';
 import type { RealtimeHub } from '../realtime/realtime-hub';
 import { type FoodItemDto, foodItemDtoSchema } from '../schemas';
+import type {
+  ItemsRepository,
+} from '@stocked/shared/src/repositories/items.repo';
+import type {
+  FoodRepository,
+} from '@stocked/shared/src/repositories/food.repo';
+import type {
+  FoodCategory,
+  FoodUnit,
+} from '@stocked/shared/src/generated/prisma/enums';
+import type { Result } from '@stocked/shared/src/util';
 
 export class ItemsService {
   constructor(private readonly itemsRepo: ItemsRepository, private readonly foodRepo: FoodRepository, private realtime: RealtimeHub) {

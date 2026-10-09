@@ -1,10 +1,13 @@
-import type { UserRepository } from '../repositories/users.repo';
-import type { Result } from '../util';
+import type {
+  UserRepository,
+} from '@stocked/shared/src/repositories/users.repo';
+import type { Result } from '@stocked/shared/src/util';
+import { type UserDto, userDtoSchema } from '../schemas';
 
 export class UserService {
   constructor(private userRepo: UserRepository) {}
 
-  async getCurrentUser(userId: string): Promise<Result<{ id: string, email: string, username: string }, 'NOT_FOUND'>> {
+  async getCurrentUser(userId: string): Promise<Result<UserDto, 'NOT_FOUND'>> {
     const user = await this.userRepo.findById(userId);
     if (!user) {
       return {
@@ -14,11 +17,7 @@ export class UserService {
     }
     return {
       success: true,
-      data: {
-        id: user.id,
-        email: user.email,
-        username: user.username,
-      },
+      data: userDtoSchema.parse(user),
     }
   }
 }

@@ -1,12 +1,7 @@
 import { z } from 'zod';
 import type { JwtVariables } from 'hono/jwt';
 import type { JWTPayload } from 'hono/utils/jwt/types';
-
-const jwtSchema = z.object({
-  sub: z.string(),
-  email: z.email(),
-  username: z.string(),
-});
+import type { jwtSchema } from '@stocked/shared/src/schema';
 
 export type JwtFields = z.infer<typeof jwtSchema> & JWTPayload;
 

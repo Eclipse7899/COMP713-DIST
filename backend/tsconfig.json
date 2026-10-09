@@ -11,6 +11,7 @@
     "noEmit": true,
     "moduleResolution": "Bundler",
     "esModuleInterop": true,
+    "allowImportingTsExtensions": true,
 
     /* Linting */
     "noUnusedLocals": true,
