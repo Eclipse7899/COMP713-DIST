@@ -2,13 +2,20 @@
   "name": "comp713",
   "private": true,
   "scripts": {
-    "generate": "bun run --cwd shared prisma:generate && bun run --cwd shared proto:generate && bun run --cwd backend openapi:generate",
-    "docker:images": "docker build --file auth-service.Dockerfile -t auth-service:latest . && docker build --file db-init.Dockerfile -t db-init:latest ."
+    "generate": "bun run --cwd auth-service prisma:generate && bun run --cwd backend prisma:generate && bun run --cwd auth-service proto:generate && bun run --cwd backend proto:generate && bun run --cwd backend openapi:generate",
+    "docker:images": "docker build --file auth-service.Dockerfile -t auth-service:latest . && docker build --file db-init.Dockerfile -t db-init:latest .",
+    "lint": "oxlint",
+    "format": "oxfmt"
   },
   "workspaces": [
     "frontend",
     "backend",
-    "shared",
     "auth-service"
-  ]
+  ],
+  "devDependencies": {
+    "oxfmt": "^0.64.0",
+    "oxlint": "^1.79.0",
+    "typescript": "^7.0.2",
+    "typescript-eslint": "^8.71.1"
+  }
 }
