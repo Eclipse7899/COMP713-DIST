@@ -3,12 +3,10 @@ import {
   type FoodCategory,
   type FoodItem,
   PrismaClient,
-} from '../generated/prisma/client';
-import { FoodUnit } from '../generated/prisma/enums';
-import type { Result } from '../util.ts';
-import {
-  PrismaClientKnownRequestError,
-} from '../generated/prisma/internal/prismaNamespace.ts';
+} from '@stocked/shared/src/generated/prisma/client.ts';
+import { FoodUnit } from '@stocked/shared/src/generated/prisma/enums.ts';
+import type { Result } from '@stocked/shared/src/util.ts';
+import { PrismaClientKnownRequestError } from '@stocked/shared/src/generated/prisma/internal/prismaNamespace.ts';
 
 type FoodItemWithFood = FoodItem & { food: Food };
 
@@ -20,7 +18,10 @@ export interface ItemsRepository {
     unit: FoodUnit;
     expiryDate: Date | null;
   }): Promise<Result<FoodItemWithFood, 'FOOD_NOT_FOUND'>>;
-  listByUser(userId: string, sort?: 'asc' | 'desc'): Promise<FoodItemWithFood[]>;
+  listByUser(
+    userId: string,
+    sort?: 'asc' | 'desc',
+  ): Promise<FoodItemWithFood[]>;
   updateByUser(
     id: string,
     userId: string,
@@ -55,14 +56,13 @@ export class ItemsRepo implements ItemsRepository {
     });
   }
 
-  async create(
-    data: {
-      userId: string;
-      foodId: string;
-      quantity: number;
-      unit: FoodUnit;
-      expiryDate: Date | null;
-    }): Promise<Result<FoodItem & { food: Food }, 'FOOD_NOT_FOUND'>> {
+  async create(data: {
+    userId: string;
+    foodId: string;
+    quantity: number;
+    unit: FoodUnit;
+    expiryDate: Date | null;
+  }): Promise<Result<FoodItem & { food: Food }, 'FOOD_NOT_FOUND'>> {
     try {
       const foodItem = await this.prisma.foodItem.create({
         data: {
@@ -91,12 +91,15 @@ export class ItemsRepo implements ItemsRepository {
     }
   }
 
-  async listByUser(userId: string, sort: 'asc' | 'desc' = 'asc'): Promise<(FoodItem & { food: Food })[]> {
+  async listByUser(
+    userId: string,
+    sort: 'asc' | 'desc' = 'asc',
+  ): Promise<(FoodItem & { food: Food })[]> {
     return await this.prisma.foodItem.findMany({
       where: { userId },
       include: { food: true },
       orderBy: { expiryDate: sort },
-    })
+    });
   }
 
   async updateByUser(
@@ -108,7 +111,9 @@ export class ItemsRepo implements ItemsRepository {
       unit: FoodUnit;
       expiryDate: Date | null;
     },
-  ): Promise<Result<FoodItem & { food: Food }, 'ITEM_NOT_FOUND' | 'FOOD_NOT_FOUND'>> {
+  ): Promise<
+    Result<FoodItem & { food: Food }, 'ITEM_NOT_FOUND' | 'FOOD_NOT_FOUND'>
+  > {
     try {
       const batch = await this.prisma.foodItem.updateManyAndReturn({
         where: { id, userId },
@@ -126,7 +131,6 @@ export class ItemsRepo implements ItemsRepository {
         success: false,
         error: 'ITEM_NOT_FOUND',
       };
-
     } catch (error: any) {
       if (error instanceof PrismaClientKnownRequestError) {
         if (error.code === 'P2003') {

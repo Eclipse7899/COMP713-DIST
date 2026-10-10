@@ -1,6 +1,9 @@
-import { type Food, PrismaClient } from '../generated/prisma/client';
-import type { FoodCategory } from '../generated/prisma/enums';
-import type { Result } from '../util.ts';
+import {
+  type Food,
+  PrismaClient,
+} from '@stocked/shared/src/generated/prisma/client.ts';
+import type { FoodCategory } from '@stocked/shared/src/generated/prisma/enums.ts';
+import type { Result } from '@stocked/shared/src/util.ts';
 
 export interface FoodRepository {
   create(data: {
@@ -14,7 +17,10 @@ export interface FoodRepository {
     data: Partial<{ name: string; category: FoodCategory }>,
     userId: string,
   ): Promise<Result<Food, 'NOT_FOUND'>>;
-  deleteForUser(id: string, userId: string): Promise<Result<void, 'NOT_FOUND' | 'UNAUTHORIZED'>>;
+  deleteForUser(
+    id: string,
+    userId: string,
+  ): Promise<Result<void, 'NOT_FOUND' | 'UNAUTHORIZED'>>;
   findById(id: string): Promise<Food | null>;
 }
 
@@ -73,7 +79,10 @@ export class FoodRepo implements FoodRepository {
     };
   }
 
-  async deleteForUser(id: string, userId: string): Promise<Result<void, 'NOT_FOUND' | 'UNAUTHORIZED'>> {
+  async deleteForUser(
+    id: string,
+    userId: string,
+  ): Promise<Result<void, 'NOT_FOUND' | 'UNAUTHORIZED'>> {
     const deleted = await this.prisma.food.deleteMany({
       where: {
         id,

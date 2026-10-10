@@ -37,3 +37,7 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 src/proto/
 src/proto/*
 
+node_modules/
+dist/
+
+/generated/prisma

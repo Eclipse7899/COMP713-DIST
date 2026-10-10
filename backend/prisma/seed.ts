@@ -1,7 +1,7 @@
 import { PrismaPg } from '@prisma/adapter-pg';
-import { hashPassword } from '../src/util.ts';
-import { FoodCategory } from '../src/generated/prisma/enums.ts';
-import { PrismaClient } from '../src/generated/prisma/client.ts';
+import { hashPassword } from '../../shared/src/util.ts';
+import { FoodCategory } from '../../shared/src/generated/prisma/enums.ts';
+import { PrismaClient } from '../../shared/src/generated/prisma/client.ts';
 
 const connectionString = `${process.env.DATABASE_URL}`;
 const adapter = new PrismaPg(connectionString);
