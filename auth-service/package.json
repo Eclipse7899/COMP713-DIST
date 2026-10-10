@@ -6,19 +6,32 @@
   "scripts": {
     "dev": "bun run --hot src/index.ts",
     "test": "bun test --timeout 30000",
+    "build:image": "docker build -t auth-service:latest -f Dockerfile ..",
     "test:watch": "bun test --watch --timeout 30000",
-    "test:coverage": "bun test --coverage --timeout 30000"
+    "test:coverage": "bun test --coverage --timeout 30000",
+    "prisma:generate": "prisma generate --no-hints",
+    "prisma:migrate-dev": "prisma migrate dev",
+    "prisma:seed": "prisma db seed",
+    "prisma:reset": "prisma migrate reset",
+    "proto:generate": "mkdir -p src/generated/proto && protoc --ts_proto_out=src/generated/proto --ts_proto_opt=outputServices=grpc-js,env=node,outputClientImpl=false,outputServerImpl=true,oneof=unions --proto_path=../proto ../proto/auth.proto"
+  },
+  "dependencies": {
+    "@bufbuild/protobuf": "^2.16.0",
+    "@grpc/grpc-js": "^1.6.0",
+    "@prisma/adapter-pg": "^7.9.1",
+    "@prisma/client": "^7.9.1",
+    "bcryptjs": "^3.0.3",
+    "jose": "^6.2.12"
   },
   "devDependencies": {
+    "@bufbuild/buf": "^1.73.0",
     "@grpc/proto-loader": "^0.8.1",
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "@types/node": "^26.6.5",
+    "prisma": "^7.9.1",
+    "ts-proto": "^2.13.0"
   },
   "peerDependencies": {
     "typescript": "^7"
-  },
-  "dependencies": {
-    "@stocked/shared": "workspace:*",
-    "@grpc/grpc-js": "^1.6.0",
-    "jose": "^6.2.12"
   }
 }

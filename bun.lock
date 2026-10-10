@@ -14,20 +14,20 @@
     "auth-service": {
       "name": "auth-service",
       "dependencies": {
+        "@bufbuild/protobuf": "^2.16.0",
         "@grpc/grpc-js": "^1.6.0",
-        "dotenv": "^18.0.7",
+        "@prisma/adapter-pg": "^7.9.1",
+        "@prisma/client": "^7.9.1",
+        "bcryptjs": "^3.0.3",
         "jose": "^6.2.12",
-        "ts-proto": "^2.13.0",
       },
       "devDependencies": {
         "@bufbuild/buf": "^1.73.0",
-        "@bufbuild/protobuf": "^2.16.0",
         "@grpc/proto-loader": "^0.8.1",
-        "@prisma/adapter-pg": "^7.9.1",
-        "@prisma/client": "^7.9.1",
         "@types/bun": "latest",
         "@types/node": "^26.6.5",
         "prisma": "^7.9.1",
+        "ts-proto": "^2.13.0",
       },
       "peerDependencies": {
         "typescript": "^7",
@@ -36,45 +36,45 @@
     "backend": {
       "name": "@stocked/backend",
       "dependencies": {
-        "@bufbuild/buf": "^1.73.0",
         "@bufbuild/protobuf": "^2.16.0",
         "@grpc/grpc-js": "^1.14.5",
         "@hono/bun": "^1.0.0",
         "@hono/zod-validator": "^0.9.0",
-        "@testcontainers/postgresql": "^12.1.0",
+        "@prisma/adapter-pg": "^7.9.1",
+        "@prisma/client": "^7.9.1",
         "hono": "^4.13.3",
         "hono-openapi": "^1.3.3",
-        "oxfmt": "^0.64.0",
-        "oxlint": "^1.79.0",
         "pg": "^8.23.0",
-        "typescript": "^7.0.2",
         "zod": "^4.4.3",
       },
       "devDependencies": {
-        "@grpc/grpc-js": "^1.6.0",
+        "@testcontainers/postgresql": "^12.1.0",
         "@types/bun": "^1.4.0",
+        "dotenv": "^18.0.7",
+        "prisma": "^7.9.1",
         "testcontainers": "^12.1.0",
         "ts-proto": "^2.13.0",
+        "typescript": "^7.0.2",
       },
     },
     "frontend": {
       "name": "@stocked/frontend",
       "version": "0.0.0",
       "dependencies": {
-        "@tailwindcss/vite": "^4.3.3",
         "hono": "^4.13.3",
         "jwt-decode": "^4.0.0",
         "react": "^19.2.8",
         "react-dom": "^19.2.8",
         "react-router": "^8.3.0",
-        "tailwindcss": "^4.3.3",
       },
       "devDependencies": {
         "@stocked/backend": "workspace:*",
+        "@tailwindcss/vite": "^4.3.3",
         "@types/node": "^24.13.3",
         "@types/react": "^19.2.18",
         "@types/react-dom": "^19.2.4",
         "@vitejs/plugin-react": "^6.1.0",
+        "tailwindcss": "^4.3.3",
         "typescript": "~6.0.3",
         "vite": "^8.2.2",
       },
@@ -554,6 +554,8 @@
     "base64-js": ["base64-js@1.5.1", "", {}, "sha512-AKpaYlHn8t4SVbOHCy+b5+KKgvR4vrsD8vbvrbiQJps7fKDTkjkDry6ji0rUJjC0kzbNePLwzxq8iypo41qeWA=="],
 
     "bcrypt-pbkdf": ["bcrypt-pbkdf@1.0.2", "", { "dependencies": { "tweetnacl": "^0.14.3" } }, "sha512-qeFIXtP4MSoi6NLqO12WfqARWWuCKi2Rn/9hJLEmtB5yTNr9DqFWkJRCf2qShWzPeAMRnOgCrq0sg/KLv5ES9w=="],
+
+    "bcryptjs": ["bcryptjs@3.0.3", "", { "bin": { "bcrypt": "bin/bcrypt" } }, "sha512-GlF5wPWnSa/X5LKM1o0wz0suXIINz1iHRLvTS+sLyi7XPbe5ycmYI3DlZqVGZZtDgl4DmasFg7gOB3JYbphV5g=="],
 
     "better-result": ["better-result@2.10.0", "", {}, "sha512-oQhh0y1qo2/ZKdAAEvHZAqKKiHOFU5k/bW96fE2ScgQOVkJRiHwB+nOS1SgFsYqRlxMDWvefXi9Q3px7QvgNDw=="],
 
