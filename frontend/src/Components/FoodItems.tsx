@@ -50,18 +50,21 @@ export default function FoodItems() {
     getWebSocketClient(client).then((ws) => {
       if (ws instanceof WebSocket) {
         ws.onmessage = (event) => {
-          const raw = JSON.parse(event.data)
-          const type = raw.type
-          const data = raw.data
+          const raw = JSON.parse(event.data);
+          const type = raw.type;
+          const data = raw.data;
 
           if (type === 'item.created') {
-            setItems((current) => [...current, data])
+            setItems((current) => [...current, data]);
           } else if (type === 'item.updated') {
-            setItems((current) => current.map((item) => item.id === data.id ? data : item))
+            setItems((current) =>
+              current.map((item) => (item.id === data.id ? data : item)),
+            );
           } else if (type === 'item.deleted') {
-            setItems((current) => current.filter((item) => item.id !== data.id))
+            setItems((current) =>
+              current.filter((item) => item.id !== data.id),
+            );
           }
-
         };
       }
       if (typeof ws === 'string') {
@@ -69,17 +72,15 @@ export default function FoodItems() {
         return;
       }
     });
-  }, []);
+  }, [client]);
 
   const loadItems = useCallback(
-    async (
-      {
-        searchValue = search,
-        categoryValue = category,
-        sortValue = sort,
-        expiresBeforeValue = expiresBefore,
-      } = {},
-    ) => {
+    async ({
+      searchValue = search,
+      categoryValue = category,
+      sortValue = sort,
+      expiresBeforeValue = expiresBefore,
+    } = {}) => {
       setLoading(true);
       setError('');
 
@@ -121,7 +122,7 @@ export default function FoodItems() {
       setItems(res);
       setLoading(false);
     },
-    [client],
+    [client, search, category, sort, expiresBefore],
   );
 
   const clearFilters = useCallback(async () => {
@@ -141,8 +142,7 @@ export default function FoodItems() {
   const loadItemsOnMount = useCallback(() => {
     loadItems();
     loadFoodTypes();
-    connectWs();
-  }, [loadItems]);
+  }, [loadItems, loadFoodTypes]);
 
   const filterItems = async () => {
     await loadItems({
@@ -155,7 +155,8 @@ export default function FoodItems() {
 
   React.useEffect(() => {
     loadItemsOnMount();
-  }, [loadItemsOnMount]);
+    connectWs();
+  }, []);
 
   const deleteItem = async (id: string) => {
     setError('');
@@ -217,12 +218,13 @@ export default function FoodItems() {
         </button>
       </div>
 
-      <div
-        className="card flex flex-col gap-6 p-4">
+      <div className="card flex flex-col gap-6 p-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="search-items"
-                   className="text-xs font-semibold uppercase tracking-wider text-(--secondary)">
+            <label
+              htmlFor="search-items"
+              className="text-xs font-semibold uppercase tracking-wider text-(--secondary)"
+            >
               Search
             </label>
             <input
@@ -236,8 +238,10 @@ export default function FoodItems() {
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="category-filter"
-                   className="text-xs font-semibold uppercase tracking-wider text-(--secondary)">
+            <label
+              htmlFor="category-filter"
+              className="text-xs font-semibold uppercase tracking-wider text-(--secondary)"
+            >
               Category
             </label>
             <select
@@ -256,8 +260,10 @@ export default function FoodItems() {
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="sort-filter"
-                   className="text-xs font-semibold uppercase tracking-wider text-(--secondary)">
+            <label
+              htmlFor="sort-filter"
+              className="text-xs font-semibold uppercase tracking-wider text-(--secondary)"
+            >
               Sort By Expiry
             </label>
             <select
@@ -272,8 +278,10 @@ export default function FoodItems() {
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="expires-before-filter"
-                   className="text-xs font-semibold uppercase tracking-wider text-(--secondary)">
+            <label
+              htmlFor="expires-before-filter"
+              className="text-xs font-semibold uppercase tracking-wider text-(--secondary)"
+            >
               Expires Before
             </label>
             <input
@@ -301,12 +309,13 @@ export default function FoodItems() {
         </div>
       </div>
 
-      <ErrorMessage message={error}/>
+      <ErrorMessage message={error} />
 
       <div className="card">
         {loading ? (
-          <div className="p-8 text-center text-(--secondary)">Loading stocked
-            items...</div>
+          <div className="p-8 text-center text-(--secondary)">
+            Loading stocked items...
+          </div>
         ) : items.length === 0 ? (
           <div className="p-8 text-center text-(--secondary)">
             {hasActiveFilters ? (
@@ -320,10 +329,16 @@ export default function FoodItems() {
         ) : (
           <ul className="divide-y divide-(--border)">
             {items.map((item) => (
-              <li key={item.id}
-                  className="p-4 hover:bg-(--secondary)/5 transition-colors">
-                <FoodItemBox item={item} foodTypes={foodTypes}
-                             onDelete={deleteItem} onEdit={editItem}/>
+              <li
+                key={item.id}
+                className="p-4 hover:bg-(--secondary)/5 transition-colors"
+              >
+                <FoodItemBox
+                  item={item}
+                  foodTypes={foodTypes}
+                  onDelete={deleteItem}
+                  onEdit={editItem}
+                />
               </li>
             ))}
           </ul>

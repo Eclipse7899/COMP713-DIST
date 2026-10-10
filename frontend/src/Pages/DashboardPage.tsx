@@ -16,7 +16,9 @@ export default function DashboardPage() {
     <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
       <div className="flex flex-col gap-1">
         <h1 className="text-3xl font-bold text-(--text-h)">Dashboard</h1>
-        <p className="text-(--text)">Manage your food stock and categories in one place.</p>
+        <p className="text-(--text)">
+          Manage your food stock and categories in one place.
+        </p>
       </div>
 
       <div className="flex flex-col md:flex-row gap-8 items-start">

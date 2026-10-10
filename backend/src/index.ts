@@ -1,11 +1,14 @@
-import { createDb } from '@stocked/shared/src/db';
 import { getConfig } from './config';
 import { createApp } from './app';
 import { websocket } from '@hono/bun';
+import { PrismaClient } from './generated/prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
 
 const config = getConfig();
 
-const db = createDb(config.DATABASE_URL);
+const db = new PrismaClient({
+  adapter: new PrismaPg(config.DATABASE_URL),
+});
 
 const { app, routes } = createApp(
   config.JWT_SECRET,

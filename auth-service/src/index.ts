@@ -1,11 +1,10 @@
 import * as grpc from '@grpc/grpc-js';
 import { AuthService } from './services/service.ts';
 import { createAuthHandlers } from './handlers/handler.ts';
-import UserRepo from '@stocked/shared/src/repositories/users.repo.ts';
-import { createDb } from '@stocked/shared/src/db.ts';
-import {
-  AuthServiceService,
-} from '@stocked/shared/src/generated/proto/auth.ts';
+import UserRepo from './repositories/users.repo.ts';
+import { AuthServiceService } from './generated/proto/auth.ts';
+import { PrismaPg } from '@prisma/adapter-pg';
+import { PrismaClient } from './generated/prisma/client.ts';
 
 function main() {
   const server = new grpc.Server();
@@ -21,19 +20,26 @@ function main() {
     throw new Error('DATABASE_URL environment variable is not set');
   }
 
-  const db = createDb(databaseUrl);
+  const db = new PrismaClient({
+    adapter: new PrismaPg(databaseUrl),
+  });
+
   const userRepo = new UserRepo(db);
   const repo = new AuthService(jwtSecret, userRepo);
   const authHandlers = createAuthHandlers(repo);
 
   server.addService(AuthServiceService, authHandlers);
-  server.bindAsync(`0.0.0.0:${port}`, grpc.ServerCredentials.createInsecure(), (err, port) => {
-    if (err) {
-      console.error(`Server failed to bind: ${err.message}`);
-      return;
-    }
-    console.log(`Server running on port ${port}`);
-  });
+  server.bindAsync(
+    `0.0.0.0:${port}`,
+    grpc.ServerCredentials.createInsecure(),
+    (err, port) => {
+      if (err) {
+        console.error(`Server failed to bind: ${err.message}`);
+        return;
+      }
+      console.log(`Server running on port ${port}`);
+    },
+  );
 }
 
 main();

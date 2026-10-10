@@ -50,9 +50,7 @@
     "/api/users/me": {
       "get": {
         "operationId": "getApiUsersMe",
-        "tags": [
-          "Users"
-        ],
+        "tags": ["Users"],
         "summary": "Get the authenticated user",
         "description": "Returns the profile of the user identified by the JWT supplied in the Authorization header.",
         "security": [
@@ -81,11 +79,7 @@
                       "description": "Unique username"
                     }
                   },
-                  "required": [
-                    "id",
-                    "email",
-                    "username"
-                  ]
+                  "required": ["id", "email", "username"]
                 }
               }
             }
@@ -113,9 +107,7 @@
                       "description": "Human readable message"
                     }
                   },
-                  "required": [
-                    "message"
-                  ]
+                  "required": ["message"]
                 }
               }
             }
@@ -126,9 +118,7 @@
     "/api/food": {
       "get": {
         "operationId": "getApiFood",
-        "tags": [
-          "Food"
-        ],
+        "tags": ["Food"],
         "summary": "List foods available to the user",
         "description": "Returns globally available foods plus the foods created by the authenticated user.",
         "security": [
@@ -172,18 +162,10 @@
                       },
                       "createdByUserId": {
                         "description": "Owner user id, or null for a globally available food",
-                        "type": [
-                          "string",
-                          "null"
-                        ]
+                        "type": ["string", "null"]
                       }
                     },
-                    "required": [
-                      "id",
-                      "name",
-                      "category",
-                      "createdByUserId"
-                    ]
+                    "required": ["id", "name", "category", "createdByUserId"]
                   }
                 }
               }
@@ -204,9 +186,7 @@
       },
       "post": {
         "operationId": "postApiFood",
-        "tags": [
-          "Food"
-        ],
+        "tags": ["Food"],
         "summary": "Create a food",
         "description": "Creates a food owned by the authenticated user.",
         "security": [
@@ -241,10 +221,7 @@
                     ]
                   }
                 },
-                "required": [
-                  "name",
-                  "category"
-                ]
+                "required": ["name", "category"]
               }
             }
           }
@@ -283,18 +260,10 @@
                     },
                     "createdByUserId": {
                       "description": "Owner user id, or null for a globally available food",
-                      "type": [
-                        "string",
-                        "null"
-                      ]
+                      "type": ["string", "null"]
                     }
                   },
-                  "required": [
-                    "id",
-                    "name",
-                    "category",
-                    "createdByUserId"
-                  ]
+                  "required": ["id", "name", "category", "createdByUserId"]
                 }
               }
             }
@@ -308,19 +277,14 @@
                   "properties": {
                     "success": {
                       "type": "boolean",
-                      "enum": [
-                        false
-                      ]
+                      "enum": [false]
                     },
                     "error": {
                       "type": "object",
                       "description": "Zod validation issues"
                     }
                   },
-                  "required": [
-                    "success",
-                    "error"
-                  ]
+                  "required": ["success", "error"]
                 }
               }
             }
@@ -342,9 +306,7 @@
     "/api/food/{id}": {
       "put": {
         "operationId": "putApiFoodById",
-        "tags": [
-          "Food"
-        ],
+        "tags": ["Food"],
         "summary": "Update a food",
         "description": "Updates the name and/or category of a food owned by the authenticated user.",
         "security": [
@@ -429,18 +391,10 @@
                     },
                     "createdByUserId": {
                       "description": "Owner user id, or null for a globally available food",
-                      "type": [
-                        "string",
-                        "null"
-                      ]
+                      "type": ["string", "null"]
                     }
                   },
-                  "required": [
-                    "id",
-                    "name",
-                    "category",
-                    "createdByUserId"
-                  ]
+                  "required": ["id", "name", "category", "createdByUserId"]
                 }
               }
             }
@@ -454,19 +408,14 @@
                   "properties": {
                     "success": {
                       "type": "boolean",
-                      "enum": [
-                        false
-                      ]
+                      "enum": [false]
                     },
                     "error": {
                       "type": "object",
                       "description": "Zod validation issues"
                     }
                   },
-                  "required": [
-                    "success",
-                    "error"
-                  ]
+                  "required": ["success", "error"]
                 }
               }
             }
@@ -494,9 +443,7 @@
                       "description": "Human readable error code or message"
                     }
                   },
-                  "required": [
-                    "error"
-                  ]
+                  "required": ["error"]
                 }
               }
             }
@@ -513,9 +460,7 @@
                       "description": "Human readable error code or message"
                     }
                   },
-                  "required": [
-                    "error"
-                  ]
+                  "required": ["error"]
                 }
               }
             }
@@ -524,9 +469,7 @@
       },
       "delete": {
         "operationId": "deleteApiFoodById",
-        "tags": [
-          "Food"
-        ],
+        "tags": ["Food"],
         "summary": "Delete a food",
         "description": "Deletes a food owned by the authenticated user.",
         "security": [
@@ -559,19 +502,14 @@
                   "properties": {
                     "success": {
                       "type": "boolean",
-                      "enum": [
-                        false
-                      ]
+                      "enum": [false]
                     },
                     "error": {
                       "type": "object",
                       "description": "Zod validation issues"
                     }
                   },
-                  "required": [
-                    "success",
-                    "error"
-                  ]
+                  "required": ["success", "error"]
                 }
               }
             }
@@ -599,9 +537,7 @@
                       "description": "Human readable error code or message"
                     }
                   },
-                  "required": [
-                    "error"
-                  ]
+                  "required": ["error"]
                 }
               }
             }
@@ -618,9 +554,7 @@
                       "description": "Human readable error code or message"
                     }
                   },
-                  "required": [
-                    "error"
-                  ]
+                  "required": ["error"]
                 }
               }
             }
@@ -631,9 +565,7 @@
     "/api/items": {
       "get": {
         "operationId": "getApiItems",
-        "tags": [
-          "Items"
-        ],
+        "tags": ["Items"],
         "summary": "List the authenticated user food items",
         "description": "Returns the food items owned by the authenticated user, optionally filtered by name, category, and expiry date, and sorted by expiry date.",
         "security": [
@@ -684,10 +616,7 @@
             "description": "Sort results by expiry date",
             "schema": {
               "type": "string",
-              "enum": [
-                "asc",
-                "desc"
-              ]
+              "enum": ["asc", "desc"]
             }
           },
           {
@@ -725,14 +654,7 @@
                       },
                       "unit": {
                         "type": "string",
-                        "enum": [
-                          "ITEM",
-                          "KG",
-                          "G",
-                          "L",
-                          "ML",
-                          "PACK"
-                        ],
+                        "enum": ["ITEM", "KG", "G", "L", "ML", "PACK"],
                         "description": "Unit the quantity is expressed in"
                       },
                       "expiryDate": {
@@ -781,10 +703,7 @@
                           },
                           "createdByUserId": {
                             "description": "Owner user id, or null for a globally available food",
-                            "type": [
-                              "string",
-                              "null"
-                            ]
+                            "type": ["string", "null"]
                           }
                         },
                         "required": [
@@ -819,19 +738,14 @@
                   "properties": {
                     "success": {
                       "type": "boolean",
-                      "enum": [
-                        false
-                      ]
+                      "enum": [false]
                     },
                     "error": {
                       "type": "object",
                       "description": "Zod validation issues"
                     }
                   },
-                  "required": [
-                    "success",
-                    "error"
-                  ]
+                  "required": ["success", "error"]
                 }
               }
             }
@@ -851,9 +765,7 @@
       },
       "post": {
         "operationId": "postApiItems",
-        "tags": [
-          "Items"
-        ],
+        "tags": ["Items"],
         "summary": "Create a food item",
         "description": "Adds a food item to the authenticated user's inventory. The referenced food must be global or owned by the user.",
         "security": [
@@ -879,14 +791,7 @@
                   },
                   "unit": {
                     "type": "string",
-                    "enum": [
-                      "ITEM",
-                      "KG",
-                      "G",
-                      "L",
-                      "ML",
-                      "PACK"
-                    ]
+                    "enum": ["ITEM", "KG", "G", "L", "ML", "PACK"]
                   },
                   "expiryDate": {
                     "anyOf": [
@@ -901,11 +806,7 @@
                     ]
                   }
                 },
-                "required": [
-                  "foodId",
-                  "quantity",
-                  "unit"
-                ]
+                "required": ["foodId", "quantity", "unit"]
               }
             }
           }
@@ -940,14 +841,7 @@
                         },
                         "unit": {
                           "type": "string",
-                          "enum": [
-                            "ITEM",
-                            "KG",
-                            "G",
-                            "L",
-                            "ML",
-                            "PACK"
-                          ],
+                          "enum": ["ITEM", "KG", "G", "L", "ML", "PACK"],
                           "description": "Unit the quantity is expressed in"
                         },
                         "expiryDate": {
@@ -996,10 +890,7 @@
                             },
                             "createdByUserId": {
                               "description": "Owner user id, or null for a globally available food",
-                              "type": [
-                                "string",
-                                "null"
-                              ]
+                              "type": ["string", "null"]
                             }
                           },
                           "required": [
@@ -1023,10 +914,7 @@
                       "description": "The newly created food item"
                     }
                   },
-                  "required": [
-                    "success",
-                    "data"
-                  ]
+                  "required": ["success", "data"]
                 }
               }
             }
@@ -1040,19 +928,14 @@
                   "properties": {
                     "success": {
                       "type": "boolean",
-                      "enum": [
-                        false
-                      ]
+                      "enum": [false]
                     },
                     "error": {
                       "type": "object",
                       "description": "Zod validation issues"
                     }
                   },
-                  "required": [
-                    "success",
-                    "error"
-                  ]
+                  "required": ["success", "error"]
                 }
               }
             }
@@ -1080,9 +963,7 @@
                       "description": "Human readable error code or message"
                     }
                   },
-                  "required": [
-                    "error"
-                  ]
+                  "required": ["error"]
                 }
               }
             }
@@ -1099,9 +980,7 @@
                       "description": "Human readable error code or message"
                     }
                   },
-                  "required": [
-                    "error"
-                  ]
+                  "required": ["error"]
                 }
               }
             }
@@ -1112,9 +991,7 @@
     "/api/items/{id}": {
       "put": {
         "operationId": "putApiItemsById",
-        "tags": [
-          "Items"
-        ],
+        "tags": ["Items"],
         "summary": "Update a food item",
         "description": "Updates a food item owned by the authenticated user. The referenced food must be global or owned by the user.",
         "security": [
@@ -1152,14 +1029,7 @@
                   },
                   "unit": {
                     "type": "string",
-                    "enum": [
-                      "ITEM",
-                      "KG",
-                      "G",
-                      "L",
-                      "ML",
-                      "PACK"
-                    ]
+                    "enum": ["ITEM", "KG", "G", "L", "ML", "PACK"]
                   },
                   "expiryDate": {
                     "anyOf": [
@@ -1174,11 +1044,7 @@
                     ]
                   }
                 },
-                "required": [
-                  "foodId",
-                  "quantity",
-                  "unit"
-                ]
+                "required": ["foodId", "quantity", "unit"]
               }
             }
           }
@@ -1205,14 +1071,7 @@
                     },
                     "unit": {
                       "type": "string",
-                      "enum": [
-                        "ITEM",
-                        "KG",
-                        "G",
-                        "L",
-                        "ML",
-                        "PACK"
-                      ],
+                      "enum": ["ITEM", "KG", "G", "L", "ML", "PACK"],
                       "description": "Unit the quantity is expressed in"
                     },
                     "expiryDate": {
@@ -1261,18 +1120,10 @@
                         },
                         "createdByUserId": {
                           "description": "Owner user id, or null for a globally available food",
-                          "type": [
-                            "string",
-                            "null"
-                          ]
+                          "type": ["string", "null"]
                         }
                       },
-                      "required": [
-                        "id",
-                        "name",
-                        "category",
-                        "createdByUserId"
-                      ],
+                      "required": ["id", "name", "category", "createdByUserId"],
                       "description": "Food this item refers to"
                     }
                   },
@@ -1298,19 +1149,14 @@
                   "properties": {
                     "success": {
                       "type": "boolean",
-                      "enum": [
-                        false
-                      ]
+                      "enum": [false]
                     },
                     "error": {
                       "type": "object",
                       "description": "Zod validation issues"
                     }
                   },
-                  "required": [
-                    "success",
-                    "error"
-                  ]
+                  "required": ["success", "error"]
                 }
               }
             }
@@ -1338,9 +1184,7 @@
                       "description": "Human readable error code or message"
                     }
                   },
-                  "required": [
-                    "error"
-                  ]
+                  "required": ["error"]
                 }
               }
             }
@@ -1349,9 +1193,7 @@
       },
       "delete": {
         "operationId": "deleteApiItemsById",
-        "tags": [
-          "Items"
-        ],
+        "tags": ["Items"],
         "summary": "Delete a food item",
         "description": "Deletes a food item owned by the authenticated user.",
         "security": [
@@ -1384,9 +1226,7 @@
                       "description": "Whether the operation succeeded"
                     }
                   },
-                  "required": [
-                    "success"
-                  ]
+                  "required": ["success"]
                 }
               }
             }
@@ -1400,19 +1240,14 @@
                   "properties": {
                     "success": {
                       "type": "boolean",
-                      "enum": [
-                        false
-                      ]
+                      "enum": [false]
                     },
                     "error": {
                       "type": "object",
                       "description": "Zod validation issues"
                     }
                   },
-                  "required": [
-                    "success",
-                    "error"
-                  ]
+                  "required": ["success", "error"]
                 }
               }
             }
@@ -1440,9 +1275,7 @@
                       "description": "Human readable error code or message"
                     }
                   },
-                  "required": [
-                    "error"
-                  ]
+                  "required": ["error"]
                 }
               }
             }
@@ -1453,9 +1286,7 @@
     "/api/ws": {
       "get": {
         "operationId": "getApiWs",
-        "tags": [
-          "WebSocket"
-        ],
+        "tags": ["WebSocket"],
         "summary": "Open a realtime WebSocket connection",
         "description": "Upgrades the request to a WebSocket connection and streams realtime inventory events to the client as JSON messages. Authenticate by passing a connection token (obtained from GET /ws/token) as the token query parameter rather than an Authorization header.",
         "parameters": [
@@ -1499,9 +1330,7 @@
     "/api/ws/token": {
       "get": {
         "operationId": "getApiWsToken",
-        "tags": [
-          "WebSocket"
-        ],
+        "tags": ["WebSocket"],
         "summary": "Issue a WebSocket connection token",
         "description": "Generates a single-use connection token for the authenticated user, to be supplied as the token query parameter when opening the WebSocket connection at GET /ws.",
         "security": [
@@ -1522,9 +1351,7 @@
                       "description": "Connection token to pass as the token query parameter of /ws"
                     }
                   },
-                  "required": [
-                    "token"
-                  ]
+                  "required": ["token"]
                 }
               }
             }
@@ -1546,9 +1373,7 @@
     "/api/auth/login": {
       "post": {
         "operationId": "postApiAuthLogin",
-        "tags": [
-          "Auth"
-        ],
+        "tags": ["Auth"],
         "summary": "Log in with email and password",
         "description": "Exchanges valid credentials for a JWT access token.",
         "requestBody": {
@@ -1567,10 +1392,7 @@
                     "type": "string"
                   }
                 },
-                "required": [
-                  "email",
-                  "password"
-                ]
+                "required": ["email", "password"]
               }
             }
           }
@@ -1599,11 +1421,7 @@
                           "description": "Unique username"
                         }
                       },
-                      "required": [
-                        "id",
-                        "email",
-                        "username"
-                      ],
+                      "required": ["id", "email", "username"],
                       "description": "The authenticated user"
                     },
                     "token": {
@@ -1611,10 +1429,7 @@
                       "description": "JWT access token, valid for one hour"
                     }
                   },
-                  "required": [
-                    "user",
-                    "token"
-                  ]
+                  "required": ["user", "token"]
                 }
               }
             }
@@ -1628,19 +1443,14 @@
                   "properties": {
                     "success": {
                       "type": "boolean",
-                      "enum": [
-                        false
-                      ]
+                      "enum": [false]
                     },
                     "error": {
                       "type": "object",
                       "description": "Zod validation issues"
                     }
                   },
-                  "required": [
-                    "success",
-                    "error"
-                  ]
+                  "required": ["success", "error"]
                 }
               }
             }
@@ -1657,9 +1467,7 @@
                       "description": "Human readable message"
                     }
                   },
-                  "required": [
-                    "message"
-                  ]
+                  "required": ["message"]
                 }
               }
             }
@@ -1670,9 +1478,7 @@
     "/api/auth/register": {
       "post": {
         "operationId": "postApiAuthRegister",
-        "tags": [
-          "Auth"
-        ],
+        "tags": ["Auth"],
         "summary": "Register a new account",
         "description": "Creates a user, hashes the password, and returns a JWT access token.",
         "requestBody": {
@@ -1698,11 +1504,7 @@
                     "pattern": "^[a-zA-Z0-9_-]+$"
                   }
                 },
-                "required": [
-                  "email",
-                  "password",
-                  "username"
-                ]
+                "required": ["email", "password", "username"]
               }
             }
           }
@@ -1731,11 +1533,7 @@
                           "description": "Unique username"
                         }
                       },
-                      "required": [
-                        "id",
-                        "email",
-                        "username"
-                      ],
+                      "required": ["id", "email", "username"],
                       "description": "The authenticated user"
                     },
                     "token": {
@@ -1743,10 +1541,7 @@
                       "description": "JWT access token, valid for one hour"
                     }
                   },
-                  "required": [
-                    "user",
-                    "token"
-                  ]
+                  "required": ["user", "token"]
                 }
               }
             }
@@ -1760,19 +1555,14 @@
                   "properties": {
                     "success": {
                       "type": "boolean",
-                      "enum": [
-                        false
-                      ]
+                      "enum": [false]
                     },
                     "error": {
                       "type": "object",
                       "description": "Zod validation issues"
                     }
                   },
-                  "required": [
-                    "success",
-                    "error"
-                  ]
+                  "required": ["success", "error"]
                 }
               }
             }
@@ -1789,9 +1579,7 @@
                       "description": "Human readable message"
                     }
                   },
-                  "required": [
-                    "message"
-                  ]
+                  "required": ["message"]
                 }
               }
             }
@@ -1802,9 +1590,7 @@
     "/api/health": {
       "get": {
         "operationId": "getApiHealth",
-        "tags": [
-          "Health"
-        ],
+        "tags": ["Health"],
         "summary": "Health check",
         "description": "Returns a static status payload. Does not touch the database or require authentication.",
         "responses": {
@@ -1820,9 +1606,7 @@
                       "const": "ok"
                     }
                   },
-                  "required": [
-                    "status"
-                  ]
+                  "required": ["status"]
                 }
               }
             }

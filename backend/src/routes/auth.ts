@@ -96,11 +96,7 @@ export function createAuthRoute(authService: AuthService) {
       zValidator('json', registerSchema),
       async (c) => {
         const { email, password, username } = c.req.valid('json');
-        const result = await authService.register(
-          email,
-          password,
-          username,
-        );
+        const result = await authService.register(email, password, username);
         if (!result.success) {
           switch (result.error) {
             case 'EMAIL_TAKEN':

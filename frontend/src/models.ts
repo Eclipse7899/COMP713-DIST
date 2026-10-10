@@ -4,11 +4,21 @@ import type { AppType } from '@stocked/backend/src';
 
 const typeClient = hc<AppType>('/');
 
-export type FoodType = InferResponseType<typeof typeClient.api.food.$get, 200>[number];
-export type FoodItem = InferResponseType<typeof typeClient.api.items.$get, 200>[number];
+export type FoodType = InferResponseType<
+  typeof typeClient.api.food.$get,
+  200
+>[number];
+export type FoodItem = InferResponseType<
+  typeof typeClient.api.items.$get,
+  200
+>[number];
 
-export type AddFoodType = InferRequestType<typeof typeClient.api.food.$post>['json'];
-export type AddFoodItem = InferRequestType<typeof typeClient.api.items.$post>['json'];
+export type AddFoodType = InferRequestType<
+  typeof typeClient.api.food.$post
+>['json'];
+export type AddFoodItem = InferRequestType<
+  typeof typeClient.api.items.$post
+>['json'];
 
 const itemsById = typeClient.api.items[':id'];
 const foodById = typeClient.api.food[':id'];
@@ -30,10 +40,7 @@ export const FOOD_CATEGORIES = [
   'OTHER',
 ] as const satisfies readonly FoodCategory[];
 
-type Missing = Exclude<
-  FoodCategory,
-  (typeof FOOD_CATEGORIES)[number]
->;
+type Missing = Exclude<FoodCategory, (typeof FOOD_CATEGORIES)[number]>;
 
 const _: Missing extends never ? true : never = true;
 
@@ -48,9 +55,6 @@ export const FOOD_UNITS = [
   'PACK',
 ] as const satisfies readonly FoodUnit[];
 
-type MissingUnit = Exclude<
-  FoodItem['unit'],
-  (typeof FOOD_UNITS)[number]
->;
+type MissingUnit = Exclude<FoodItem['unit'], (typeof FOOD_UNITS)[number]>;
 
 const __: MissingUnit extends never ? true : never = true;

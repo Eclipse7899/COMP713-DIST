@@ -1,51 +1,61 @@
 import { z } from 'zod';
-import {
-  FoodCategory,
-  FoodUnit,
-} from '@stocked/shared/src/generated/prisma/enums';
+import { FoodCategory, FoodUnit } from './generated/prisma/client';
 
+export const jwtSchema = z.object({
+  sub: z.string(),
+  email: z.email(),
+  username: z.string(),
+});
 
 export const foodCategorySchema = z.enum(FoodCategory);
 
 export const foodUnitSchema = z.enum(FoodUnit);
 
-export const foodDtoSchema = z.object({
-  id: z.string().describe('Food CUID2 identifier'),
-  name: z.string().describe('Display name of the food'),
-  category: foodCategorySchema.describe('Category the food belongs to'),
-  createdByUserId: z
-    .string()
-    .nullable()
-    .describe('Owner user id, or null for a globally available food'),
-}).brand('FoodDto');
+export const foodDtoSchema = z
+  .object({
+    id: z.string().describe('Food CUID2 identifier'),
+    name: z.string().describe('Display name of the food'),
+    category: foodCategorySchema.describe('Category the food belongs to'),
+    createdByUserId: z
+      .string()
+      .nullable()
+      .describe('Owner user id, or null for a globally available food'),
+  })
+  .brand('FoodDto');
 
 export type FoodDto = z.infer<typeof foodDtoSchema>;
 
-export const foodItemDtoSchema = z.object({
-  id: z.string().describe('Food item CUID2 identifier'),
-  foodId: z.string().describe('Referenced food CUID2 identifier'),
-  quantity: z.number().describe('Quantity currently on hand'),
-  unit: foodUnitSchema.describe('Unit the quantity is expressed in'),
-  expiryDate: z.date().nullable().describe('Expiry timestamp (ISO 8601)'),
-  addedAt: z.date().describe('Timestamp the item was added (ISO 8601)'),
-  food: foodDtoSchema.describe('Food this item refers to'),
-}).brand('FoodItemDto');
+export const foodItemDtoSchema = z
+  .object({
+    id: z.string().describe('Food item CUID2 identifier'),
+    foodId: z.string().describe('Referenced food CUID2 identifier'),
+    quantity: z.number().describe('Quantity currently on hand'),
+    unit: foodUnitSchema.describe('Unit the quantity is expressed in'),
+    expiryDate: z.date().nullable().describe('Expiry timestamp (ISO 8601)'),
+    addedAt: z.date().describe('Timestamp the item was added (ISO 8601)'),
+    food: foodDtoSchema.describe('Food this item refers to'),
+  })
+  .brand('FoodItemDto');
 
 export type FoodItemDto = z.infer<typeof foodItemDtoSchema>;
 
-export const userDtoSchema = z.object({
-  id: z.string().describe('User CUID2 identifier'),
-  email: z.string().describe('User email address'),
-  username: z.string().describe('Unique username'),
-}).brand('UserDto');
+export const userDtoSchema = z
+  .object({
+    id: z.string().describe('User CUID2 identifier'),
+    email: z.string().describe('User email address'),
+    username: z.string().describe('Unique username'),
+  })
+  .brand('UserDto');
 
 export type UserDto = z.infer<typeof userDtoSchema>;
 
-export const wsTokenResponseSchema = z.object({
-  token: z
-    .string()
-    .describe('Connection token to pass as the token query parameter of /ws'),
-}).brand('WsTokenResponse');
+export const wsTokenResponseSchema = z
+  .object({
+    token: z
+      .string()
+      .describe('Connection token to pass as the token query parameter of /ws'),
+  })
+  .brand('WsTokenResponse');
 
 export type WsTokenResponse = z.infer<typeof wsTokenResponseSchema>;
 

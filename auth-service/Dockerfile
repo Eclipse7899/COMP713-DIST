@@ -4,20 +4,25 @@ WORKDIR /app
 
 FROM base AS build
 
+RUN apk add --no-cache protoc
+
 COPY . .
 
+WORKDIR /app/auth-service
+
 RUN bun install --frozen-lockfile
-RUN bun run --cwd ./shared prisma:generate
+RUN bun run prisma:generate
+RUN bun run proto:generate
 
 ENV NODE_ENV=production
 
-RUN bun build ./auth-service/src/index.ts --compile --outfile app
+RUN bun build src/index.ts --compile --outfile app
 
 FROM base AS release
 
 RUN apk add --no-cache curl
 
-COPY --from=build /app/app ./
+COPY --from=build /app/auth-service/app ./
 
 ENV NODE_ENV=production
 

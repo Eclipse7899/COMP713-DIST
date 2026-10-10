@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:image": "docker build -t frontend:latest -f Dockerfile ..",
     "preview": "vite preview"
   },
   "dependencies": {

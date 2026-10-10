@@ -14,10 +14,7 @@ import {
   unauthorizedResponse,
   validationErrorResponse,
 } from '../schemas';
-import {
-  FoodCategory,
-  FoodUnit,
-} from '@stocked/shared/src/generated/prisma/enums';
+import { FoodCategory, FoodUnit } from '../generated/prisma/enums';
 
 const createItemSchema = z.object({
   foodId: z.cuid2(),
@@ -165,7 +162,7 @@ export function createItemsRoute(itemsService: ItemsService) {
         tags: ['Items'],
         summary: 'Update a food item',
         description:
-          "Updates a food item owned by the authenticated user. The referenced food must be global or owned by the user.",
+          'Updates a food item owned by the authenticated user. The referenced food must be global or owned by the user.',
         security: [{ bearerAuth: [] }],
         parameters: [idPathParameter()],
         requestBody: {
@@ -224,8 +221,7 @@ export function createItemsRoute(itemsService: ItemsService) {
       describeRoute({
         tags: ['Items'],
         summary: 'Delete a food item',
-        description:
-          'Deletes a food item owned by the authenticated user.',
+        description: 'Deletes a food item owned by the authenticated user.',
         security: [{ bearerAuth: [] }],
         parameters: [idPathParameter()],
         responses: {
@@ -252,10 +248,7 @@ export function createItemsRoute(itemsService: ItemsService) {
 
         const deleted = await itemsService.removeItem(id, userId);
         if (!deleted.success) {
-          return c.json(
-            { error: 'Item not found or not owned by user' },
-            404,
-          );
+          return c.json({ error: 'Item not found or not owned by user' }, 404);
         }
         return c.json({ success: true });
       },

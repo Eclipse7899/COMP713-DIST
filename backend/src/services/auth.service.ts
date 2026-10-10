@@ -1,29 +1,45 @@
-import { AuthServiceClient } from '@stocked/shared/src/generated/proto/auth';
 import { ChannelCredentials } from '@grpc/grpc-js';
-import type { Result } from '@stocked/shared/src/util';
+import { AuthServiceClient } from '../generated/proto/auth';
 import {
   type UserDto,
   userDtoSchema,
   type WsTokenResponse,
   wsTokenResponseSchema,
 } from '../schemas';
-
+import type { Result } from '../util';
 
 export class AuthService {
   private client: AuthServiceClient;
 
   constructor(authUrl: string) {
-    this.client = new AuthServiceClient(authUrl, ChannelCredentials.createInsecure());
+    this.client = new AuthServiceClient(
+      authUrl,
+      ChannelCredentials.createInsecure(),
+    );
   }
 
-  async register(email: string, password: string, username: string): Promise<Result<{
-    token: string
-    user: UserDto
-  }, string>> {
-    return new Promise<Result<{
-      token: string,
-      user: UserDto
-    }, string>>((resolve, reject) => {
+  async register(
+    email: string,
+    password: string,
+    username: string,
+  ): Promise<
+    Result<
+      {
+        token: string;
+        user: UserDto;
+      },
+      string
+    >
+  > {
+    return new Promise<
+      Result<
+        {
+          token: string;
+          user: UserDto;
+        },
+        string
+      >
+    >((resolve, reject) => {
       this.client.register({ email, password, username }, (err, response) => {
         if (err) {
           reject(err);
@@ -44,14 +60,46 @@ export class AuthService {
     });
   }
 
-  async signIn(email: string, password: string): Promise<Result<{
-    token: string
-    user: UserDto
-  }, string>> {
-    return new Promise<Result<{
-      token: string,
-      user: UserDto
-    }, string>>((resolve, reject) => {
+  async getUser(userId: string): Promise<Result<UserDto, 'NOT_FOUND'>> {
+    return new Promise<Result<UserDto, 'NOT_FOUND'>>((resolve, reject) => {
+      this.client.getUser({ userId }, (err, response) => {
+        if (err) {
+          reject(err);
+        } else {
+          if (response.payload?.$case === 'user') {
+            resolve({
+              success: true,
+              data: userDtoSchema.parse(response.payload.user),
+            });
+          } else if (response.payload?.$case === 'error') {
+            resolve({ success: false, error: 'NOT_FOUND' });
+          }
+        }
+      });
+    });
+  }
+
+  async signIn(
+    email: string,
+    password: string,
+  ): Promise<
+    Result<
+      {
+        token: string;
+        user: UserDto;
+      },
+      string
+    >
+  > {
+    return new Promise<
+      Result<
+        {
+          token: string;
+          user: UserDto;
+        },
+        string
+      >
+    >((resolve, reject) => {
       this.client.signIn({ email, password }, (err, response) => {
         if (err) {
           reject(err);
@@ -78,7 +126,9 @@ export class AuthService {
         if (err) {
           reject(err);
         } else {
-          const tokenResponse = wsTokenResponseSchema.parse({ token: response.token });
+          const tokenResponse = wsTokenResponseSchema.parse({
+            token: response.token,
+          });
           resolve(tokenResponse);
         }
       });

@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import type { JwtVariables } from 'hono/jwt';
 import type { JWTPayload } from 'hono/utils/jwt/types';
-import type { jwtSchema } from '@stocked/shared/src/schema';
+import type { jwtSchema } from './schemas';
 
 export type JwtFields = z.infer<typeof jwtSchema> & JWTPayload;
 

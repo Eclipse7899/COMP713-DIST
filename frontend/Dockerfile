@@ -1,16 +1,19 @@
-FROM oven/bun:latest AS build
+FROM oven/bun:alpine AS build
+
+RUN apk add --no-cache protoc
 
 WORKDIR /app
 
 COPY . .
 
 RUN bun install --frozen-lockfile
+RUN bun run generate
 
-RUN bun run --cwd ./shared prisma:generate
+WORKDIR /app/frontend
 
 ENV NODE_ENV=production
 
-RUN bun run --cwd ./frontend build
+RUN bun run build
 
 FROM nginx:alpine
 

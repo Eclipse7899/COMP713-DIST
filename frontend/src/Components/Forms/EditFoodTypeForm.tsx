@@ -7,18 +7,17 @@ import {
 } from '../../models.ts';
 import { titleCase } from '../../util.ts';
 
-export function EditFoodTypeForm(
-  {
-    id,
-    foodType,
-    onCancel,
-    onEdit,
-  }: {
-    id: string;
-    foodType: FoodType;
-    onCancel: () => void;
-    onEdit: (id: string, form: EditFoodType) => Promise<void>;
-  }) {
+export function EditFoodTypeForm({
+  id,
+  foodType,
+  onCancel,
+  onEdit,
+}: {
+  id: string;
+  foodType: FoodType;
+  onCancel: () => void;
+  onEdit: (id: string, form: EditFoodType) => Promise<void>;
+}) {
   const [editFoodType, setEditFoodType] = React.useState<EditFoodType>({
     name: foodType.name,
     category: foodType.category,
@@ -38,8 +37,10 @@ export function EditFoodTypeForm(
       <form onSubmit={addFoodType} className="flex flex-col gap-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-(--text-h)"
-                   htmlFor="foodTypeName">
+            <label
+              className="text-sm font-medium text-(--text-h)"
+              htmlFor="foodTypeName"
+            >
               Food Name
             </label>
             <input
@@ -58,8 +59,10 @@ export function EditFoodTypeForm(
           </div>
 
           <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-(--text-h)"
-                   htmlFor="foodCategory">
+            <label
+              className="text-sm font-medium text-(--text-h)"
+              htmlFor="foodCategory"
+            >
               Category
             </label>
             <select
@@ -83,17 +86,10 @@ export function EditFoodTypeForm(
         </div>
 
         <div className="flex flex-row gap-3 pt-2">
-          <button
-            type="submit"
-            disabled={isSaving}
-            className="btn">
+          <button type="submit" disabled={isSaving} className="btn">
             {isSaving ? 'Saving...' : 'Save'}
           </button>
-          <button
-            type="button"
-            onClick={onCancel}
-            className="btn-secondary"
-          >
+          <button type="button" onClick={onCancel} className="btn-secondary">
             Cancel
           </button>
         </div>

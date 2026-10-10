@@ -1,7 +1,6 @@
 import type { FoodDto, FoodItemDto } from '../schemas';
 
-
-export type Event<T,K> = {
+export type Event<T, K> = {
   type: T;
   data: K;
 };
@@ -17,7 +16,6 @@ export type ServerEvent =
 export type ServerCallback = (event: ServerEvent) => void;
 
 export class RealtimeHub {
-
   private userCallbacks: Map<string, Set<ServerCallback>> = new Map();
 
   public subscribe(userId: string, callback: ServerCallback) {

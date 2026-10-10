@@ -47,6 +47,17 @@ message TokenRequest{
   string userId = 1;
 }
 
+message UserRequest{
+  string userId = 1;
+}
+
+message UserResponse{
+  oneof payload {
+    User user = 1;
+    string error = 2;
+  }
+}
+
 message TokenResponse{
   string token = 1;
 }
@@ -54,5 +65,6 @@ message TokenResponse{
 service AuthService {
   rpc Register(RegisterRequest) returns (RegisterResponse);
   rpc SignIn(SignInRequest) returns (SignInResponse);
+  rpc GetUser(UserRequest) returns (UserResponse);
   rpc GetWsToken(TokenRequest) returns (TokenResponse);
 }

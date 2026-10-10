@@ -37,7 +37,10 @@ function getServerMessage(error: unknown): string | undefined {
   return undefined;
 }
 
-export function getApiErrorMessage(error: unknown, context: ErrorContext): string {
+export function getApiErrorMessage(
+  error: unknown,
+  context: ErrorContext,
+): string {
   if (!isDetailedError(error) || typeof error.statusCode !== 'number') {
     return `We couldn't ${context}. Check your connection and try again.`;
   }

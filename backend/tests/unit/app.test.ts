@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import { createApp } from '../../src/app';
-import type { PrismaClient } from '@stocked/shared/src/generated/prisma/client';
+import type { PrismaClient } from '../../src/generated/prisma/client';
 
 describe('Application health check', () => {
   it('returns a healthy response without authentication or database access', async () => {

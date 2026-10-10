@@ -8,23 +8,30 @@ import {
   jest,
 } from 'bun:test';
 import { setup, teardown } from '../setup';
-import { createDb } from '@stocked/shared/src/db';
 import { createApp } from '../../src/app';
 import { verify } from 'hono/jwt';
-import bcrypt from 'bcrypt';
-import type { PrismaClient } from '@prisma/client/extension';
+import { comparePasswords } from '../../../auth-service/src/util';
+import { PrismaClient } from '../../src/generated/prisma/client';
+import { PrismaClient as AuthPrismaClient } from '../../../auth-service/src/generated/prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
 
 jest.setTimeout(30000);
 
 let app: ReturnType<typeof createApp>['app'];
-let db: PrismaClient;
+let db: PrismaClient & { user: AuthPrismaClient['user'] };
 const jwtSecret = 'test-secret';
 const authPort = 5051;
 
 beforeAll(async () => {
   const { postgres, auth } = await setup(jwtSecret, authPort);
-  db = createDb(postgres);
-  app = createApp(jwtSecret, auth, db).app;
+  const backendDb = new PrismaClient({
+    adapter: new PrismaPg(postgres),
+  });
+  const authDb = new AuthPrismaClient({
+    adapter: new PrismaPg(postgres),
+  });
+  db = Object.assign(backendDb, { user: authDb.user });
+  app = createApp(jwtSecret, auth, backendDb).app;
 });
 
 afterAll(async () => {
@@ -283,7 +290,7 @@ describe('Auth Endpoints', () => {
         // Ensure raw password is NOT stored in plain text
         expect(dbUser?.hashed_password).not.toBe(rawPassword);
         // Ensure password is correctly hashed
-        const isPasswordMatch = await bcrypt.compare(
+        const isPasswordMatch = await comparePasswords(
           rawPassword,
           dbUser!.hashed_password,
         );

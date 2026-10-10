@@ -1,20 +1,16 @@
+import type { FoodCategory, FoodUnit } from '../generated/prisma/enums';
 import type { RealtimeHub } from '../realtime/realtime-hub';
+import type { FoodRepository } from '../repositories/food.repo';
+import type { ItemsRepository } from '../repositories/items.repo';
 import { type FoodItemDto, foodItemDtoSchema } from '../schemas';
-import type {
-  ItemsRepository,
-} from '@stocked/shared/src/repositories/items.repo';
-import type {
-  FoodRepository,
-} from '@stocked/shared/src/repositories/food.repo';
-import type {
-  FoodCategory,
-  FoodUnit,
-} from '@stocked/shared/src/generated/prisma/enums';
-import type { Result } from '@stocked/shared/src/util';
+import type { Result } from '../util';
 
 export class ItemsService {
-  constructor(private readonly itemsRepo: ItemsRepository, private readonly foodRepo: FoodRepository, private realtime: RealtimeHub) {
-  }
+  constructor(
+    private readonly itemsRepo: ItemsRepository,
+    private readonly foodRepo: FoodRepository,
+    private realtime: RealtimeHub,
+  ) {}
 
   async createItem(data: {
     userId: string;
@@ -52,7 +48,7 @@ export class ItemsService {
     return {
       success: true,
       data: dto,
-    }
+    };
   }
 
   async getItems(
@@ -63,21 +59,23 @@ export class ItemsService {
       name_contains?: string;
       sort?: 'asc' | 'desc';
     },
-  ): Promise<(FoodItemDto)[]> {
-    if (data.categories || data.expiresBefore || data.name_contains || data.sort) {
-      const items = await this.itemsRepo.filterByUser(
-        userId,
-        {
-          categories: data.categories,
-          expiresBefore: data.expiresBefore,
-          name_contains: data.name_contains,
-          sort: data.sort,
-        },
-      );
-      return items.map(item => foodItemDtoSchema.parse(item));
+  ): Promise<FoodItemDto[]> {
+    if (
+      data.categories ||
+      data.expiresBefore ||
+      data.name_contains ||
+      data.sort
+    ) {
+      const items = await this.itemsRepo.filterByUser(userId, {
+        categories: data.categories,
+        expiresBefore: data.expiresBefore,
+        name_contains: data.name_contains,
+        sort: data.sort,
+      });
+      return items.map((item) => foodItemDtoSchema.parse(item));
     } else {
       const items = await this.itemsRepo.listByUser(userId);
-      return items.map(item => (foodItemDtoSchema.parse(item)));
+      return items.map((item) => foodItemDtoSchema.parse(item));
     }
   }
 
@@ -119,7 +117,7 @@ export class ItemsService {
     });
     return {
       success: true,
-      data: dto
+      data: dto,
     };
   }
 

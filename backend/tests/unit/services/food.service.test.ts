@@ -1,12 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'bun:test';
 import { mocked } from '../../mocked';
-import type {
-  FoodRepository,
-} from '@stocked/shared/src/repositories/food.repo';
 import { FoodService } from '../../../src/services/food.service';
 import type { RealtimeHub } from '../../../src/realtime/realtime-hub';
-import { FoodCategory } from '@stocked/shared/src/generated/prisma/enums';
-import type { Food } from '@stocked/shared/src/generated/prisma/client';
+import { FoodCategory } from '../../../src/generated/prisma/enums';
+import type { FoodRepository } from '../../../src/repositories/food.repo';
+import type { Food } from '../../../src/generated/prisma/client';
 
 const USER_ID = 'user-1';
 const OTHER_USER_ID = 'other-user';

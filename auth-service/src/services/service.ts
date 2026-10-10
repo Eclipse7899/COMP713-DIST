@@ -1,34 +1,41 @@
-import type {
-  UserRepository,
-} from '@stocked/shared/src/repositories/users.repo.ts';
-import {
-  comparePasswords,
-  hashPassword,
-  type Result,
-} from '@stocked/shared/src/util.ts';
+import type { UserRepository } from '../repositories/users.repo.ts';
+import { comparePasswords, hashPassword, type Result } from '../util.ts';
 import { SignJWT } from 'jose';
-import { jwtSchema } from '@stocked/shared/src/schema.ts';
 
 export class AuthService {
-  constructor(private readonly jwtSecret: string, private readonly userRepo: UserRepository) {
-  }
+  constructor(
+    private readonly jwtSecret: string,
+    private readonly userRepo: UserRepository,
+  ) {}
 
   normalizeEmail(email: string): string {
     return email.trim().toLowerCase();
   }
 
-  async registerUser(email: string, password: string, username: string,
-  ): Promise<Result<{
-    user: {
-      id: string
-      email: string
-      username: string
-    }
-    token: string
-  }, 'USERNAME_TAKEN' | 'EMAIL_TAKEN'>> {
+  async registerUser(
+    email: string,
+    password: string,
+    username: string,
+  ): Promise<
+    Result<
+      {
+        user: {
+          id: string;
+          email: string;
+          username: string;
+        };
+        token: string;
+      },
+      'USERNAME_TAKEN' | 'EMAIL_TAKEN'
+    >
+  > {
     const hashedPassword = await hashPassword(password);
     const normalizedEmail = this.normalizeEmail(email);
-    const result = await this.userRepo.createUser(normalizedEmail, hashedPassword, username);
+    const result = await this.userRepo.createUser(
+      normalizedEmail,
+      hashedPassword,
+      username,
+    );
     if (!result.success) {
       return {
         success: false,
@@ -49,14 +56,16 @@ export class AuthService {
     };
   }
 
-  async createAccessToken(
-    user_data: { id: string; email: string; username: string },
-  ): Promise<{ token: string }> {
-    const data = jwtSchema.parse({
+  async createAccessToken(user_data: {
+    id: string;
+    email: string;
+    username: string;
+  }): Promise<{ token: string }> {
+    const data = {
       sub: user_data.id,
       email: user_data.email,
       username: user_data.username,
-    });
+    };
     const token = await new SignJWT(data)
       .setProtectedHeader({ alg: 'HS256' })
       .setExpirationTime('1h')
@@ -64,9 +73,7 @@ export class AuthService {
     return { token };
   }
 
-  async createWsToken(
-    id: string,
-  ): Promise<{ wsToken: string }> {
+  async createWsToken(id: string): Promise<{ wsToken: string }> {
     const token = await new SignJWT()
       .setProtectedHeader({ alg: 'HS256' })
       .setExpirationTime('5m')
@@ -77,13 +84,40 @@ export class AuthService {
     };
   }
 
+  async getUser(
+    userId: string,
+  ): Promise<
+    Result<{ id: string; email: string; username: string }, 'NOT_FOUND'>
+  > {
+    const user = await this.userRepo.findById(userId);
+    if (!user) {
+      return {
+        success: false,
+        error: 'NOT_FOUND',
+      };
+    }
+    return {
+      success: true,
+      data: {
+        id: user.id,
+        email: user.email,
+        username: user.username,
+      },
+    };
+  }
+
   async signInUser(
     email: string,
     password: string,
-  ): Promise<Result<{
-    token: string,
-    user: { id: string; email: string; username: string }
-  }, void>> {
+  ): Promise<
+    Result<
+      {
+        token: string;
+        user: { id: string; email: string; username: string };
+      },
+      void
+    >
+  > {
     const normalizedEmail = this.normalizeEmail(email);
     const user = await this.userRepo.findUserByEmail(normalizedEmail);
     if (!user) {
@@ -101,13 +135,11 @@ export class AuthService {
       };
     }
 
-    const { token } = await this.createAccessToken(
-      {
-        id: user.id,
-        email: user.email,
-        username: user.username,
-      },
-    );
+    const { token } = await this.createAccessToken({
+      id: user.id,
+      email: user.email,
+      username: user.username,
+    });
     return {
       success: true,
       data: {

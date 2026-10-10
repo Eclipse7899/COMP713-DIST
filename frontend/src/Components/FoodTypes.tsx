@@ -48,18 +48,21 @@ export default function FoodTypes() {
     getWebSocketClient(client).then((ws) => {
       if (ws instanceof WebSocket) {
         ws.onmessage = (event) => {
-          const raw = JSON.parse(event.data)
-          const type = raw.type
-          const data = raw.data
+          const raw = JSON.parse(event.data);
+          const type = raw.type;
+          const data = raw.data;
 
           if (type === 'food.created') {
-            setTypes((current) => [...current, data])
+            setTypes((current) => [...current, data]);
           } else if (type === 'food.updated') {
-            setTypes((current) => current.map((type) => type.id === data.id ? data : type))
+            setTypes((current) =>
+              current.map((type) => (type.id === data.id ? data : type)),
+            );
           } else if (type === 'food.deleted') {
-            setTypes((current) => current.filter((type) => type.id !== data.id))
+            setTypes((current) =>
+              current.filter((type) => type.id !== data.id),
+            );
           }
-
         };
       }
       if (typeof ws === 'string') {
@@ -110,22 +113,29 @@ export default function FoodTypes() {
         </button>
       </div>
 
-      <ErrorMessage message={error}/>
+      <ErrorMessage message={error} />
 
       <div className="card">
         {loading ? (
-          <div className="p-8 text-center text-(--secondary)">Loading food
-            types...</div>
+          <div className="p-8 text-center text-(--secondary)">
+            Loading food types...
+          </div>
         ) : types.length === 0 ? (
-          <div className="p-8 text-center text-(--secondary)">No food types yet.
-            Add one above!</div>
+          <div className="p-8 text-center text-(--secondary)">
+            No food types yet. Add one above!
+          </div>
         ) : (
           <ul className="divide-y divide-(--border)">
             {types.map((type) => (
-              <li key={type.id}
-                  className="p-4 hover:bg-(--secondary)/5 transition-colors">
-                <FoodTypeBox foodType={type} onDelete={deleteType}
-                             onEdit={editType}/>
+              <li
+                key={type.id}
+                className="p-4 hover:bg-(--secondary)/5 transition-colors"
+              >
+                <FoodTypeBox
+                  foodType={type}
+                  onDelete={deleteType}
+                  onEdit={editType}
+                />
               </li>
             ))}
           </ul>

@@ -2,22 +2,31 @@ services:
   auth:
     image: auth-service:latest
     build:
-      dockerfile: ./auth-service.Dockerfile
+      context: .
+      dockerfile: ./auth-service/Dockerfile
     ports:
-      - "5051:5051"
+      - '5051:5051'
     environment:
-      DATABASE_URL: postgresql://user:password@db:5432/mydb
+      DATABASE_URL: postgresql://user:password@auth-db:5432/mydb
       JWT_SECRET: secret_that_is_at_least_32_characters_long
     networks:
       - webnet
     depends_on:
-      db-init:
+      auth-init:
         condition: service_completed_successfully
+    healthcheck:
+      test: ['CMD-SHELL', 'nc -z 127.0.0.1 5051 || exit 1']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
   frontend:
     build:
-      dockerfile: ./frontend.Dockerfile
+      context: .
+      dockerfile: ./frontend/Dockerfile
     ports:
-      - "80:80"
+      - '80:80'
     volumes:
       - type: bind
         source: ./nginx/default.conf
@@ -30,51 +39,97 @@ services:
 
   backend:
     build:
-      dockerfile: ./backend.Dockerfile
+      context: .
+      dockerfile: ./backend/Dockerfile
     ports:
-      - "3000:3000"
+      - '3000:3000'
     environment:
-      DATABASE_URL: postgresql://user:password@db:5432/mydb
+      DATABASE_URL: postgresql://user:password@backend-db:5432/mydb
       JWT_SECRET: secret_that_is_at_least_32_characters_long
       AUTH_HOST: auth
       AUTH_PORT: 5051
     networks:
       - webnet
     healthcheck:
-      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health" ]
+      test:
+        [
+          'CMD',
+          'curl',
+          '--fail',
+          '--silent',
+          '--show-error',
+          '--max-time',
+          '5',
+          'http://127.0.0.1:3000/api/health',
+        ]
       interval: 5s
       timeout: 5s
       retries: 3
       start_period: 5s
     depends_on:
-      - auth
+      auth:
+        condition: service_healthy
+      backend-init:
+        condition: service_completed_successfully
 
-  db-init:
-    image: db-init:latest
+  auth-init:
+    image: auth-db-init:latest
     build:
-      dockerfile: ./db-init.Dockerfile
+      context: .
+      dockerfile: ./auth-service/init.Dockerfile
     environment:
-      DATABASE_URL: postgresql://user:password@db:5432/mydb
+      DATABASE_URL: postgresql://user:password@auth-db:5432/mydb
     networks:
       - webnet
     depends_on:
-      db:
+      auth-db:
         condition: service_healthy
 
-  db:
+  backend-init:
+    image: backend-db-init:latest
+    build:
+      context: .
+      dockerfile: ./backend/init.Dockerfile
+    environment:
+      DATABASE_URL: postgresql://user:password@backend-db:5432/mydb
+    networks:
+      - webnet
+    depends_on:
+      backend-db:
+        condition: service_healthy
+
+  backend-db:
     image: postgres:latest
     environment:
       POSTGRES_USER: user
       POSTGRES_PASSWORD: password
       POSTGRES_DB: mydb
     ports:
-      - "5432:5432"
+      - '5432:5432'
     volumes:
-      - postgres_data:/var/lib/postgresql
+      - postgres_backend_data:/var/lib/postgresql
     networks:
       - webnet
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U user -d mydb"]
+      test: ['CMD-SHELL', 'pg_isready -U user -d mydb']
+      interval: 5s
+      timeout: 5s
+      retries: 3
+
+  auth-db:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: mydb
+    ports:
+      - '5433:5432'
+    volumes:
+      - postgres_auth_data:/var/lib/postgresql
+    networks:
+      - webnet
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U user -d mydb']
       interval: 5s
       timeout: 5s
       retries: 3
@@ -83,4 +138,5 @@ networks:
   webnet:
 
 volumes:
-  postgres_data:
+  postgres_backend_data:
+  postgres_auth_data:

@@ -37,7 +37,9 @@ export default function LoginForm() {
         navigate('/dashboard');
       }
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : getApiErrorMessage(err, 'login'));
+      setError(
+        err instanceof Error ? err.message : getApiErrorMessage(err, 'login'),
+      );
     } finally {
       setLoading(false);
     }
@@ -52,12 +54,14 @@ export default function LoginForm() {
         </p>
       </div>
 
-      <ErrorMessage message={error}/>
+      <ErrorMessage message={error} />
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="text-left space-y-1.5">
-          <label className="text-sm font-medium text-(--text-h)"
-                 htmlFor="email">
+          <label
+            className="text-sm font-medium text-(--text-h)"
+            htmlFor="email"
+          >
             Email address
           </label>
           <input
@@ -73,8 +77,10 @@ export default function LoginForm() {
 
         <div className="text-left space-y-1.5">
           <div className="flex items-center justify-between">
-            <label className="text-sm font-medium text-(--text-h)"
-                   htmlFor="password">
+            <label
+              className="text-sm font-medium text-(--text-h)"
+              htmlFor="password"
+            >
               Password
             </label>
           </div>
@@ -89,11 +95,7 @@ export default function LoginForm() {
           />
         </div>
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full btn"
-        >
+        <button type="submit" disabled={loading} className="w-full btn">
           {loading ? 'Signing in...' : 'Sign in'}
         </button>
       </form>
@@ -101,8 +103,10 @@ export default function LoginForm() {
       <div className="text-center text-sm">
         <p className="text-(--text)">
           Don't have an account?{' '}
-          <Link to="/signup"
-                className="font-medium text-(--primary) hover:underline">
+          <Link
+            to="/signup"
+            className="font-medium text-(--primary) hover:underline"
+          >
             Sign up
           </Link>
         </p>

@@ -15,10 +15,14 @@ export function getClient() {
   });
 }
 
-export async function getWebSocketClient(client: ReturnType<typeof getClient>): Promise<WebSocket | string> {
-  const res = await parseResponse(client.api.ws.token.$get()).catch((error: unknown) => {
-    return getApiErrorMessage(error, 'ws token');
-  });
+export async function getWebSocketClient(
+  client: ReturnType<typeof getClient>,
+): Promise<WebSocket | string> {
+  const res = await parseResponse(client.api.ws.token.$get()).catch(
+    (error: unknown) => {
+      return getApiErrorMessage(error, 'ws token');
+    },
+  );
 
   if (typeof res === 'string') {
     return res;
@@ -30,4 +34,3 @@ export async function getWebSocketClient(client: ReturnType<typeof getClient>): 
   }
   return new WebSocket(client.api.ws.$url() + `?token=${token}`);
 }
-

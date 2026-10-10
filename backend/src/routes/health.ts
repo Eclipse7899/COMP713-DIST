@@ -2,7 +2,6 @@ import { Hono } from 'hono';
 import { describeRoute, resolver } from 'hono-openapi';
 import z from 'zod';
 
-
 export function createHealthRoute() {
   const app = new Hono();
   app.get(
@@ -27,4 +26,3 @@ export function createHealthRoute() {
   );
   return app;
 }
-

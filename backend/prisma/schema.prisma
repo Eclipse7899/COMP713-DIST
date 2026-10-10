@@ -23,7 +23,6 @@ model FoodItem {
   addedAt    DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   food Food @relation(fields: [foodId], references: [id], onDelete: Cascade)
 
   @@index([userId])
@@ -35,7 +34,6 @@ model Food {
   name            String
   category        FoodCategory
   createdByUserId String?
-  createdBy       User?        @relation(fields: [createdByUserId], references: [id], onDelete: Cascade)
   createdAt       DateTime     @default(now())
   foodItems       FoodItem[]
 

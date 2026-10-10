@@ -11,7 +11,7 @@ import {
   unauthorizedResponse,
   validationErrorResponse,
 } from '../schemas';
-import { FoodCategory } from '@stocked/shared/src/generated/prisma/enums';
+import { FoodCategory } from '../generated/prisma/enums';
 
 const createFoodSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -115,7 +115,7 @@ export function createFoodRoute(foodService: FoodService) {
           400: validationErrorResponse,
           401: unauthorizedResponse,
           403: {
-            description: "The food does not belong to the authenticated user",
+            description: 'The food does not belong to the authenticated user',
             content: {
               'application/json': { schema: resolver(errorSchema) },
             },
@@ -160,7 +160,7 @@ export function createFoodRoute(foodService: FoodService) {
           400: validationErrorResponse,
           401: unauthorizedResponse,
           403: {
-            description: "The food does not belong to the authenticated user",
+            description: 'The food does not belong to the authenticated user',
             content: {
               'application/json': { schema: resolver(errorSchema) },
             },

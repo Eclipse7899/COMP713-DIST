@@ -1,9 +1,6 @@
-import {
-  type Food,
-  PrismaClient,
-} from '@stocked/shared/src/generated/prisma/client.ts';
-import type { FoodCategory } from '@stocked/shared/src/generated/prisma/enums.ts';
-import type { Result } from '@stocked/shared/src/util.ts';
+import type { Food, PrismaClient } from '../generated/prisma/client';
+import type { FoodCategory } from '../generated/prisma/enums';
+import type { Result } from '../util';
 
 export interface FoodRepository {
   create(data: {

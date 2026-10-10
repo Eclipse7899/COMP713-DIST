@@ -1,20 +1,21 @@
-import type { FoodCategory } from '@stocked/shared/src/generated/prisma/enums';
+import type { FoodCategory } from '../generated/prisma/enums';
 import type { RealtimeHub } from '../realtime/realtime-hub';
-import type {
-  FoodRepository,
-} from '@stocked/shared/src/repositories/food.repo';
+import type { FoodRepository } from '../repositories/food.repo';
 import { type FoodDto, foodDtoSchema } from '../schemas';
-import type { Result } from '@stocked/shared/src/util';
+import type { Result } from '../util';
 
 export class FoodService {
-  constructor(private readonly foodRepo: FoodRepository, private readonly realtime: RealtimeHub) {}
+  constructor(
+    private readonly foodRepo: FoodRepository,
+    private readonly realtime: RealtimeHub,
+  ) {}
 
   async createFood(
     userId: string,
     data: {
       name: string;
       category: FoodCategory;
-    }
+    },
   ): Promise<FoodDto> {
     const food = await this.foodRepo.create({
       name: data.name,
@@ -46,7 +47,7 @@ export class FoodService {
       return {
         success: false,
         error: 'NOT_FOUND',
-      }
+      };
     }
     const existing = result.data;
     if (existing.createdByUserId !== userId) {
@@ -73,7 +74,10 @@ export class FoodService {
     };
   }
 
-  async deleteFood(id: string, userId: string): Promise<Result<void, 'NOT_FOUND' | 'UNAUTHORIZED'>> {
+  async deleteFood(
+    id: string,
+    userId: string,
+  ): Promise<Result<void, 'NOT_FOUND' | 'UNAUTHORIZED'>> {
     const result = await this.getFoodById(id);
     if (!result.success) {
       return {

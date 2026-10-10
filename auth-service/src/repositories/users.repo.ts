@@ -1,9 +1,6 @@
-import {
-  type PrismaClient,
-  type User,
-} from '@stocked/shared/src/generated/prisma/client.ts';
-import type { Result } from '@stocked/shared/src/util.ts';
-import { PrismaClientKnownRequestError } from '@stocked/shared/src/generated/prisma/internal/prismaNamespace.ts';
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
+import type { PrismaClient, User } from '../generated/prisma/client';
+import type { Result } from '../util';
 
 export interface UserRepository {
   findById(userId: string): Promise<User | null>;

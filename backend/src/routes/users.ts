@@ -1,14 +1,10 @@
-import { UserService } from '../services/user.service';
 import { Hono } from 'hono';
 import { describeRoute, resolver } from 'hono-openapi';
 import type { Variables } from '../variables';
-import {
-  messageSchema,
-  unauthorizedResponse,
-  userDtoSchema,
-} from '../schemas';
+import { messageSchema, unauthorizedResponse, userDtoSchema } from '../schemas';
+import type { AuthService } from '../services/auth.service';
 
-export function createUsersRoute(userService: UserService) {
+export function createUsersRoute(authService: AuthService) {
   return new Hono<{ Variables: Variables }>().get(
     '/me',
     describeRoute({
@@ -31,7 +27,7 @@ export function createUsersRoute(userService: UserService) {
     }),
     async (c) => {
       const userId = c.get('jwtPayload').sub;
-      const user = await userService.getCurrentUser(userId);
+      const user = await authService.getUser(userId);
       if (!user || !user.success) {
         return c.json({ message: 'User not found' }, 404);
       }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { comparePasswords, hashPassword } from '../../shared/src/util.ts';
+import { comparePasswords, hashPassword } from '../src/util';
 
 describe('Hashing', () => {
   it('hashes a password correctly', async () => {

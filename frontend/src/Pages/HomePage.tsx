@@ -11,7 +11,8 @@ export default function HomePage() {
           </h1>
           <p className="text-lg sm:text-xl md:text-2xl text-(--text) max-w-2xl mx-auto leading-relaxed">
             Track every food item, expiry dates, and more with{' '}
-            <span className="font-semibold text-(--text-h)">{APP_NAME}</span>. Never let your food go to waste again!
+            <span className="font-semibold text-(--text-h)">{APP_NAME}</span>.
+            Never let your food go to waste again!
           </p>
         </div>
         <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto justify-center">

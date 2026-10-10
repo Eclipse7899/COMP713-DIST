@@ -7,21 +7,19 @@ import {
   it,
   jest,
 } from 'bun:test';
-import { createDb } from '@stocked/shared/src/db';
 import { createApp } from '../../src/app';
 import { sign } from 'hono/jwt';
 import type { JwtFields } from '../../src/variables';
-import {
-  FoodCategory,
-  FoodUnit,
-} from '@stocked/shared/src/generated/prisma/enums';
-import type { PrismaClient } from '@prisma/client/extension';
+import { PrismaClient } from '../../src/generated/prisma/client';
+import { PrismaClient as AuthPrismaClient } from '../../../auth-service/src/generated/prisma/client';
 import { setup, teardown } from '../setup';
+import { PrismaPg } from '@prisma/adapter-pg';
+import { FoodCategory, FoodUnit } from '../../src/generated/prisma/enums';
 
 jest.setTimeout(30000);
 
 let app: ReturnType<typeof createApp>['app'];
-let db: PrismaClient;
+let db: PrismaClient & { user: AuthPrismaClient['user'] };
 const jwtSecret = 'test-secret';
 const authPort = 5051;
 
@@ -47,8 +45,14 @@ async function createTestUser(username: string, email: string) {
 
 beforeAll(async () => {
   const { postgres, auth } = await setup(jwtSecret, authPort);
-  db = createDb(postgres);
-  app = createApp(jwtSecret, auth, db).app;
+  const backendDb = new PrismaClient({
+    adapter: new PrismaPg(postgres),
+  });
+  const authDb = new AuthPrismaClient({
+    adapter: new PrismaPg(postgres),
+  });
+  db = Object.assign(backendDb, { user: authDb.user });
+  app = createApp(jwtSecret, auth, backendDb).app;
 });
 
 afterAll(async () => {
@@ -632,10 +636,13 @@ describe('Items Endpoints', () => {
       });
 
       // Filter items expiring before 2026-08-01
-      const resExpiry = await app.request('/api/items?expiryDate=' + new Date('2026-08-01').toISOString(), {
-        method: 'GET',
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const resExpiry = await app.request(
+        '/api/items?expiryDate=' + new Date('2026-08-01').toISOString(),
+        {
+          method: 'GET',
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
       expect(resExpiry.status).toBe(200);
       const dataExpiry = await resExpiry.json();
       expect(dataExpiry).toHaveLength(2);

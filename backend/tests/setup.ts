@@ -30,12 +30,19 @@ export async function setupTestDatabase(network: StartedNetwork) {
     .withNetwork(network)
     .start();
 
-  const init = new GenericContainer('db-init:latest');
-  await init
-    .withEnvironment({ DATABASE_URL: internalDatabaseUrl() })
-    .withNetwork(network)
-    .withWaitStrategy(Wait.forLogMessage('🌱  The seed command has been executed.'))
-    .start();
+  // Run the two service migrations against the same shared test database.
+  // Order matters: the backend migration must run first (it creates and then
+  // drops the legacy `User` table), followed by the auth-service migration
+  // which creates the current `User` table.
+  for (const image of ['backend-db-init:latest', 'auth-db-init:latest']) {
+    await new GenericContainer(image)
+      .withEnvironment({ DATABASE_URL: internalDatabaseUrl() })
+      .withNetwork(network)
+      .withWaitStrategy(
+        Wait.forLogMessage('🌱  The seed command has been executed.'),
+      )
+      .start();
+  }
 
   return `postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${dbContainer.getHost()}:${dbContainer.getMappedPort(POSTGRES_PORT)}/${POSTGRES_DB}`;
 }

@@ -8,19 +8,17 @@ import {
 } from '../../models.ts';
 import { titleCase } from '../../util.ts';
 
-export default function EditFoodItemForm(
-  {
-    item,
-    foodTypes,
-    onCancel,
-    onEdit,
-  }: {
-    item: FoodItem;
-    foodTypes: FoodType[];
-    onCancel: () => void;
-    onEdit: (id: string, item: EditFoodItem) => Promise<void>;
-  }) {
-
+export default function EditFoodItemForm({
+  item,
+  foodTypes,
+  onCancel,
+  onEdit,
+}: {
+  item: FoodItem;
+  foodTypes: FoodType[];
+  onCancel: () => void;
+  onEdit: (id: string, item: EditFoodItem) => Promise<void>;
+}) {
   const initialFormState: EditFoodItem = {
     foodId: item.foodId,
     quantity: item.quantity,
@@ -40,14 +38,14 @@ export default function EditFoodItemForm(
 
   return (
     <div className="card-flat flex flex-col gap-4 p-4">
-      <h2 className="text-xl font-semibold text-(--text-h)">
-        Editing item
-      </h2>
+      <h2 className="text-xl font-semibold text-(--text-h)">Editing item</h2>
       <form onSubmit={submit} className="flex flex-col gap-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-(--text-h)"
-                   htmlFor="foodId">
+            <label
+              className="text-sm font-medium text-(--text-h)"
+              htmlFor="foodId"
+            >
               Food Type
             </label>
             <select
@@ -67,8 +65,10 @@ export default function EditFoodItemForm(
           </div>
 
           <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-(--text-h)"
-                   htmlFor="quantity">
+            <label
+              className="text-sm font-medium text-(--text-h)"
+              htmlFor="quantity"
+            >
               Quantity
             </label>
             <input
@@ -90,8 +90,10 @@ export default function EditFoodItemForm(
           </div>
 
           <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-(--text-h)"
-                   htmlFor="unit">
+            <label
+              className="text-sm font-medium text-(--text-h)"
+              htmlFor="unit"
+            >
               Unit
             </label>
             <select
@@ -115,8 +117,10 @@ export default function EditFoodItemForm(
           </div>
 
           <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-(--text-h)"
-                   htmlFor="expiryDate">
+            <label
+              className="text-sm font-medium text-(--text-h)"
+              htmlFor="expiryDate"
+            >
               Expiry Date
             </label>
             <input
@@ -130,18 +134,10 @@ export default function EditFoodItemForm(
         </div>
 
         <div className="flex flex-row gap-3 pt-2">
-          <button
-            type="submit"
-            disabled={isDisabled}
-            className="btn"
-          >
+          <button type="submit" disabled={isDisabled} className="btn">
             {isDisabled ? 'Saving...' : 'Save'}
           </button>
-          <button
-            type="button"
-            onClick={onCancel}
-            className="btn-secondary"
-          >
+          <button type="button" onClick={onCancel} className="btn-secondary">
             Cancel
           </button>
         </div>

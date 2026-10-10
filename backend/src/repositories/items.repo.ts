@@ -1,12 +1,12 @@
-import {
-  type Food,
-  type FoodCategory,
-  type FoodItem,
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
+import type {
+  Food,
+  FoodCategory,
+  FoodItem,
+  FoodUnit,
   PrismaClient,
-} from '@stocked/shared/src/generated/prisma/client.ts';
-import { FoodUnit } from '@stocked/shared/src/generated/prisma/enums.ts';
-import type { Result } from '@stocked/shared/src/util.ts';
-import { PrismaClientKnownRequestError } from '@stocked/shared/src/generated/prisma/internal/prismaNamespace.ts';
+} from '../generated/prisma/client';
+import type { Result } from '../util';
 
 type FoodItemWithFood = FoodItem & { food: Food };
 
