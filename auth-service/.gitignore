@@ -40,4 +40,4 @@ src/proto/*
 node_modules/
 dist/
 
-/generated/prisma
+src/generated/
