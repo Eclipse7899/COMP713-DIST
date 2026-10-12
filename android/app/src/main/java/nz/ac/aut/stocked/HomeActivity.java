@@ -2,6 +2,7 @@ package nz.ac.aut.stocked;
 
 import android.os.Bundle;
 import android.widget.TextView;
+import android.widget.Button;
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -30,6 +31,18 @@ public class HomeActivity extends AppCompatActivity {
 
         String username = getIntent().getStringExtra("username");
         String accessToken = getIntent().getStringExtra("accessToken");
+
+        Button refreshButton = findViewById(R.id.refreshButton);
+
+        refreshButton.setOnClickListener(v -> {
+            pantryStatusText.setText("Loading pantry...");
+
+            if (accessToken != null) {
+                new Thread(() -> loadItems(accessToken)).start();
+            } else {
+                pantryStatusText.setText("Could not load pantry.");
+            }
+        });
 
         if (username != null && !username.isEmpty()) {
             welcomeText.setText("Welcome, " + username);
