@@ -35,12 +35,20 @@ public class HomeActivity extends AppCompatActivity {
         Button refreshButton = findViewById(R.id.refreshButton);
 
         refreshButton.setOnClickListener(v -> {
+            refreshButton.setEnabled(false);
             pantryStatusText.setText("Loading pantry...");
 
             if (accessToken != null) {
-                new Thread(() -> loadItems(accessToken)).start();
+                new Thread(() -> {
+                    loadItems(accessToken);
+
+                    runOnUiThread(() ->
+                            refreshButton.setEnabled(true)
+                    );
+                }).start();
             } else {
                 pantryStatusText.setText("Could not load pantry.");
+                refreshButton.setEnabled(true);
             }
         });
 
