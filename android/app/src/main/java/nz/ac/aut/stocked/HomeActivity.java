@@ -14,12 +14,15 @@ import java.net.URL;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import android.content.Intent;
+
 public class HomeActivity extends AppCompatActivity {
 
     private static final String ITEMS_URL =
             "http://10.0.2.2:3000/api/items";
 
     private TextView pantryStatusText;
+    private String accessToken;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -30,7 +33,7 @@ public class HomeActivity extends AppCompatActivity {
         pantryStatusText = findViewById(R.id.pantryStatusText);
 
         String username = getIntent().getStringExtra("username");
-        String accessToken = getIntent().getStringExtra("accessToken");
+        accessToken = getIntent().getStringExtra("accessToken");
 
         Button refreshButton = findViewById(R.id.refreshButton);
 
@@ -52,15 +55,19 @@ public class HomeActivity extends AppCompatActivity {
             }
         });
 
+        Button addItemNavButton = findViewById(R.id.addItemNavButton);
+
+        addItemNavButton.setOnClickListener(v -> {
+            Intent intent = new Intent(HomeActivity.this, AddItemActivity.class);
+            intent.putExtra("accessToken", accessToken);
+            startActivity(intent);
+        });
+
+
         if (username != null && !username.isEmpty()) {
             welcomeText.setText("Welcome, " + username);
         }
 
-        if (accessToken != null) {
-            new Thread(() -> loadItems(accessToken)).start();
-        } else {
-            pantryStatusText.setText("Could not load pantry.");
-        }
     }
 
     private void loadItems(String accessToken) {
@@ -145,6 +152,16 @@ public class HomeActivity extends AppCompatActivity {
             if (connection != null) {
                 connection.disconnect();
             }
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        if (accessToken != null && pantryStatusText != null) {
+            pantryStatusText.setText("Loading pantry...");
+            new Thread(() -> loadItems(accessToken)).start();
         }
     }
 }

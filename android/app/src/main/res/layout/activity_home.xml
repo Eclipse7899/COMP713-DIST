@@ -62,6 +62,17 @@
             android:backgroundTint="@color/stocked_primary"
             android:textColor="@android:color/white" />
 
+        <Button
+            android:id="@+id/addItemNavButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Add Item"
+            android:textAllCaps="false"
+            android:backgroundTint="#2563EB"
+            android:textColor="#FFFFFF"
+            android:layout_marginTop="12dp"
+            android:layout_marginBottom="16dp" />
+
         <!-- Pantry card -->
         <LinearLayout
             android:layout_width="match_parent"
