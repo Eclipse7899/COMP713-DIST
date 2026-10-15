@@ -63,6 +63,13 @@ public class HomeActivity extends AppCompatActivity {
             startActivity(intent);
         });
 
+        Button deleteItemNavButton = findViewById(R.id.deleteItemNavButton);
+
+        deleteItemNavButton.setOnClickListener(v -> {
+            Intent intent = new Intent(HomeActivity.this, DeleteItemActivity.class);
+            intent.putExtra("accessToken", accessToken);
+            startActivity(intent);
+        });
 
         if (username != null && !username.isEmpty()) {
             welcomeText.setText("Welcome, " + username);

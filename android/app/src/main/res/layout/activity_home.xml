@@ -73,6 +73,18 @@
             android:layout_marginTop="12dp"
             android:layout_marginBottom="16dp" />
 
+        <Button
+            android:id="@+id/deleteItemNavButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Delete Item"
+            android:textAllCaps="false"
+            android:backgroundTint="#DC2626"
+            android:textColor="#FFFFFF"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="16dp" />
+
+
         <!-- Pantry card -->
         <LinearLayout
             android:layout_width="match_parent"
