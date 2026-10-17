@@ -64,6 +64,7 @@ afterAll(async () => {
 });
 
 beforeEach(async () => {
+  await db.userShare.deleteMany();
   await db.foodItem.deleteMany();
   await db.food.deleteMany();
   await db.user.deleteMany();
@@ -72,29 +73,35 @@ beforeEach(async () => {
 
 describe('Items Endpoints', () => {
   describe('Authorization', () => {
-    it('should reject GET /api/items without authorization header', async () => {
-      const response = await app.request('/api/items', {
-        method: 'GET',
-      });
-      expect(response.status).toBe(401);
-    });
-
-    it('should reject POST /api/items without authorization header', async () => {
-      const response = await app.request('/api/items', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          foodId: 'clh0000000000000000000000',
-          quantity: 2,
-          unit: 'ITEM',
-        }),
-      });
-      expect(response.status).toBe(401);
-    });
-
-    it('should reject PUT /api/items/:id without authorization header', async () => {
+    it('should reject GET /api/items/:userId without authorization header', async () => {
       const response = await app.request(
         '/api/items/clh0000000000000000000000',
+        {
+          method: 'GET',
+        },
+      );
+      expect(response.status).toBe(401);
+    });
+
+    it('should reject POST /api/items/:userId without authorization header', async () => {
+      const response = await app.request(
+        '/api/items/clh0000000000000000000000',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            foodId: 'clh0000000000000000000000',
+            quantity: 2,
+            unit: 'ITEM',
+          }),
+        },
+      );
+      expect(response.status).toBe(401);
+    });
+
+    it('should reject PUT /api/items/:userId/:id without authorization header', async () => {
+      const response = await app.request(
+        '/api/items/clh0000000000000000000000/clh0000000000000000000000',
         {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
@@ -108,9 +115,9 @@ describe('Items Endpoints', () => {
       expect(response.status).toBe(401);
     });
 
-    it('should reject DELETE /api/items/:id without authorization header', async () => {
+    it('should reject DELETE /api/items/:userId/:id without authorization header', async () => {
       const response = await app.request(
-        '/api/items/clh0000000000000000000000',
+        '/api/items/clh0000000000000000000000/clh0000000000000000000000',
         {
           method: 'DELETE',
         },
@@ -119,18 +126,24 @@ describe('Items Endpoints', () => {
     });
 
     it('should reject request with invalid JWT token', async () => {
-      const response = await app.request('/api/items', {
-        method: 'GET',
-        headers: { Authorization: 'Bearer invalid.token.payload' },
-      });
+      const response = await app.request(
+        '/api/items/clh0000000000000000000000',
+        {
+          method: 'GET',
+          headers: { Authorization: 'Bearer invalid.token.payload' },
+        },
+      );
       expect(response.status).toBe(401);
     });
   });
 
   describe('Validation', () => {
     it('should return 400 when creating item with invalid foodId', async () => {
-      const { token } = await createTestUser('user1', 'user1@example.com');
-      const response = await app.request('/api/items', {
+      const { user, token } = await createTestUser(
+        'user1',
+        'user1@example.com',
+      );
+      const response = await app.request(`/api/items/${user.id}`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -146,8 +159,11 @@ describe('Items Endpoints', () => {
     });
 
     it('should return 400 when creating item with non-positive quantity', async () => {
-      const { token } = await createTestUser('user1', 'user1@example.com');
-      const response = await app.request('/api/items', {
+      const { user, token } = await createTestUser(
+        'user1',
+        'user1@example.com',
+      );
+      const response = await app.request(`/api/items/${user.id}`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -161,7 +177,7 @@ describe('Items Endpoints', () => {
       });
       expect(response.status).toBe(400);
 
-      const responseNegative = await app.request('/api/items', {
+      const responseNegative = await app.request(`/api/items/${user.id}`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -177,8 +193,11 @@ describe('Items Endpoints', () => {
     });
 
     it('should return 400 when creating item with invalid unit', async () => {
-      const { token } = await createTestUser('user1', 'user1@example.com');
-      const response = await app.request('/api/items', {
+      const { user, token } = await createTestUser(
+        'user1',
+        'user1@example.com',
+      );
+      const response = await app.request(`/api/items/${user.id}`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -194,8 +213,11 @@ describe('Items Endpoints', () => {
     });
 
     it('should return 400 when creating item with invalid expiryDate format', async () => {
-      const { token } = await createTestUser('user1', 'user1@example.com');
-      const response = await app.request('/api/items', {
+      const { user, token } = await createTestUser(
+        'user1',
+        'user1@example.com',
+      );
+      const response = await app.request(`/api/items/${user.id}`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -212,8 +234,11 @@ describe('Items Endpoints', () => {
     });
 
     it('should return 400 when updating item with invalid param id', async () => {
-      const { token } = await createTestUser('user1', 'user1@example.com');
-      const response = await app.request('/api/items/invalid-id!', {
+      const { user, token } = await createTestUser(
+        'user1',
+        'user1@example.com',
+      );
+      const response = await app.request(`/api/items/${user.id}/invalid-id!`, {
         method: 'PUT',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -229,8 +254,11 @@ describe('Items Endpoints', () => {
     });
 
     it('should return 400 when deleting item with invalid param id', async () => {
-      const { token } = await createTestUser('user1', 'user1@example.com');
-      const response = await app.request('/api/items/invalid-id!', {
+      const { user, token } = await createTestUser(
+        'user1',
+        'user1@example.com',
+      );
+      const response = await app.request(`/api/items/${user.id}/invalid-id!`, {
         method: 'DELETE',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -240,9 +268,12 @@ describe('Items Endpoints', () => {
     });
 
     it('should return 400 when querying items with invalid sort or category', async () => {
-      const { token } = await createTestUser('user1', 'user1@example.com');
+      const { user, token } = await createTestUser(
+        'user1',
+        'user1@example.com',
+      );
       const invalidSortResponse = await app.request(
-        '/api/items?sort=invalid_sort',
+        `/api/items/${user.id}?sort=invalid_sort`,
         {
           method: 'GET',
           headers: { Authorization: `Bearer ${token}` },
@@ -251,7 +282,7 @@ describe('Items Endpoints', () => {
       expect(invalidSortResponse.status).toBe(400);
 
       const invalidCategoryResponse = await app.request(
-        '/api/items?categories=NOT_A_CATEGORY',
+        `/api/items/${user.id}?categories=NOT_A_CATEGORY`,
         {
           method: 'GET',
           headers: { Authorization: `Bearer ${token}` },
@@ -275,7 +306,7 @@ describe('Items Endpoints', () => {
         },
       });
 
-      const response = await app.request('/api/items', {
+      const response = await app.request(`/api/items/${user.id}`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -321,7 +352,7 @@ describe('Items Endpoints', () => {
         },
       });
 
-      const response = await app.request('/api/items', {
+      const response = await app.request(`/api/items/${user.id}`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -342,13 +373,13 @@ describe('Items Endpoints', () => {
     });
 
     it('should return 404 if foodId does not exist', async () => {
-      const { token } = await createTestUser(
+      const { user, token } = await createTestUser(
         'itemuser3',
         'itemuser3@example.com',
       );
       const nonExistentFoodId = 'clh0000000000000000000000';
 
-      const response = await app.request('/api/items', {
+      const response = await app.request(`/api/items/${user.id}`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -371,7 +402,7 @@ describe('Items Endpoints', () => {
         'userA',
         'usera@example.com',
       );
-      const { token: tokenB } = await createTestUser(
+      const { user: userB, token: tokenB } = await createTestUser(
         'userB',
         'userb@example.com',
       );
@@ -384,7 +415,7 @@ describe('Items Endpoints', () => {
         },
       });
 
-      const response = await app.request('/api/items', {
+      const response = await app.request(`/api/items/${userB.id}`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${tokenB}`,
@@ -407,8 +438,8 @@ describe('Items Endpoints', () => {
     });
   });
 
-  describe('GET /api/items', () => {
-    it('should only return items belonging to current user', async () => {
+  describe('GET /api/items/:userId', () => {
+    it('should only return items belonging to the requested user', async () => {
       const { user: userA, token: tokenA } = await createTestUser(
         'userA',
         'usera@example.com',
@@ -444,7 +475,7 @@ describe('Items Endpoints', () => {
         },
       });
 
-      const response = await app.request('/api/items', {
+      const response = await app.request(`/api/items/${userA.id}`, {
         method: 'GET',
         headers: { Authorization: `Bearer ${tokenA}` },
       });
@@ -494,10 +525,13 @@ describe('Items Endpoints', () => {
         },
       });
 
-      const response = await app.request('/api/items?contains=STRAWBERRY', {
-        method: 'GET',
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await app.request(
+        `/api/items/${user.id}?contains=STRAWBERRY`,
+        {
+          method: 'GET',
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
 
       expect(response.status).toBe(200);
       const data = await response.json();
@@ -559,10 +593,13 @@ describe('Items Endpoints', () => {
       });
 
       // Filter by single category
-      const resFruit = await app.request('/api/items?categories=FRUIT', {
-        method: 'GET',
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const resFruit = await app.request(
+        `/api/items/${user.id}?categories=FRUIT`,
+        {
+          method: 'GET',
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
       expect(resFruit.status).toBe(200);
       const dataFruit = await resFruit.json();
       expect(dataFruit).toHaveLength(1);
@@ -570,7 +607,7 @@ describe('Items Endpoints', () => {
 
       // Filter by multiple categories
       const resMulti = await app.request(
-        '/api/items?categories=FRUIT&categories=MEAT',
+        `/api/items/${user.id}?categories=FRUIT&categories=MEAT`,
         {
           method: 'GET',
           headers: { Authorization: `Bearer ${token}` },
@@ -642,7 +679,8 @@ describe('Items Endpoints', () => {
 
       // Filter items expiring before 2026-08-01
       const resExpiry = await app.request(
-        '/api/items?expiryDate=' + new Date('2026-08-01').toISOString(),
+        `/api/items/${user.id}?expiryDate=` +
+          new Date('2026-08-01').toISOString(),
         {
           method: 'GET',
           headers: { Authorization: `Bearer ${token}` },
@@ -653,7 +691,7 @@ describe('Items Endpoints', () => {
       expect(dataExpiry).toHaveLength(2);
 
       // Sort descending
-      const resDesc = await app.request('/api/items?sort=desc', {
+      const resDesc = await app.request(`/api/items/${user.id}?sort=desc`, {
         method: 'GET',
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -666,7 +704,7 @@ describe('Items Endpoints', () => {
     });
   });
 
-  describe('PUT /api/items/:id', () => {
+  describe('PUT /api/items/:userId/:id', () => {
     it('should successfully update item quantity, unit, and expiryDate and verify database', async () => {
       const { user, token } = await createTestUser(
         'updateuser',
@@ -697,7 +735,7 @@ describe('Items Endpoints', () => {
         },
       });
 
-      const response = await app.request(`/api/items/${item.id}`, {
+      const response = await app.request(`/api/items/${user.id}/${item.id}`, {
         method: 'PUT',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -728,7 +766,7 @@ describe('Items Endpoints', () => {
     });
 
     it('should return 404 when updating non-existent item', async () => {
-      const { token } = await createTestUser(
+      const { user, token } = await createTestUser(
         'updateuser2',
         'update2@example.com',
       );
@@ -741,18 +779,21 @@ describe('Items Endpoints', () => {
       });
       const nonExistentItemId = 'clh0000000000000000000000';
 
-      const response = await app.request(`/api/items/${nonExistentItemId}`, {
-        method: 'PUT',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
+      const response = await app.request(
+        `/api/items/${user.id}/${nonExistentItemId}`,
+        {
+          method: 'PUT',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            foodId: food.id,
+            quantity: 2,
+            unit: FoodUnit.ITEM,
+          }),
         },
-        body: JSON.stringify({
-          foodId: food.id,
-          quantity: 2,
-          unit: FoodUnit.ITEM,
-        }),
-      });
+      );
 
       expect(response.status).toBe(404);
     });
@@ -762,7 +803,7 @@ describe('Items Endpoints', () => {
         'userA',
         'usera4@example.com',
       );
-      const { token: tokenB } = await createTestUser(
+      const { user: userB, token: tokenB } = await createTestUser(
         'userB',
         'userb4@example.com',
       );
@@ -783,7 +824,7 @@ describe('Items Endpoints', () => {
         },
       });
 
-      const response = await app.request(`/api/items/${itemA.id}`, {
+      const response = await app.request(`/api/items/${userB.id}/${itemA.id}`, {
         method: 'PUT',
         headers: {
           Authorization: `Bearer ${tokenB}`,
@@ -838,7 +879,7 @@ describe('Items Endpoints', () => {
       });
 
       // Update with foodId belonging to user B
-      const response = await app.request(`/api/items/${itemA.id}`, {
+      const response = await app.request(`/api/items/${userA.id}/${itemA.id}`, {
         method: 'PUT',
         headers: {
           Authorization: `Bearer ${tokenA}`,
@@ -854,24 +895,27 @@ describe('Items Endpoints', () => {
       expect(response.status).toBe(404);
 
       // Update with non-existent foodId
-      const resNonExistent = await app.request(`/api/items/${itemA.id}`, {
-        method: 'PUT',
-        headers: {
-          Authorization: `Bearer ${tokenA}`,
-          'Content-Type': 'application/json',
+      const resNonExistent = await app.request(
+        `/api/items/${userA.id}/${itemA.id}`,
+        {
+          method: 'PUT',
+          headers: {
+            Authorization: `Bearer ${tokenA}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            foodId: 'clh0000000000000000000000',
+            quantity: 2,
+            unit: FoodUnit.ITEM,
+          }),
         },
-        body: JSON.stringify({
-          foodId: 'clh0000000000000000000000',
-          quantity: 2,
-          unit: FoodUnit.ITEM,
-        }),
-      });
+      );
 
       expect(resNonExistent.status).toBe(404);
     });
   });
 
-  describe('DELETE /api/items/:id', () => {
+  describe('DELETE /api/items/:userId/:id', () => {
     it('should successfully delete own item and verify database removal', async () => {
       const { user, token } = await createTestUser(
         'deluser',
@@ -894,7 +938,7 @@ describe('Items Endpoints', () => {
         },
       });
 
-      const response = await app.request(`/api/items/${item.id}`, {
+      const response = await app.request(`/api/items/${user.id}/${item.id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -909,13 +953,19 @@ describe('Items Endpoints', () => {
     });
 
     it('should return 404 when deleting non-existent item', async () => {
-      const { token } = await createTestUser('deluser2', 'del2@example.com');
+      const { user, token } = await createTestUser(
+        'deluser2',
+        'del2@example.com',
+      );
       const nonExistentId = 'clh0000000000000000000000';
 
-      const response = await app.request(`/api/items/${nonExistentId}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await app.request(
+        `/api/items/${user.id}/${nonExistentId}`,
+        {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
 
       expect(response.status).toBe(404);
     });
@@ -925,7 +975,7 @@ describe('Items Endpoints', () => {
         'userA6',
         'usera6@example.com',
       );
-      const { token: tokenB } = await createTestUser(
+      const { user: userB, token: tokenB } = await createTestUser(
         'userB6',
         'userb6@example.com',
       );
@@ -946,7 +996,7 @@ describe('Items Endpoints', () => {
         },
       });
 
-      const response = await app.request(`/api/items/${itemA.id}`, {
+      const response = await app.request(`/api/items/${userB.id}/${itemA.id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${tokenB}` },
       });
@@ -956,6 +1006,421 @@ describe('Items Endpoints', () => {
       // Verify DB unchanged
       const dbItem = await db.foodItem.findUnique({ where: { id: itemA.id } });
       expect(dbItem).not.toBeNull();
+    });
+  });
+
+  describe('Item sharing', () => {
+    it('should list only the shares owned by the requested user', async () => {
+      const { user: owner, token: ownerToken } = await createTestUser(
+        'shareowner',
+        'shareowner@example.com',
+      );
+      const { user: sharedUser } = await createTestUser(
+        'sharewith',
+        'sharewith@example.com',
+      );
+      const { user: otherOwner } = await createTestUser(
+        'othershareowner',
+        'othershareowner@example.com',
+      );
+
+      await db.userShare.create({
+        data: { userId: owner.id, sharedWithUserId: sharedUser.id },
+      });
+      await db.userShare.create({
+        data: { userId: otherOwner.id, sharedWithUserId: owner.id },
+      });
+
+      const response = await app.request(`/api/items/${owner.id}/shared`, {
+        method: 'GET',
+        headers: { Authorization: `Bearer ${ownerToken}` },
+      });
+
+      expect(response.status).toBe(200);
+      const data = await response.json();
+      expect(data).toHaveLength(1);
+      expect(data[0].userId).toBe(owner.id);
+      expect(data[0].sharedWithUserId).toBe(sharedUser.id);
+      expect(data[0]).toHaveProperty('sharedAt');
+    });
+
+    it('should reject listing another user shares', async () => {
+      const { user: owner } = await createTestUser(
+        'shareowner2',
+        'shareowner2@example.com',
+      );
+      const { token: otherToken } = await createTestUser(
+        'shareother2',
+        'shareother2@example.com',
+      );
+
+      const response = await app.request(`/api/items/${owner.id}/shared`, {
+        method: 'GET',
+        headers: { Authorization: `Bearer ${otherToken}` },
+      });
+
+      expect(response.status).toBe(403);
+    });
+
+    it('should share inventory with another user', async () => {
+      const { user: owner, token } = await createTestUser(
+        'sharepost',
+        'sharepost@example.com',
+      );
+      const { user: sharedUser } = await createTestUser(
+        'sharepostwith',
+        'sharepostwith@example.com',
+      );
+
+      const response = await app.request(`/api/items/${owner.id}/shared`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ sharedWithUserId: sharedUser.id }),
+      });
+
+      expect(response.status).toBe(201);
+      const data = await response.json();
+      expect(data.success).toBe(true);
+      expect(data.data.userId).toBe(owner.id);
+      expect(data.data.sharedWithUserId).toBe(sharedUser.id);
+
+      const dbShare = await db.userShare.findFirst({
+        where: { userId: owner.id, sharedWithUserId: sharedUser.id },
+      });
+      expect(dbShare).not.toBeNull();
+    });
+
+    it('should reject sharing another user inventory', async () => {
+      const { user: owner } = await createTestUser(
+        'sharepostowner3',
+        'sharepostowner3@example.com',
+      );
+      const { user: other, token: otherToken } = await createTestUser(
+        'sharepostother3',
+        'sharepostother3@example.com',
+      );
+
+      const response = await app.request(`/api/items/${owner.id}/shared`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${otherToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ sharedWithUserId: other.id }),
+      });
+
+      expect(response.status).toBe(403);
+      expect(await db.userShare.count()).toBe(0);
+    });
+
+    it('should reject sharing inventory with yourself', async () => {
+      const { user, token } = await createTestUser(
+        'shareself',
+        'shareself@example.com',
+      );
+
+      const response = await app.request(`/api/items/${user.id}/shared`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ sharedWithUserId: user.id }),
+      });
+
+      expect(response.status).toBe(400);
+      expect(await db.userShare.count()).toBe(0);
+    });
+
+    it('should reject sharing with a user that does not exist', async () => {
+      const { user, token } = await createTestUser(
+        'shareunknown',
+        'shareunknown@example.com',
+      );
+
+      const response = await app.request(`/api/items/${user.id}/shared`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          sharedWithUserId: 'clh0000000000000000000000',
+        }),
+      });
+
+      expect(response.status).toBe(404);
+      expect(await db.userShare.count()).toBe(0);
+    });
+
+    it('should reject sharing inventory that is already shared', async () => {
+      const { user: owner, token } = await createTestUser(
+        'sharedouble',
+        'sharedouble@example.com',
+      );
+      const { user: sharedUser } = await createTestUser(
+        'sharedoublewith',
+        'sharedoublewith@example.com',
+      );
+
+      await db.userShare.create({
+        data: { userId: owner.id, sharedWithUserId: sharedUser.id },
+      });
+
+      const response = await app.request(`/api/items/${owner.id}/shared`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ sharedWithUserId: sharedUser.id }),
+      });
+
+      expect(response.status).toBe(409);
+      expect(await db.userShare.count()).toBe(1);
+    });
+
+    it('should allow only one of two concurrent identical shares', async () => {
+      const { user: owner, token } = await createTestUser(
+        'shareconcurrent',
+        'shareconcurrent@example.com',
+      );
+      const { user: sharedUser } = await createTestUser(
+        'shareconcurrentwith',
+        'shareconcurrentwith@example.com',
+      );
+
+      const share = () =>
+        app.request(`/api/items/${owner.id}/shared`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ sharedWithUserId: sharedUser.id }),
+        });
+
+      const responses = await Promise.all([share(), share()]);
+      expect(responses.map((response) => response.status).sort()).toEqual([
+        201, 409,
+      ]);
+      expect(await db.userShare.count()).toBe(1);
+    });
+
+    it('should stop sharing inventory with a user', async () => {
+      const { user: owner, token } = await createTestUser(
+        'sharedelete',
+        'sharedelete@example.com',
+      );
+      const { user: sharedUser } = await createTestUser(
+        'sharedeletewith',
+        'sharedeletewith@example.com',
+      );
+
+      await db.userShare.create({
+        data: { userId: owner.id, sharedWithUserId: sharedUser.id },
+      });
+
+      const response = await app.request(
+        `/api/items/${owner.id}/shared/${sharedUser.id}`,
+        {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
+
+      expect(response.status).toBe(200);
+      expect(await db.userShare.count()).toBe(0);
+    });
+
+    it('should reject removing another user share', async () => {
+      const { user: owner } = await createTestUser(
+        'sharedeleteowner2',
+        'sharedeleteowner2@example.com',
+      );
+      const { user: other, token: otherToken } = await createTestUser(
+        'sharedeleteother2',
+        'sharedeleteother2@example.com',
+      );
+
+      await db.userShare.create({
+        data: { userId: owner.id, sharedWithUserId: other.id },
+      });
+
+      const response = await app.request(
+        `/api/items/${owner.id}/shared/${other.id}`,
+        {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${otherToken}` },
+        },
+      );
+
+      expect(response.status).toBe(403);
+      expect(await db.userShare.count()).toBe(1);
+    });
+
+    it('should return 404 when removing a share that does not exist', async () => {
+      const { user, token } = await createTestUser(
+        'sharedeletenone',
+        'sharedeletenone@example.com',
+      );
+
+      const response = await app.request(
+        `/api/items/${user.id}/shared/clh0000000000000000000000`,
+        {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
+
+      expect(response.status).toBe(404);
+    });
+
+    it('should let a shared user read the owner inventory', async () => {
+      const { user: owner } = await createTestUser(
+        'sharedread',
+        'sharedread@example.com',
+      );
+      const { user: sharedUser, token: sharedToken } = await createTestUser(
+        'sharedreader',
+        'sharedreader@example.com',
+      );
+      const food = await db.food.create({
+        data: {
+          name: 'Shared Apples',
+          category: FoodCategory.FRUIT,
+          createdByUserId: null,
+        },
+      });
+      const item = await db.foodItem.create({
+        data: {
+          userId: owner.id,
+          foodId: food.id,
+          quantity: 4,
+          unit: FoodUnit.ITEM,
+        },
+      });
+      await db.userShare.create({
+        data: { userId: owner.id, sharedWithUserId: sharedUser.id },
+      });
+
+      const response = await app.request(`/api/items/${owner.id}`, {
+        method: 'GET',
+        headers: { Authorization: `Bearer ${sharedToken}` },
+      });
+
+      expect(response.status).toBe(200);
+      const data = await response.json();
+      expect(data).toHaveLength(1);
+      expect(data[0].id).toBe(item.id);
+    });
+
+    it('should reject reading inventory that has not been shared', async () => {
+      const { user: owner } = await createTestUser(
+        'shareddenied',
+        'shareddenied@example.com',
+      );
+      const { token: otherToken } = await createTestUser(
+        'shareddeniedother',
+        'shareddeniedother@example.com',
+      );
+      const food = await db.food.create({
+        data: {
+          name: 'Private Apples',
+          category: FoodCategory.FRUIT,
+          createdByUserId: null,
+        },
+      });
+      await db.foodItem.create({
+        data: {
+          userId: owner.id,
+          foodId: food.id,
+          quantity: 4,
+          unit: FoodUnit.ITEM,
+        },
+      });
+
+      const response = await app.request(`/api/items/${owner.id}`, {
+        method: 'GET',
+        headers: { Authorization: `Bearer ${otherToken}` },
+      });
+
+      expect(response.status).toBe(403);
+    });
+
+    it('should keep a shared inventory read-only for the shared user', async () => {
+      const { user: owner } = await createTestUser(
+        'sharedreadonly',
+        'sharedreadonly@example.com',
+      );
+      const { user: sharedUser, token: sharedToken } = await createTestUser(
+        'sharedreadonlyuser',
+        'sharedreadonlyuser@example.com',
+      );
+      const food = await db.food.create({
+        data: {
+          name: 'Read Only Apples',
+          category: FoodCategory.FRUIT,
+          createdByUserId: null,
+        },
+      });
+      const item = await db.foodItem.create({
+        data: {
+          userId: owner.id,
+          foodId: food.id,
+          quantity: 4,
+          unit: FoodUnit.ITEM,
+        },
+      });
+      await db.userShare.create({
+        data: { userId: owner.id, sharedWithUserId: sharedUser.id },
+      });
+
+      const createResponse = await app.request(`/api/items/${owner.id}`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${sharedToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          foodId: food.id,
+          quantity: 1,
+          unit: FoodUnit.ITEM,
+        }),
+      });
+      expect(createResponse.status).toBe(403);
+
+      const updateResponse = await app.request(
+        `/api/items/${owner.id}/${item.id}`,
+        {
+          method: 'PUT',
+          headers: {
+            Authorization: `Bearer ${sharedToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            foodId: food.id,
+            quantity: 99,
+            unit: FoodUnit.ITEM,
+          }),
+        },
+      );
+      expect(updateResponse.status).toBe(403);
+
+      const deleteResponse = await app.request(
+        `/api/items/${owner.id}/${item.id}`,
+        {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${sharedToken}` },
+        },
+      );
+      expect(deleteResponse.status).toBe(403);
+
+      const dbItem = await db.foodItem.findUnique({ where: { id: item.id } });
+      expect(dbItem?.quantity).toBe(4);
     });
   });
 });

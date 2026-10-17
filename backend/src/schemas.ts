@@ -39,6 +39,25 @@ export const foodItemDtoSchema = z
 
 export type FoodItemDto = z.infer<typeof foodItemDtoSchema>;
 
+export const userShareDtoSchema = z
+  .object({
+    userId: z.string().describe('CUID2 identifier of the inventory owner'),
+    sharedWithUserId: z
+      .string()
+      .describe('CUID2 identifier of the user the inventory is shared with'),
+    sharedAt: z
+      .date()
+      .describe('Timestamp the inventory was shared (ISO 8601)'),
+  })
+  .brand('UserShareDto');
+
+export type UserShareDto = z.infer<typeof userShareDtoSchema>;
+
+export const createdShareResponseSchema = z.object({
+  success: z.literal(true).describe('Always true when the share was created'),
+  data: userShareDtoSchema.describe('The newly created inventory share'),
+});
+
 export const userDtoSchema = z
   .object({
     id: z.string().describe('User CUID2 identifier'),

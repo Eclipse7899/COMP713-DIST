@@ -39,7 +39,6 @@ model User {
 }
 
 model UserShare {
-  id         String   @id @default(cuid(2))
   userId     String
   sharedWithUserId String
   sharedAt   DateTime @default(now())
@@ -47,6 +46,7 @@ model UserShare {
   user User @relation("UserSharedOwner", fields: [userId], references: [id], onDelete: Cascade)
   sharedUser User @relation("UserSharedWith", fields: [sharedWithUserId], references: [id], onDelete: Cascade)
 
+  @@id([userId, sharedWithUserId])
   @@index([userId])
   @@index([sharedWithUserId])
 }

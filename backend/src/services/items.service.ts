@@ -2,7 +2,12 @@ import type { FoodCategory, FoodUnit } from '../generated/prisma/enums';
 import type { RealtimeHub } from '../realtime/realtime-hub';
 import type { FoodRepository } from '../repositories/food.repo';
 import type { ItemsRepository } from '../repositories/items.repo';
-import { type FoodItemDto, foodItemDtoSchema } from '../schemas';
+import {
+  type FoodItemDto,
+  type UserShareDto,
+  foodItemDtoSchema,
+  userShareDtoSchema,
+} from '../schemas';
 import type { Result } from '../util';
 
 export class ItemsService {
@@ -12,13 +17,24 @@ export class ItemsService {
     private realtime: RealtimeHub,
   ) {}
 
-  async createItem(data: {
-    userId: string;
-    foodId: string;
-    quantity: number;
-    unit: FoodUnit;
-    expiryDate: Date | null;
-  }): Promise<Result<FoodItemDto, 'FOOD_NOT_FOUND' | 'UNAUTHORIZED_FOOD'>> {
+  async createItem(
+    actorId: string,
+    ownerId: string,
+    data: {
+      foodId: string;
+      quantity: number;
+      unit: FoodUnit;
+      expiryDate: Date | null;
+    },
+  ): Promise<
+    Result<FoodItemDto, 'FORBIDDEN' | 'FOOD_NOT_FOUND' | 'UNAUTHORIZED_FOOD'>
+  > {
+    if (actorId !== ownerId) {
+      return {
+        success: false,
+        error: 'FORBIDDEN',
+      };
+    }
     const food = await this.foodRepo.findById(data.foodId);
     if (!food) {
       return {
@@ -26,13 +42,19 @@ export class ItemsService {
         error: 'FOOD_NOT_FOUND',
       };
     }
-    if (food.createdByUserId !== null && food.createdByUserId !== data.userId) {
+    if (food.createdByUserId !== null && food.createdByUserId !== ownerId) {
       return {
         success: false,
         error: 'UNAUTHORIZED_FOOD',
       };
     }
-    const result = await this.itemsRepo.create(data);
+    const result = await this.itemsRepo.create({
+      userId: ownerId,
+      foodId: data.foodId,
+      quantity: data.quantity,
+      unit: data.unit,
+      expiryDate: data.expiryDate,
+    });
     if (!result.success) {
       return {
         success: false,
@@ -41,7 +63,7 @@ export class ItemsService {
     }
     const item = result.data;
     const dto = foodItemDtoSchema.parse(item);
-    this.realtime.broadcast(data.userId, {
+    this.realtime.broadcast(ownerId, {
       type: 'item.created',
       data: dto,
     });
@@ -52,43 +74,58 @@ export class ItemsService {
   }
 
   async getItems(
-    userId: string,
+    viewerId: string,
+    ownerId: string,
     data: {
       categories?: FoodCategory[];
       expiresBefore?: Date | null;
       name_contains?: string;
       sort?: 'asc' | 'desc';
     },
-  ): Promise<FoodItemDto[]> {
-    if (
-      data.categories ||
-      data.expiresBefore ||
-      data.name_contains ||
-      data.sort
-    ) {
-      const items = await this.itemsRepo.filterByUser(userId, {
-        categories: data.categories,
-        expiresBefore: data.expiresBefore,
-        name_contains: data.name_contains,
-        sort: data.sort,
-      });
-      return items.map((item) => foodItemDtoSchema.parse(item));
-    } else {
-      const items = await this.itemsRepo.listByUser(userId);
-      return items.map((item) => foodItemDtoSchema.parse(item));
+  ): Promise<Result<FoodItemDto[], 'FORBIDDEN'>> {
+    const hasAccess = await this.itemsRepo.hasSharedAccess(ownerId, viewerId);
+    if (!hasAccess) {
+      return {
+        success: false,
+        error: 'FORBIDDEN',
+      };
     }
+
+    const items =
+      data.categories || data.expiresBefore || data.name_contains || data.sort
+        ? await this.itemsRepo.filterByUser(ownerId, {
+            categories: data.categories,
+            expiresBefore: data.expiresBefore,
+            name_contains: data.name_contains,
+            sort: data.sort,
+          })
+        : await this.itemsRepo.listByUser(ownerId);
+
+    return {
+      success: true,
+      data: items.map((item) => foodItemDtoSchema.parse(item)),
+    };
   }
 
   async updateItem(
+    actorId: string,
+    ownerId: string,
     id: string,
-    userId: string,
     data: {
       foodId: string;
       quantity: number;
       unit: FoodUnit;
       expiryDate: Date | null;
     },
-  ): Promise<Result<FoodItemDto, 'ITEM_NOT_FOUND' | 'FOOD_NOT_FOUND'>> {
+  ): Promise<
+    Result<FoodItemDto, 'FORBIDDEN' | 'ITEM_NOT_FOUND' | 'FOOD_NOT_FOUND'>
+  > {
+    if (actorId !== ownerId) {
+      return {
+        success: false,
+        error: 'FORBIDDEN',
+      };
+    }
     const food = await this.foodRepo.findById(data.foodId);
     if (!food) {
       return {
@@ -96,13 +133,13 @@ export class ItemsService {
         error: 'FOOD_NOT_FOUND',
       };
     }
-    if (food.createdByUserId !== null && food.createdByUserId !== userId) {
+    if (food.createdByUserId !== null && food.createdByUserId !== ownerId) {
       return {
         success: false,
         error: 'FOOD_NOT_FOUND',
       };
     }
-    const item = await this.itemsRepo.updateByUser(id, userId, data);
+    const item = await this.itemsRepo.updateByUser(id, ownerId, data);
     if (!item.success) {
       return {
         success: false,
@@ -111,7 +148,7 @@ export class ItemsService {
     }
     const updatedItem = item.data;
     const dto = foodItemDtoSchema.parse(updatedItem);
-    this.realtime.broadcast(userId, {
+    this.realtime.broadcast(ownerId, {
       type: 'item.updated',
       data: dto,
     });
@@ -122,33 +159,125 @@ export class ItemsService {
   }
 
   async removeItem(
+    actorId: string,
+    ownerId: string,
     id: string,
-    userId: string,
-  ): Promise<Result<boolean, 'ITEM_NOT_FOUND' | 'UNAUTHORIZED'>> {
+  ): Promise<Result<boolean, 'FORBIDDEN' | 'ITEM_NOT_FOUND'>> {
+    if (actorId !== ownerId) {
+      return {
+        success: false,
+        error: 'FORBIDDEN',
+      };
+    }
     const item = await this.itemsRepo.findById(id);
-    if (!item) {
+    if (!item || item.userId !== ownerId) {
       return {
         success: false,
         error: 'ITEM_NOT_FOUND',
       };
     }
-    if (item.userId !== userId) {
-      return {
-        success: false,
-        error: 'UNAUTHORIZED',
-      };
-    }
-    const deleted = await this.itemsRepo.deleteByUser(id, userId);
+    const deleted = await this.itemsRepo.deleteByUser(id, ownerId);
     if (!deleted) {
       return {
         success: false,
         error: 'ITEM_NOT_FOUND',
       };
     }
-    this.realtime.broadcast(userId, {
+    this.realtime.broadcast(ownerId, {
       type: 'item.deleted',
       data: item,
     });
+    return {
+      success: true,
+      data: true,
+    };
+  }
+
+  async listShares(
+    actorId: string,
+    ownerId: string,
+  ): Promise<Result<UserShareDto[], 'FORBIDDEN'>> {
+    if (actorId !== ownerId) {
+      return {
+        success: false,
+        error: 'FORBIDDEN',
+      };
+    }
+    const shares = await this.itemsRepo.listSharesByOwner(ownerId);
+    return {
+      success: true,
+      data: shares.map((share) => userShareDtoSchema.parse(share)),
+    };
+  }
+
+  async shareItems(
+    actorId: string,
+    ownerId: string,
+    sharedWithUserId: string,
+  ): Promise<
+    Result<
+      UserShareDto,
+      | 'FORBIDDEN'
+      | 'CANNOT_SHARE_WITH_SELF'
+      | 'USER_NOT_FOUND'
+      | 'ALREADY_SHARED'
+    >
+  > {
+    if (actorId !== ownerId) {
+      return {
+        success: false,
+        error: 'FORBIDDEN',
+      };
+    }
+    if (sharedWithUserId === ownerId) {
+      return {
+        success: false,
+        error: 'CANNOT_SHARE_WITH_SELF',
+      };
+    }
+    if (!(await this.itemsRepo.userExists(sharedWithUserId))) {
+      return {
+        success: false,
+        error: 'USER_NOT_FOUND',
+      };
+    }
+    if (await this.itemsRepo.findShare(ownerId, sharedWithUserId)) {
+      return {
+        success: false,
+        error: 'ALREADY_SHARED',
+      };
+    }
+    const share = await this.itemsRepo.createShare(ownerId, sharedWithUserId);
+    if (!share.success) {
+      return {
+        success: false,
+        error: share.error,
+      };
+    }
+    return {
+      success: true,
+      data: userShareDtoSchema.parse(share.data),
+    };
+  }
+
+  async unshareItems(
+    actorId: string,
+    ownerId: string,
+    sharedWithUserId: string,
+  ): Promise<Result<boolean, 'FORBIDDEN' | 'SHARE_NOT_FOUND'>> {
+    if (actorId !== ownerId) {
+      return {
+        success: false,
+        error: 'FORBIDDEN',
+      };
+    }
+    const deleted = await this.itemsRepo.deleteShare(ownerId, sharedWithUserId);
+    if (!deleted) {
+      return {
+        success: false,
+        error: 'SHARE_NOT_FOUND',
+      };
+    }
     return {
       success: true,
       data: true,
