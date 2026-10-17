@@ -199,6 +199,7 @@ Supported categories are `FRUIT`, `VEGETABLE`, `MEAT`, `DAIRY`,
 
 | Method   | Endpoint                                      | Description                                   |
 | -------- | --------------------------------------------- | --------------------------------------------- |
+| `GET`    | `/api/items/shared-with-me`                   | List inventories other users shared with you  |
 | `GET`    | `/api/items/:userId`                          | List a user's food items, if shared with you  |
 | `POST`   | `/api/items/:userId`                          | Add a food item to your inventory             |
 | `PUT`    | `/api/items/:userId/:id`                      | Update an inventory item you own              |
@@ -211,6 +212,8 @@ The user identity is always taken from the JWT. For item mutations and share
 management, `:userId` must match the authenticated user. Item reads are allowed
 for the owner or for a user the inventory has been shared with. When sharing,
 the recipient is identified by the email address of their auth-service account.
+`GET /api/items/shared-with-me` returns the `userId`, `username`, and `sharedAt`
+of each inventory shared with the authenticated user.
 
 Share request:
 
