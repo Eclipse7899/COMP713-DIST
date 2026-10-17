@@ -125,6 +125,13 @@ describe('Items Endpoints', () => {
       expect(response.status).toBe(401);
     });
 
+    it('should reject GET /api/items/shared-with-me without authorization header', async () => {
+      const response = await app.request('/api/items/shared-with-me', {
+        method: 'GET',
+      });
+      expect(response.status).toBe(401);
+    });
+
     it('should reject request with invalid JWT token', async () => {
       const response = await app.request(
         '/api/items/clh0000000000000000000000',
@@ -1042,6 +1049,55 @@ describe('Items Endpoints', () => {
       expect(data[0].userId).toBe(owner.id);
       expect(data[0].sharedWithUserId).toBe(sharedUser.id);
       expect(data[0]).toHaveProperty('sharedAt');
+    });
+
+    it('should list inventories shared with the authenticated user', async () => {
+      const { user: owner } = await createTestUser(
+        'incomingowner',
+        'incomingowner@example.com',
+      );
+      const { user: otherOwner } = await createTestUser(
+        'incomingotherowner',
+        'incomingotherowner@example.com',
+      );
+      const { user: recipient, token: recipientToken } = await createTestUser(
+        'incomingrecipient',
+        'incomingrecipient@example.com',
+      );
+
+      await db.userShare.create({
+        data: { userId: owner.id, sharedWithUserId: recipient.id },
+      });
+      await db.userShare.create({
+        data: { userId: otherOwner.id, sharedWithUserId: recipient.id },
+      });
+      await db.userShare.create({
+        data: { userId: recipient.id, sharedWithUserId: owner.id },
+      });
+
+      const response = await app.request('/api/items/shared-with-me', {
+        method: 'GET',
+        headers: { Authorization: `Bearer ${recipientToken}` },
+      });
+
+      expect(response.status).toBe(200);
+      const data = await response.json();
+      expect(data).toHaveLength(2);
+      expect(data).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            userId: owner.id,
+            username: owner.username,
+          }),
+          expect.objectContaining({
+            userId: otherOwner.id,
+            username: otherOwner.username,
+          }),
+        ]),
+      );
+      expect(
+        data.some((share: { userId: string }) => share.userId === recipient.id),
+      ).toBe(false);
     });
 
     it('should reject listing another user shares', async () => {

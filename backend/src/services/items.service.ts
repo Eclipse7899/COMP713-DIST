@@ -1,15 +1,17 @@
-import type { FoodCategory, FoodUnit } from '../generated/prisma/enums';
-import type { RealtimeHub } from '../realtime/realtime-hub';
-import type { FoodRepository } from '../repositories/food.repo';
-import type { ItemsRepository } from '../repositories/items.repo';
-import type { AuthService } from './auth.service';
+import type { FoodCategory, FoodUnit } from "../generated/prisma/enums";
+import type { RealtimeHub } from "../realtime/realtime-hub";
+import type { FoodRepository } from "../repositories/food.repo";
+import type { ItemsRepository } from "../repositories/items.repo";
+import type { AuthService } from "./auth.service";
 import {
   type FoodItemDto,
+  type SharedInventoryDto,
   type UserShareDto,
   foodItemDtoSchema,
+  sharedInventoryDtoSchema,
   userShareDtoSchema,
-} from '../schemas';
-import type { Result } from '../util';
+} from "../schemas";
+import type { Result } from "../util";
 
 export class ItemsService {
   constructor(
@@ -29,25 +31,25 @@ export class ItemsService {
       expiryDate: Date | null;
     },
   ): Promise<
-    Result<FoodItemDto, 'FORBIDDEN' | 'FOOD_NOT_FOUND' | 'UNAUTHORIZED_FOOD'>
+    Result<FoodItemDto, "FORBIDDEN" | "FOOD_NOT_FOUND" | "UNAUTHORIZED_FOOD">
   > {
     if (actorId !== ownerId) {
       return {
         success: false,
-        error: 'FORBIDDEN',
+        error: "FORBIDDEN",
       };
     }
     const food = await this.foodRepo.findById(data.foodId);
     if (!food) {
       return {
         success: false,
-        error: 'FOOD_NOT_FOUND',
+        error: "FOOD_NOT_FOUND",
       };
     }
     if (food.createdByUserId !== null && food.createdByUserId !== ownerId) {
       return {
         success: false,
-        error: 'UNAUTHORIZED_FOOD',
+        error: "UNAUTHORIZED_FOOD",
       };
     }
     const result = await this.itemsRepo.create({
@@ -66,13 +68,20 @@ export class ItemsService {
     const item = result.data;
     const dto = foodItemDtoSchema.parse(item);
     this.realtime.broadcast(ownerId, {
-      type: 'item.created',
+      type: "item.created",
       data: dto,
     });
     return {
       success: true,
       data: dto,
     };
+  }
+
+  async hasSharedAccess(ownerId: string, viewerId: string): Promise<boolean> {
+    if (ownerId === viewerId) {
+      return true;
+    }
+    return (await this.itemsRepo.findShare(ownerId, viewerId)) !== null;
   }
 
   async getItems(
@@ -82,14 +91,14 @@ export class ItemsService {
       categories?: FoodCategory[];
       expiresBefore?: Date | null;
       name_contains?: string;
-      sort?: 'asc' | 'desc';
+      sort?: "asc" | "desc";
     },
-  ): Promise<Result<FoodItemDto[], 'FORBIDDEN'>> {
-    const hasAccess = await this.itemsRepo.hasSharedAccess(ownerId, viewerId);
+  ): Promise<Result<FoodItemDto[], "FORBIDDEN">> {
+    const hasAccess = await this.hasSharedAccess(ownerId, viewerId);
     if (!hasAccess) {
       return {
         success: false,
-        error: 'FORBIDDEN',
+        error: "FORBIDDEN",
       };
     }
 
@@ -120,25 +129,25 @@ export class ItemsService {
       expiryDate: Date | null;
     },
   ): Promise<
-    Result<FoodItemDto, 'FORBIDDEN' | 'ITEM_NOT_FOUND' | 'FOOD_NOT_FOUND'>
+    Result<FoodItemDto, "FORBIDDEN" | "ITEM_NOT_FOUND" | "FOOD_NOT_FOUND">
   > {
     if (actorId !== ownerId) {
       return {
         success: false,
-        error: 'FORBIDDEN',
+        error: "FORBIDDEN",
       };
     }
     const food = await this.foodRepo.findById(data.foodId);
     if (!food) {
       return {
         success: false,
-        error: 'FOOD_NOT_FOUND',
+        error: "FOOD_NOT_FOUND",
       };
     }
     if (food.createdByUserId !== null && food.createdByUserId !== ownerId) {
       return {
         success: false,
-        error: 'FOOD_NOT_FOUND',
+        error: "FOOD_NOT_FOUND",
       };
     }
     const item = await this.itemsRepo.updateByUser(id, ownerId, data);
@@ -151,7 +160,7 @@ export class ItemsService {
     const updatedItem = item.data;
     const dto = foodItemDtoSchema.parse(updatedItem);
     this.realtime.broadcast(ownerId, {
-      type: 'item.updated',
+      type: "item.updated",
       data: dto,
     });
     return {
@@ -164,29 +173,29 @@ export class ItemsService {
     actorId: string,
     ownerId: string,
     id: string,
-  ): Promise<Result<boolean, 'FORBIDDEN' | 'ITEM_NOT_FOUND'>> {
+  ): Promise<Result<boolean, "FORBIDDEN" | "ITEM_NOT_FOUND">> {
     if (actorId !== ownerId) {
       return {
         success: false,
-        error: 'FORBIDDEN',
+        error: "FORBIDDEN",
       };
     }
     const item = await this.itemsRepo.findById(id);
     if (!item || item.userId !== ownerId) {
       return {
         success: false,
-        error: 'ITEM_NOT_FOUND',
+        error: "ITEM_NOT_FOUND",
       };
     }
     const deleted = await this.itemsRepo.deleteByUser(id, ownerId);
     if (!deleted) {
       return {
         success: false,
-        error: 'ITEM_NOT_FOUND',
+        error: "ITEM_NOT_FOUND",
       };
     }
     this.realtime.broadcast(ownerId, {
-      type: 'item.deleted',
+      type: "item.deleted",
       data: item,
     });
     return {
@@ -198,11 +207,11 @@ export class ItemsService {
   async listShares(
     actorId: string,
     ownerId: string,
-  ): Promise<Result<UserShareDto[], 'FORBIDDEN'>> {
+  ): Promise<Result<UserShareDto[], "FORBIDDEN">> {
     if (actorId !== ownerId) {
       return {
         success: false,
-        error: 'FORBIDDEN',
+        error: "FORBIDDEN",
       };
     }
     const shares = await this.itemsRepo.listSharesByOwner(ownerId);
@@ -212,6 +221,26 @@ export class ItemsService {
     };
   }
 
+  async listSharedWithMe(actorId: string): Promise<SharedInventoryDto[]> {
+    const shares = await this.itemsRepo.listSharesForUser(actorId);
+    const inventories = await Promise.all(
+      shares.map(async (share) => {
+        const owner = await this.authService.getUser(share.userId);
+        if (!owner.success) {
+          return null;
+        }
+        return sharedInventoryDtoSchema.parse({
+          userId: share.userId,
+          username: owner.data.username,
+          sharedAt: share.sharedAt,
+        });
+      }),
+    );
+    return inventories.filter(
+      (inventory): inventory is SharedInventoryDto => inventory !== null,
+    );
+  }
+
   async shareItems(
     actorId: string,
     ownerId: string,
@@ -219,36 +248,36 @@ export class ItemsService {
   ): Promise<
     Result<
       UserShareDto,
-      | 'FORBIDDEN'
-      | 'CANNOT_SHARE_WITH_SELF'
-      | 'USER_NOT_FOUND'
-      | 'ALREADY_SHARED'
+      | "FORBIDDEN"
+      | "CANNOT_SHARE_WITH_SELF"
+      | "USER_NOT_FOUND"
+      | "ALREADY_SHARED"
     >
   > {
     if (actorId !== ownerId) {
       return {
         success: false,
-        error: 'FORBIDDEN',
+        error: "FORBIDDEN",
       };
     }
     const recipient = await this.authService.getUserByEmail(sharedWithEmail);
     if (!recipient.success) {
       return {
         success: false,
-        error: 'USER_NOT_FOUND',
+        error: "USER_NOT_FOUND",
       };
     }
     const sharedWithUserId = recipient.data.id;
     if (sharedWithUserId === ownerId) {
       return {
         success: false,
-        error: 'CANNOT_SHARE_WITH_SELF',
+        error: "CANNOT_SHARE_WITH_SELF",
       };
     }
     if (await this.itemsRepo.findShare(ownerId, sharedWithUserId)) {
       return {
         success: false,
-        error: 'ALREADY_SHARED',
+        error: "ALREADY_SHARED",
       };
     }
     const share = await this.itemsRepo.createShare(ownerId, sharedWithUserId);
@@ -268,18 +297,18 @@ export class ItemsService {
     actorId: string,
     ownerId: string,
     sharedWithUserId: string,
-  ): Promise<Result<boolean, 'FORBIDDEN' | 'SHARE_NOT_FOUND'>> {
+  ): Promise<Result<boolean, "FORBIDDEN" | "SHARE_NOT_FOUND">> {
     if (actorId !== ownerId) {
       return {
         success: false,
-        error: 'FORBIDDEN',
+        error: "FORBIDDEN",
       };
     }
     const deleted = await this.itemsRepo.deleteShare(ownerId, sharedWithUserId);
     if (!deleted) {
       return {
         success: false,
-        error: 'SHARE_NOT_FOUND',
+        error: "SHARE_NOT_FOUND",
       };
     }
     return {

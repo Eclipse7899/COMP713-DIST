@@ -6,7 +6,11 @@ import type { ItemsRepository } from '../../../src/repositories/items.repo';
 import type { FoodRepository } from '../../../src/repositories/food.repo';
 import type { AuthService } from '../../../src/services/auth.service';
 import { FoodCategory, FoodUnit } from '../../../src/generated/prisma/enums';
-import { userDtoSchema, userShareDtoSchema } from '../../../src/schemas';
+import {
+  foodItemDtoSchema,
+  userDtoSchema,
+  userShareDtoSchema,
+} from '../../../src/schemas';
 import type {
   Food,
   FoodItem,
@@ -49,6 +53,9 @@ const share = {
   sharedAt: new Date('2026-01-01'),
 } satisfies UserShare;
 
+const expectedItem = foodItemDtoSchema.parse(item);
+const expectedShare = userShareDtoSchema.parse(share);
+
 describe('ItemsService', () => {
   let itemsRepo: ItemsRepository;
   let foodRepo: FoodRepository;
@@ -64,9 +71,9 @@ describe('ItemsService', () => {
       deleteByUser: vi.fn(),
       filterByUser: vi.fn(),
       findById: vi.fn(),
-      hasSharedAccess: vi.fn(),
       findShare: vi.fn(),
       listSharesByOwner: vi.fn(),
+      listSharesForUser: vi.fn(),
       createShare: vi.fn(),
       deleteShare: vi.fn(),
     };
@@ -78,6 +85,7 @@ describe('ItemsService', () => {
       findById: vi.fn(),
     };
     authService = {
+      getUser: vi.fn(),
       getUserByEmail: vi.fn(),
     } as unknown as AuthService;
     realtime = {
@@ -104,20 +112,7 @@ describe('ItemsService', () => {
       }),
     ).resolves.toEqual({
       success: true,
-      data: {
-        id: item.id,
-        foodId: item.foodId,
-        quantity: item.quantity,
-        unit: item.unit,
-        expiryDate: item.expiryDate,
-        addedAt: item.addedAt,
-        food: {
-          id: food.id,
-          name: food.name,
-          category: food.category,
-          createdByUserId: food.createdByUserId,
-        },
-      },
+      data: expectedItem,
     });
   });
 
@@ -157,35 +152,17 @@ describe('ItemsService', () => {
   });
 
   it('uses listByUser when no filters are supplied', async () => {
-    mocked(itemsRepo.hasSharedAccess).mockResolvedValue(true);
     mocked(itemsRepo.listByUser).mockResolvedValue([item]);
 
     await expect(service.getItems(USER_ID, USER_ID, {})).resolves.toEqual({
       success: true,
-      data: [
-        {
-          id: item.id,
-          foodId: item.foodId,
-          quantity: item.quantity,
-          unit: item.unit,
-          expiryDate: item.expiryDate,
-          addedAt: item.addedAt,
-          food: {
-            id: food.id,
-            name: food.name,
-            category: food.category,
-            createdByUserId: food.createdByUserId,
-          },
-        },
-      ],
+      data: [expectedItem],
     });
-    expect(itemsRepo.hasSharedAccess).toHaveBeenCalledWith(USER_ID, USER_ID);
     expect(itemsRepo.listByUser).toHaveBeenCalledWith(USER_ID);
     expect(itemsRepo.filterByUser).not.toHaveBeenCalled();
   });
 
   it('uses filterByUser when filters are supplied', async () => {
-    mocked(itemsRepo.hasSharedAccess).mockResolvedValue(true);
     mocked(itemsRepo.filterByUser).mockResolvedValue([item]);
 
     await expect(
@@ -195,22 +172,7 @@ describe('ItemsService', () => {
       }),
     ).resolves.toEqual({
       success: true,
-      data: [
-        {
-          id: item.id,
-          foodId: item.foodId,
-          quantity: item.quantity,
-          unit: item.unit,
-          expiryDate: item.expiryDate,
-          addedAt: item.addedAt,
-          food: {
-            id: food.id,
-            name: food.name,
-            category: food.category,
-            createdByUserId: food.createdByUserId,
-          },
-        },
-      ],
+      data: [expectedItem],
     });
     expect(itemsRepo.filterByUser).toHaveBeenCalledWith(USER_ID, {
       categories: [FoodCategory.FRUIT],
@@ -221,21 +183,18 @@ describe('ItemsService', () => {
   });
 
   it('lists another user’s items when they have shared access', async () => {
-    mocked(itemsRepo.hasSharedAccess).mockResolvedValue(true);
+    mocked(itemsRepo.findShare).mockResolvedValue(share);
     mocked(itemsRepo.listByUser).mockResolvedValue([item]);
 
     const result = await service.getItems(OTHER_USER_ID, USER_ID, {});
 
     expect(result.success).toBe(true);
-    expect(itemsRepo.hasSharedAccess).toHaveBeenCalledWith(
-      USER_ID,
-      OTHER_USER_ID,
-    );
+    expect(itemsRepo.findShare).toHaveBeenCalledWith(USER_ID, OTHER_USER_ID);
     expect(itemsRepo.listByUser).toHaveBeenCalledWith(USER_ID);
   });
 
   it('rejects listing items when the user has no access', async () => {
-    mocked(itemsRepo.hasSharedAccess).mockResolvedValue(false);
+    mocked(itemsRepo.findShare).mockResolvedValue(null);
 
     await expect(service.getItems(OTHER_USER_ID, USER_ID, {})).resolves.toEqual(
       {
@@ -306,13 +265,7 @@ describe('ItemsService', () => {
 
     await expect(service.listShares(USER_ID, USER_ID)).resolves.toEqual({
       success: true,
-      data: [
-        {
-          userId: share.userId,
-          sharedWithUserId: share.sharedWithUserId,
-          sharedAt: share.sharedAt,
-        },
-      ],
+      data: [expectedShare],
     });
     expect(itemsRepo.listSharesByOwner).toHaveBeenCalledWith(USER_ID);
   });
@@ -323,6 +276,38 @@ describe('ItemsService', () => {
       error: FORBIDDEN_ERROR,
     });
     expect(itemsRepo.listSharesByOwner).not.toHaveBeenCalled();
+  });
+
+  it('lists inventories shared with the authenticated user', async () => {
+    mocked(itemsRepo.listSharesForUser).mockResolvedValue([share]);
+    mocked(authService.getUser).mockResolvedValue({
+      success: true,
+      data: userDtoSchema.parse({
+        id: USER_ID,
+        email: 'owner@example.com',
+        username: 'owner',
+      }),
+    });
+
+    const inventories = await service.listSharedWithMe(OTHER_USER_ID);
+    expect(inventories).toHaveLength(1);
+    expect(inventories[0]).toMatchObject({
+      userId: USER_ID,
+      username: 'owner',
+      sharedAt: share.sharedAt,
+    });
+    expect(itemsRepo.listSharesForUser).toHaveBeenCalledWith(OTHER_USER_ID);
+    expect(authService.getUser).toHaveBeenCalledWith(USER_ID);
+  });
+
+  it('omits shared inventories whose owner no longer exists', async () => {
+    mocked(itemsRepo.listSharesForUser).mockResolvedValue([share]);
+    mocked(authService.getUser).mockResolvedValue({
+      success: false,
+      error: 'NOT_FOUND',
+    });
+
+    await expect(service.listSharedWithMe(OTHER_USER_ID)).resolves.toEqual([]);
   });
 
   it('shares inventory with another user looked up by email', async () => {
@@ -344,11 +329,7 @@ describe('ItemsService', () => {
       service.shareItems(USER_ID, USER_ID, OTHER_USER_EMAIL),
     ).resolves.toEqual({
       success: true,
-      data: {
-        userId: share.userId,
-        sharedWithUserId: share.sharedWithUserId,
-        sharedAt: share.sharedAt,
-      },
+      data: expectedShare,
     });
     expect(authService.getUserByEmail).toHaveBeenCalledWith(OTHER_USER_EMAIL);
     expect(itemsRepo.createShare).toHaveBeenCalledWith(USER_ID, OTHER_USER_ID);

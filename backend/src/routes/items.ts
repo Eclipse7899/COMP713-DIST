@@ -11,6 +11,7 @@ import {
   foodItemDtoSchema,
   idPathParameter,
   itemQueryParameters,
+  sharedInventoryDtoSchema,
   successSchema,
   unauthorizedResponse,
   userShareDtoSchema,
@@ -99,6 +100,32 @@ const forbiddenResponse = {
 
 export function createItemsRoute(itemsService: ItemsService) {
   return new Hono<{ Variables: Variables }>()
+    .get(
+      '/shared-with-me',
+      describeRoute({
+        tags: ['Items'],
+        summary: 'List inventories shared with the authenticated user',
+        description:
+          'Returns the inventories other users have shared with the authenticated user, including the owner username used to label the inventory. The user identity is taken from the JWT.',
+        security: [{ bearerAuth: [] }],
+        responses: {
+          200: {
+            description: 'Inventories shared with the authenticated user',
+            content: {
+              'application/json': {
+                schema: resolver(z.array(sharedInventoryDtoSchema)),
+              },
+            },
+          },
+          401: unauthorizedResponse,
+        },
+      }),
+      async (c) => {
+        const actorId = c.get('jwtPayload').sub;
+        const inventories = await itemsService.listSharedWithMe(actorId);
+        return c.json(inventories);
+      },
+    )
     .get(
       '/:userId/shared',
       describeRoute({

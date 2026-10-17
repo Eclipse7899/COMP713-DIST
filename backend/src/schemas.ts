@@ -53,6 +53,20 @@ export const userShareDtoSchema = z
 
 export type UserShareDto = z.infer<typeof userShareDtoSchema>;
 
+export const sharedInventoryDtoSchema = z
+  .object({
+    userId: z.string().describe('CUID2 identifier of the inventory owner'),
+    username: z
+      .string()
+      .describe('Username of the inventory owner, used as the display label'),
+    sharedAt: z
+      .date()
+      .describe('Timestamp the inventory was shared (ISO 8601)'),
+  })
+  .brand('SharedInventoryDto');
+
+export type SharedInventoryDto = z.infer<typeof sharedInventoryDtoSchema>;
+
 export const createdShareResponseSchema = z.object({
   success: z.literal(true).describe('Always true when the share was created'),
   data: userShareDtoSchema.describe('The newly created inventory share'),
