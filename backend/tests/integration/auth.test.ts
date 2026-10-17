@@ -18,20 +18,23 @@ import { PrismaPg } from '@prisma/adapter-pg';
 jest.setTimeout(30000);
 
 let app: ReturnType<typeof createApp>['app'];
-let db: PrismaClient & { user: AuthPrismaClient['user'] };
+let db: PrismaClient;
+let authDb: AuthPrismaClient;
 const jwtSecret = 'test-secret';
 const authPort = 5051;
 
 beforeAll(async () => {
-  const { postgres, auth } = await setup(jwtSecret, authPort);
-  const backendDb = new PrismaClient({
-    adapter: new PrismaPg(postgres),
+  const { backendDatabaseUrl, authDatabaseUrl, auth } = await setup(
+    jwtSecret,
+    authPort,
+  );
+  db = new PrismaClient({
+    adapter: new PrismaPg(backendDatabaseUrl),
   });
-  const authDb = new AuthPrismaClient({
-    adapter: new PrismaPg(postgres),
+  authDb = new AuthPrismaClient({
+    adapter: new PrismaPg(authDatabaseUrl),
   });
-  db = Object.assign(backendDb, { user: authDb.user });
-  app = createApp(jwtSecret, auth, backendDb).app;
+  app = createApp(jwtSecret, auth, db).app;
 });
 
 afterAll(async () => {
@@ -42,6 +45,7 @@ beforeEach(async () => {
   await db.foodItem.deleteMany();
   await db.food.deleteMany();
   await db.user.deleteMany();
+  await authDb.user.deleteMany();
 });
 
 describe('Auth Endpoints', () => {
@@ -275,18 +279,19 @@ describe('Auth Endpoints', () => {
 
         // Verify token payload
         const decoded = await verify(data.token, jwtSecret, 'HS256');
+        const userId = decoded.sub as string;
         expect(decoded.email).toBe('testuser@example.com');
         expect(decoded.username).toBe('testuser');
-        expect(decoded).toHaveProperty('sub');
+        expect(userId).toEqual(expect.any(String));
 
-        // Verify database state
-        const dbUser = await db.user.findUnique({
+        // Verify auth database state
+        const dbUser = await authDb.user.findUnique({
           where: { email: 'testuser@example.com' },
         });
         expect(dbUser).not.toBeNull();
         expect(dbUser?.username).toBe('testuser');
         expect(dbUser?.email).toBe('testuser@example.com');
-        expect(dbUser?.id).toBe(decoded.sub);
+        expect(dbUser?.id).toBe(userId);
         // Ensure raw password is NOT stored in plain text
         expect(dbUser?.hashed_password).not.toBe(rawPassword);
         // Ensure password is correctly hashed
@@ -295,6 +300,13 @@ describe('Auth Endpoints', () => {
           dbUser!.hashed_password,
         );
         expect(isPasswordMatch).toBe(true);
+
+        // The backend must mirror the auth user for referential integrity
+        const backendUser = await db.user.findUnique({
+          where: { id: userId },
+        });
+        expect(backendUser).not.toBeNull();
+        expect(backendUser?.id).toBe(userId);
       });
 
       it('should allow valid usernames with alphanumeric characters, underscores, and dashes', async () => {
@@ -452,6 +464,45 @@ describe('Auth Endpoints', () => {
         const decoded = await verify(data.token, jwtSecret, 'HS256');
         expect(decoded.email).toBe('testuser2@example.com');
         expect(decoded.username).toBe('testuser2');
+      });
+
+      it('should recreate the backend user row when signing in', async () => {
+        const registerResponse = await app.request('/api/auth/register', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            username: 'syncuser',
+            email: 'syncuser@example.com',
+            password: 'testpassword',
+          }),
+        });
+
+        expect(registerResponse.status).toBe(201);
+        const { user } = await registerResponse.json();
+
+        // Simulate a user that only exists in the auth service
+        await db.user.delete({ where: { id: user.id } });
+        expect(await db.user.findUnique({ where: { id: user.id } })).toBeNull();
+
+        const response = await app.request('/api/auth/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email: 'syncuser@example.com',
+            password: 'testpassword',
+          }),
+        });
+
+        expect(response.status).toBe(200);
+        const backendUser = await db.user.findUnique({
+          where: { id: user.id },
+        });
+        expect(backendUser).not.toBeNull();
+        expect(backendUser?.id).toBe(user.id);
       });
     });
   });

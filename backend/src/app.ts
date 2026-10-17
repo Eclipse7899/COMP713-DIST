@@ -8,6 +8,7 @@ import { RealtimeHub } from './realtime/realtime-hub';
 import type { PrismaClient } from './generated/prisma/client';
 import { ItemsRepo } from './repositories/items.repo';
 import { FoodRepo } from './repositories/food.repo';
+import { UsersRepo } from './repositories/users.repo';
 
 export function createApp(
   jwt_secret: string,
@@ -20,10 +21,11 @@ export function createApp(
 
   const foodRepo = new FoodRepo(database);
   const itemsRepo = new ItemsRepo(database);
+  const usersRepo = new UsersRepo(database);
 
   const foodService = new FoodService(foodRepo, realtime);
   const itemsService = new ItemsService(itemsRepo, foodRepo, realtime);
-  const authService = new AuthService(auth_url);
+  const authService = new AuthService(auth_url, usersRepo);
 
   const api = createApi(jwt_secret, {
     foodService,
