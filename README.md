@@ -197,12 +197,27 @@ Supported categories are `FRUIT`, `VEGETABLE`, `MEAT`, `DAIRY`,
 
 #### Food Items
 
-| Method   | Endpoint         | Description                              |
-| -------- | ---------------- | ---------------------------------------- |
-| `GET`    | `/api/items`     | List the authenticated user's food items |
-| `POST`   | `/api/items`     | Add a food item to the inventory         |
-| `PUT`    | `/api/items/:id` | Update an inventory item                 |
-| `DELETE` | `/api/items/:id` | Delete an inventory item                 |
+| Method   | Endpoint                                      | Description                                   |
+| -------- | --------------------------------------------- | --------------------------------------------- |
+| `GET`    | `/api/items/:userId`                          | List a user's food items, if shared with you  |
+| `POST`   | `/api/items/:userId`                          | Add a food item to your inventory             |
+| `PUT`    | `/api/items/:userId/:id`                      | Update an inventory item you own              |
+| `DELETE` | `/api/items/:userId/:id`                      | Delete an inventory item you own              |
+| `GET`    | `/api/items/:userId/shared`                   | List users your inventory is shared with      |
+| `POST`   | `/api/items/:userId/shared`                   | Share your inventory with another user        |
+| `DELETE` | `/api/items/:userId/shared/:sharedWithUserId` | Stop sharing your inventory with another user |
+
+The user identity is always taken from the JWT. For item mutations and share
+management, `:userId` must match the authenticated user. Item reads are allowed
+for the owner or for a user the inventory has been shared with.
+
+Share request:
+
+```json
+{
+  "sharedWithUserId": "m5x9w3r1t00000abcd1234ef"
+}
+```
 
 Food item request:
 
@@ -237,7 +252,7 @@ The API also exposes a WebSocket endpoint that streams inventory changes
 | Method | Endpoint        | Auth | Description                                       |
 | ------ | --------------- | ---- | ------------------------------------------------- |
 | `GET`  | `/api/ws/token` | Yes  | Issue a short-lived connection token              |
-| `GET`  | `/api/ws`       | No*  | Open the WebSocket connection with `?token=<jwt>` |
+| `GET`  | `/api/ws`       | No\* | Open the WebSocket connection with `?token=<jwt>` |
 
 \* The WebSocket handshake authenticates with the `token` query parameter
 instead of the `Authorization` header, because browsers cannot set custom
