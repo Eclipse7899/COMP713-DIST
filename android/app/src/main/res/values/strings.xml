@@ -1,3 +1,32 @@
 <resources>
     <string name="app_name">Stocked</string>
+
+    <string name="edit_pantry_item">Edit Pantry Item</string>
+    <string name="loading_pantry">Loading pantry…</string>
+    <string name="loading_item">Loading item…</string>
+    <string name="quantity_label">Quantity</string>
+    <string name="quantity_hint">Enter quantity</string>
+    <string name="unit_label">Unit</string>
+    <string name="save_changes">Save Changes</string>
+
+
+    <string name="home_title">🥫 Stocked</string>
+    <string name="welcome">Welcome</string>
+    <string name="pantry_subtitle">Here\'s what\'s in your pantry.</string>
+    <string name="your_pantry">Your pantry</string>
+    <string name="refresh">Refresh</string>
+    <string name="add_item">Add Item</string>
+    <string name="delete_item">Delete Item</string>
+    <string name="pantry_placeholder">Pantry items will appear here</string>
+
+    <string name="item_not_found">Item not found</string>
+
+    <string name="welcome_user">Welcome, %1$s</string>
+    <string name="pantry_load_failed">Could not load pantry.</string>
+    <string name="pantry_empty">Your pantry is empty.</string>
+    <string name="pantry_connection_failed">Unable to connect to Stocked.</string>
+    <string name="pantry_item_display_failed">Could not display an item.</string>
+    <string name="pantry_item_details">%1$s\n%2$s %3$s\n%4$s</string>
+    <string name="edit_item">Edit</string>
+
 </resources>

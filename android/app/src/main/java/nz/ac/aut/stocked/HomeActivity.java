@@ -16,18 +16,25 @@ import org.json.JSONObject;
 
 import android.content.Intent;
 
+import android.widget.LinearLayout;
+import android.view.Gravity;
+import android.graphics.Color;
+
 public class HomeActivity extends AppCompatActivity {
 
     private static final String ITEMS_URL =
             "http://10.0.2.2:3000/api/items";
 
     private TextView pantryStatusText;
+    private LinearLayout pantryItemsContainer;
     private String accessToken;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_home);
+
+        pantryItemsContainer = findViewById(R.id.pantryItemsContainer);
 
         TextView welcomeText = findViewById(R.id.welcomeText);
         pantryStatusText = findViewById(R.id.pantryStatusText);
@@ -39,7 +46,7 @@ public class HomeActivity extends AppCompatActivity {
 
         refreshButton.setOnClickListener(v -> {
             refreshButton.setEnabled(false);
-            pantryStatusText.setText("Loading pantry...");
+            pantryStatusText.setText(R.string.loading_pantry);
 
             if (accessToken != null) {
                 new Thread(() -> {
@@ -50,7 +57,7 @@ public class HomeActivity extends AppCompatActivity {
                     );
                 }).start();
             } else {
-                pantryStatusText.setText("Could not load pantry.");
+                pantryStatusText.setText(R.string.pantry_load_failed);
                 refreshButton.setEnabled(true);
             }
         });
@@ -72,7 +79,7 @@ public class HomeActivity extends AppCompatActivity {
         });
 
         if (username != null && !username.isEmpty()) {
-            welcomeText.setText("Welcome, " + username);
+            welcomeText.setText(getString(R.string.welcome_user, username));
         }
 
     }
@@ -110,49 +117,72 @@ public class HomeActivity extends AppCompatActivity {
                 JSONArray items = new JSONArray(itemsJson);
 
                 if (items.length() == 0) {
-                    runOnUiThread(() ->
-                            pantryStatusText.setText("Your pantry is empty.")
-                    );
+                    runOnUiThread(() -> {
+                        pantryItemsContainer.removeAllViews();
+                        pantryStatusText.setText(R.string.pantry_empty);
+                    });
                     return;
                 }
 
-                StringBuilder itemText = new StringBuilder();
 
-                for (int i = 0; i < items.length(); i++) {
-                    JSONObject item = items.getJSONObject(i);
-                    JSONObject food = item.getJSONObject("food");
+                runOnUiThread(() -> {
+                    pantryStatusText.setText("");
+                    pantryItemsContainer.removeAllViews();
 
-                    String name = food.getString("name");
-                    String category = food.getString("category");
-                    int quantity = item.getInt("quantity");
-                    String unit = item.getString("unit");
+                    for (int i = 0; i < items.length(); i++) {
+                        try {
+                            JSONObject item = items.getJSONObject(i);
+                            JSONObject food = item.getJSONObject("food");
 
-                    itemText.append(name)
-                            .append("\n")
-                            .append(quantity)
-                            .append(" ")
-                            .append(unit)
-                            .append("\n")
-                            .append(category);
+                            String name = food.getString("name");
+                            String category = food.getString("category");
+                            String quantity = item.getString("quantity");
+                            String unit = item.getString("unit");
 
-                    if (i < items.length() - 1) {
-                        itemText.append("\n\n");
+                            LinearLayout row = new LinearLayout(this);
+                            row.setOrientation(LinearLayout.HORIZONTAL);
+                            row.setGravity(Gravity.CENTER_VERTICAL);
+                            row.setPadding(0, 12, 0, 12);
+
+                            TextView itemText = new TextView(this);
+                            itemText.setText(getString(
+                                    R.string.pantry_item_details,
+                                    name, quantity, unit, category
+                            ));
+                            itemText.setTextColor(Color.WHITE);
+                            itemText.setTextSize(16);
+
+                            row.addView(itemText, new LinearLayout.LayoutParams(
+                                    0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
+
+                            Button editButton = new Button(this);
+                            editButton.setText(R.string.edit_item);
+
+                            editButton.setOnClickListener(v -> {
+                                Intent intent = new Intent(
+                                        HomeActivity.this, EditItemActivity.class);
+                                intent.putExtra("accessToken", accessToken);
+                                intent.putExtra("itemId", item.optString("id"));
+                                startActivity(intent);
+                            });
+
+                            row.addView(editButton);
+                            pantryItemsContainer.addView(row);
+
+                        } catch (Exception e) {
+                            pantryStatusText.setText(R.string.pantry_item_display_failed);                        }
                     }
-                }
-
-                runOnUiThread(() ->
-                        pantryStatusText.setText(itemText.toString())
-                );
+                });
 
             } else {
                 runOnUiThread(() ->
-                        pantryStatusText.setText("Could not load pantry.")
+                        pantryStatusText.setText(R.string.pantry_load_failed)
                 );
             }
 
         } catch (Exception e) {
             runOnUiThread(() ->
-                    pantryStatusText.setText("Unable to connect to Stocked.")
+                    pantryStatusText.setText(R.string.pantry_connection_failed)
             );
 
         } finally {
@@ -167,7 +197,7 @@ public class HomeActivity extends AppCompatActivity {
         super.onResume();
 
         if (accessToken != null && pantryStatusText != null) {
-            pantryStatusText.setText("Loading pantry...");
+            pantryStatusText.setText(R.string.loading_pantry);
             new Thread(() -> loadItems(accessToken)).start();
         }
     }
