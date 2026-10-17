@@ -46,7 +46,6 @@ export interface ItemsRepository {
 
   findById(id: string): Promise<FoodItemWithFood | null>;
 
-  userExists(userId: string): Promise<boolean>;
   hasSharedAccess(ownerId: string, viewerId: string): Promise<boolean>;
   findShare(
     ownerId: string,
@@ -193,14 +192,6 @@ export class ItemsRepo implements ItemsRepository {
       include: { food: true },
       orderBy: { expiryDate: data.sort ? data.sort : 'asc' },
     });
-  }
-
-  async userExists(userId: string): Promise<boolean> {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-      select: { id: true },
-    });
-    return user !== null;
   }
 
   async hasSharedAccess(ownerId: string, viewerId: string): Promise<boolean> {

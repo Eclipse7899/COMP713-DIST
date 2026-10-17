@@ -2,6 +2,7 @@ import type { FoodCategory, FoodUnit } from '../generated/prisma/enums';
 import type { RealtimeHub } from '../realtime/realtime-hub';
 import type { FoodRepository } from '../repositories/food.repo';
 import type { ItemsRepository } from '../repositories/items.repo';
+import type { AuthService } from './auth.service';
 import {
   type FoodItemDto,
   type UserShareDto,
@@ -14,6 +15,7 @@ export class ItemsService {
   constructor(
     private readonly itemsRepo: ItemsRepository,
     private readonly foodRepo: FoodRepository,
+    private readonly authService: AuthService,
     private realtime: RealtimeHub,
   ) {}
 
@@ -213,7 +215,7 @@ export class ItemsService {
   async shareItems(
     actorId: string,
     ownerId: string,
-    sharedWithUserId: string,
+    sharedWithEmail: string,
   ): Promise<
     Result<
       UserShareDto,
@@ -229,16 +231,18 @@ export class ItemsService {
         error: 'FORBIDDEN',
       };
     }
+    const recipient = await this.authService.getUserByEmail(sharedWithEmail);
+    if (!recipient.success) {
+      return {
+        success: false,
+        error: 'USER_NOT_FOUND',
+      };
+    }
+    const sharedWithUserId = recipient.data.id;
     if (sharedWithUserId === ownerId) {
       return {
         success: false,
         error: 'CANNOT_SHARE_WITH_SELF',
-      };
-    }
-    if (!(await this.itemsRepo.userExists(sharedWithUserId))) {
-      return {
-        success: false,
-        error: 'USER_NOT_FOUND',
       };
     }
     if (await this.itemsRepo.findShare(ownerId, sharedWithUserId)) {

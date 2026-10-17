@@ -8,6 +8,7 @@ import type {
   SignInResponse,
   TokenRequest,
   TokenResponse,
+  UserByEmailRequest,
   UserRequest,
   UserResponse,
 } from '../generated/proto/auth.ts';
@@ -29,6 +30,28 @@ export function createAuthHandlers(
       callback: sendUnaryData<UserResponse>,
     ): void {
       authService.getUser(call.request.userId).then((getUserResponse) => {
+        if (!getUserResponse.success) {
+          callback(null, {
+            payload: {
+              error: getUserResponse.error,
+              $case: 'error',
+            },
+          });
+        } else {
+          callback(null, {
+            payload: {
+              user: getUserResponse.data,
+              $case: 'user',
+            },
+          });
+        }
+      });
+    },
+    getUserByEmail(
+      call: ServerUnaryCall<UserByEmailRequest, UserResponse>,
+      callback: sendUnaryData<UserResponse>,
+    ): void {
+      authService.getUserByEmail(call.request.email).then((getUserResponse) => {
         if (!getUserResponse.success) {
           callback(null, {
             payload: {

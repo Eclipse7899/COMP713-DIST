@@ -1078,7 +1078,7 @@ describe('Items Endpoints', () => {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ sharedWithUserId: sharedUser.id }),
+        body: JSON.stringify({ sharedWithEmail: sharedUser.email }),
       });
 
       expect(response.status).toBe(201);
@@ -1091,6 +1091,63 @@ describe('Items Endpoints', () => {
         where: { userId: owner.id, sharedWithUserId: sharedUser.id },
       });
       expect(dbShare).not.toBeNull();
+    });
+
+    it('should look up the user by a case-insensitive email address', async () => {
+      const { user: owner, token } = await createTestUser(
+        'shareemailcase',
+        'shareemailcase@example.com',
+      );
+      const { user: sharedUser } = await createTestUser(
+        'shareemailcasewith',
+        'shareemailcasewith@example.com',
+      );
+
+      const response = await app.request(`/api/items/${owner.id}/shared`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          sharedWithEmail: sharedUser.email.toUpperCase(),
+        }),
+      });
+
+      expect(response.status).toBe(201);
+      const data = await response.json();
+      expect(data.data.sharedWithUserId).toBe(sharedUser.id);
+    });
+
+    it('should mirror an auth user that is missing from the backend database', async () => {
+      const { user: owner, token } = await createTestUser(
+        'shareemailmirror',
+        'shareemailmirror@example.com',
+      );
+      const sharedUser = await authDb.user.create({
+        data: {
+          username: 'shareemailmirrorwith',
+          email: 'shareemailmirrorwith@example.com',
+          hashed_password: 'hashedpassword',
+        },
+      });
+      expect(
+        await db.user.findUnique({ where: { id: sharedUser.id } }),
+      ).toBeNull();
+
+      const response = await app.request(`/api/items/${owner.id}/shared`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ sharedWithEmail: sharedUser.email }),
+      });
+
+      expect(response.status).toBe(201);
+      expect(
+        await db.user.findUnique({ where: { id: sharedUser.id } }),
+      ).not.toBeNull();
     });
 
     it('should reject sharing another user inventory', async () => {
@@ -1109,7 +1166,7 @@ describe('Items Endpoints', () => {
           Authorization: `Bearer ${otherToken}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ sharedWithUserId: other.id }),
+        body: JSON.stringify({ sharedWithEmail: other.email }),
       });
 
       expect(response.status).toBe(403);
@@ -1128,7 +1185,7 @@ describe('Items Endpoints', () => {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ sharedWithUserId: user.id }),
+        body: JSON.stringify({ sharedWithEmail: user.email }),
       });
 
       expect(response.status).toBe(400);
@@ -1148,7 +1205,7 @@ describe('Items Endpoints', () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          sharedWithUserId: 'clh0000000000000000000000',
+          sharedWithEmail: 'missing@example.com',
         }),
       });
 
@@ -1176,7 +1233,7 @@ describe('Items Endpoints', () => {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ sharedWithUserId: sharedUser.id }),
+        body: JSON.stringify({ sharedWithEmail: sharedUser.email }),
       });
 
       expect(response.status).toBe(409);
@@ -1200,7 +1257,7 @@ describe('Items Endpoints', () => {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ sharedWithUserId: sharedUser.id }),
+          body: JSON.stringify({ sharedWithEmail: sharedUser.email }),
         });
 
       const responses = await Promise.all([share(), share()]);

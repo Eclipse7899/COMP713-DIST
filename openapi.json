@@ -670,7 +670,7 @@
         "operationId": "postApiItemsByUserIdShared",
         "tags": ["Items"],
         "summary": "Share an inventory with another user",
-        "description": "Shares the authenticated owner's inventory with another user. Only the owner may share their inventory. The user identity is taken from the JWT, never from the path.",
+        "description": "Shares the authenticated owner's inventory with another user identified by email address. Only the owner may share their inventory. The user identity is taken from the JWT, never from the path.",
         "security": [
           {
             "bearerAuth": []
@@ -695,13 +695,13 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "sharedWithUserId": {
+                  "sharedWithEmail": {
                     "type": "string",
-                    "format": "cuid2",
-                    "pattern": "^[0-9a-z]+$"
+                    "format": "email",
+                    "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
                   }
                 },
-                "required": ["sharedWithUserId"]
+                "required": ["sharedWithEmail"]
               }
             }
           }
@@ -791,7 +791,7 @@
             }
           },
           "404": {
-            "description": "The user to share with does not exist",
+            "description": "No user exists with that email address",
             "content": {
               "application/json": {
                 "schema": {

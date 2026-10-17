@@ -204,18 +204,19 @@ Supported categories are `FRUIT`, `VEGETABLE`, `MEAT`, `DAIRY`,
 | `PUT`    | `/api/items/:userId/:id`                      | Update an inventory item you own              |
 | `DELETE` | `/api/items/:userId/:id`                      | Delete an inventory item you own              |
 | `GET`    | `/api/items/:userId/shared`                   | List users your inventory is shared with      |
-| `POST`   | `/api/items/:userId/shared`                   | Share your inventory with another user        |
+| `POST`   | `/api/items/:userId/shared`                   | Share your inventory with an email address    |
 | `DELETE` | `/api/items/:userId/shared/:sharedWithUserId` | Stop sharing your inventory with another user |
 
 The user identity is always taken from the JWT. For item mutations and share
 management, `:userId` must match the authenticated user. Item reads are allowed
-for the owner or for a user the inventory has been shared with.
+for the owner or for a user the inventory has been shared with. When sharing,
+the recipient is identified by the email address of their auth-service account.
 
 Share request:
 
 ```json
 {
-  "sharedWithUserId": "m5x9w3r1t00000abcd1234ef"
+  "sharedWithEmail": "friend@example.com"
 }
 ```
 

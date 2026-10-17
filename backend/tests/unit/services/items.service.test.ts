@@ -4,8 +4,9 @@ import type { RealtimeHub } from '../../../src/realtime/realtime-hub';
 import { ItemsService } from '../../../src/services/items.service';
 import type { ItemsRepository } from '../../../src/repositories/items.repo';
 import type { FoodRepository } from '../../../src/repositories/food.repo';
+import type { AuthService } from '../../../src/services/auth.service';
 import { FoodCategory, FoodUnit } from '../../../src/generated/prisma/enums';
-import { userShareDtoSchema } from '../../../src/schemas';
+import { userDtoSchema, userShareDtoSchema } from '../../../src/schemas';
 import type {
   Food,
   FoodItem,
@@ -14,6 +15,7 @@ import type {
 
 const USER_ID = 'user-1';
 const OTHER_USER_ID = 'other-user';
+const OTHER_USER_EMAIL = 'other@example.com';
 const FOOD_ID = 'food-1';
 const ITEM_ID = 'item-1';
 const FOOD_NAME = 'Apple';
@@ -50,6 +52,7 @@ const share = {
 describe('ItemsService', () => {
   let itemsRepo: ItemsRepository;
   let foodRepo: FoodRepository;
+  let authService: AuthService;
   let realtime: RealtimeHub;
   let service: ItemsService;
 
@@ -61,7 +64,6 @@ describe('ItemsService', () => {
       deleteByUser: vi.fn(),
       filterByUser: vi.fn(),
       findById: vi.fn(),
-      userExists: vi.fn(),
       hasSharedAccess: vi.fn(),
       findShare: vi.fn(),
       listSharesByOwner: vi.fn(),
@@ -75,12 +77,15 @@ describe('ItemsService', () => {
       deleteForUser: vi.fn(),
       findById: vi.fn(),
     };
+    authService = {
+      getUserByEmail: vi.fn(),
+    } as unknown as AuthService;
     realtime = {
       broadcast: vi.fn(),
       subscribe: vi.fn(),
       unsubscribe: vi.fn(),
     } as unknown as RealtimeHub;
-    service = new ItemsService(itemsRepo, foodRepo, realtime);
+    service = new ItemsService(itemsRepo, foodRepo, authService, realtime);
   });
 
   it('creates an item for accessible food', async () => {
@@ -320,8 +325,15 @@ describe('ItemsService', () => {
     expect(itemsRepo.listSharesByOwner).not.toHaveBeenCalled();
   });
 
-  it('shares inventory with another user', async () => {
-    mocked(itemsRepo.userExists).mockResolvedValue(true);
+  it('shares inventory with another user looked up by email', async () => {
+    mocked(authService.getUserByEmail).mockResolvedValue({
+      success: true,
+      data: userDtoSchema.parse({
+        id: OTHER_USER_ID,
+        email: OTHER_USER_EMAIL,
+        username: 'other',
+      }),
+    });
     mocked(itemsRepo.findShare).mockResolvedValue(null);
     mocked(itemsRepo.createShare).mockResolvedValue({
       success: true,
@@ -329,7 +341,7 @@ describe('ItemsService', () => {
     });
 
     await expect(
-      service.shareItems(USER_ID, USER_ID, OTHER_USER_ID),
+      service.shareItems(USER_ID, USER_ID, OTHER_USER_EMAIL),
     ).resolves.toEqual({
       success: true,
       data: {
@@ -338,24 +350,37 @@ describe('ItemsService', () => {
         sharedAt: share.sharedAt,
       },
     });
+    expect(authService.getUserByEmail).toHaveBeenCalledWith(OTHER_USER_EMAIL);
     expect(itemsRepo.createShare).toHaveBeenCalledWith(USER_ID, OTHER_USER_ID);
   });
 
   it('rejects sharing inventory with yourself', async () => {
+    mocked(authService.getUserByEmail).mockResolvedValue({
+      success: true,
+      data: userDtoSchema.parse({
+        id: USER_ID,
+        email: 'user@example.com',
+        username: 'user',
+      }),
+    });
+
     await expect(
-      service.shareItems(USER_ID, USER_ID, USER_ID),
+      service.shareItems(USER_ID, USER_ID, 'user@example.com'),
     ).resolves.toEqual({
       success: false,
       error: 'CANNOT_SHARE_WITH_SELF',
     });
-    expect(itemsRepo.userExists).not.toHaveBeenCalled();
+    expect(itemsRepo.createShare).not.toHaveBeenCalled();
   });
 
   it('rejects sharing with a user that does not exist', async () => {
-    mocked(itemsRepo.userExists).mockResolvedValue(false);
+    mocked(authService.getUserByEmail).mockResolvedValue({
+      success: false,
+      error: 'NOT_FOUND',
+    });
 
     await expect(
-      service.shareItems(USER_ID, USER_ID, OTHER_USER_ID),
+      service.shareItems(USER_ID, USER_ID, OTHER_USER_EMAIL),
     ).resolves.toEqual({
       success: false,
       error: 'USER_NOT_FOUND',
@@ -364,11 +389,18 @@ describe('ItemsService', () => {
   });
 
   it('rejects sharing inventory that is already shared', async () => {
-    mocked(itemsRepo.userExists).mockResolvedValue(true);
+    mocked(authService.getUserByEmail).mockResolvedValue({
+      success: true,
+      data: userDtoSchema.parse({
+        id: OTHER_USER_ID,
+        email: OTHER_USER_EMAIL,
+        username: 'other',
+      }),
+    });
     mocked(itemsRepo.findShare).mockResolvedValue(share);
 
     await expect(
-      service.shareItems(USER_ID, USER_ID, OTHER_USER_ID),
+      service.shareItems(USER_ID, USER_ID, OTHER_USER_EMAIL),
     ).resolves.toEqual({
       success: false,
       error: 'ALREADY_SHARED',
@@ -378,11 +410,12 @@ describe('ItemsService', () => {
 
   it('rejects sharing another user’s inventory', async () => {
     await expect(
-      service.shareItems(USER_ID, OTHER_USER_ID, OTHER_USER_ID),
+      service.shareItems(USER_ID, OTHER_USER_ID, OTHER_USER_EMAIL),
     ).resolves.toEqual({
       success: false,
       error: FORBIDDEN_ERROR,
     });
+    expect(authService.getUserByEmail).not.toHaveBeenCalled();
     expect(itemsRepo.createShare).not.toHaveBeenCalled();
   });
 

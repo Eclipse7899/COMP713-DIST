@@ -93,6 +93,32 @@ export class AuthService {
     });
   }
 
+  async getUserByEmail(email: string): Promise<Result<UserDto, 'NOT_FOUND'>> {
+    return new Promise<Result<UserDto, 'NOT_FOUND'>>((resolve, reject) => {
+      this.client.getUserByEmail({ email }, async (err, response) => {
+        if (err) {
+          reject(err);
+        } else {
+          if (response.payload?.$case === 'user') {
+            const user = userDtoSchema.parse(response.payload.user);
+            try {
+              await this.usersRepo.ensureUser(user.id);
+            } catch (error) {
+              reject(error);
+              return;
+            }
+            resolve({
+              success: true,
+              data: user,
+            });
+          } else if (response.payload?.$case === 'error') {
+            resolve({ success: false, error: 'NOT_FOUND' });
+          }
+        }
+      });
+    });
+  }
+
   async signIn(
     email: string,
     password: string,

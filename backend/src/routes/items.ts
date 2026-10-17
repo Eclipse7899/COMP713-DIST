@@ -41,7 +41,7 @@ const updateItemSchema = z.object({
 });
 
 const createShareSchema = z.object({
-  sharedWithUserId: z.cuid2(),
+  sharedWithEmail: z.email(),
 });
 
 const filterSchema = z
@@ -140,7 +140,7 @@ export function createItemsRoute(itemsService: ItemsService) {
         tags: ['Items'],
         summary: 'Share an inventory with another user',
         description:
-          "Shares the authenticated owner's inventory with another user. Only the owner may share their inventory. The user identity is taken from the JWT, never from the path.",
+          "Shares the authenticated owner's inventory with another user identified by email address. Only the owner may share their inventory. The user identity is taken from the JWT, never from the path.",
         security: [{ bearerAuth: [] }],
         parameters: [userIdPathParameter],
         requestBody: {
@@ -168,7 +168,7 @@ export function createItemsRoute(itemsService: ItemsService) {
           401: unauthorizedResponse,
           403: forbiddenResponse,
           404: {
-            description: 'The user to share with does not exist',
+            description: 'No user exists with that email address',
             content: {
               'application/json': { schema: resolver(errorSchema) },
             },
@@ -186,12 +186,12 @@ export function createItemsRoute(itemsService: ItemsService) {
       async (c) => {
         const actorId = c.get('jwtPayload').sub;
         const ownerId = c.req.valid('param').userId;
-        const { sharedWithUserId } = c.req.valid('json');
+        const { sharedWithEmail } = c.req.valid('json');
 
         const share = await itemsService.shareItems(
           actorId,
           ownerId,
-          sharedWithUserId,
+          sharedWithEmail,
         );
         if (!share.success) {
           switch (share.error) {

@@ -23,9 +23,14 @@ export function createApp(
   const itemsRepo = new ItemsRepo(database);
   const usersRepo = new UsersRepo(database);
 
-  const foodService = new FoodService(foodRepo, realtime);
-  const itemsService = new ItemsService(itemsRepo, foodRepo, realtime);
   const authService = new AuthService(auth_url, usersRepo);
+  const foodService = new FoodService(foodRepo, realtime);
+  const itemsService = new ItemsService(
+    itemsRepo,
+    foodRepo,
+    authService,
+    realtime,
+  );
 
   const api = createApi(jwt_secret, {
     foodService,

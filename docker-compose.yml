@@ -1,11 +1,8 @@
 services:
   auth:
     image: auth-service:latest
-    build:
-      context: .
-      dockerfile: ./auth-service/Dockerfile
     ports:
-      - '5051:5051'
+      - "5051:5051"
     environment:
       DATABASE_URL: postgresql://user:password@auth-db:5432/mydb
       JWT_SECRET: secret_that_is_at_least_32_characters_long
@@ -15,18 +12,16 @@ services:
       auth-init:
         condition: service_completed_successfully
     healthcheck:
-      test: ['CMD-SHELL', 'nc -z 127.0.0.1 5051 || exit 1']
+      test: ["CMD-SHELL", "nc -z 127.0.0.1 5051 || exit 1"]
       interval: 5s
       timeout: 5s
       retries: 5
       start_period: 5s
 
   frontend:
-    build:
-      context: .
-      dockerfile: ./frontend/Dockerfile
+    image: frontend:latest
     ports:
-      - '80:80'
+      - "80:80"
     volumes:
       - type: bind
         source: ./nginx/default.conf
@@ -38,11 +33,9 @@ services:
         condition: service_healthy
 
   backend:
-    build:
-      context: .
-      dockerfile: ./backend/Dockerfile
+    image: backend:latest
     ports:
-      - '3000:3000'
+      - "3000:3000"
     environment:
       DATABASE_URL: postgresql://user:password@backend-db:5432/mydb
       JWT_SECRET: secret_that_is_at_least_32_characters_long
@@ -53,14 +46,14 @@ services:
     healthcheck:
       test:
         [
-          'CMD',
-          'curl',
-          '--fail',
-          '--silent',
-          '--show-error',
-          '--max-time',
-          '5',
-          'http://127.0.0.1:3000/api/health',
+          "CMD",
+          "curl",
+          "--fail",
+          "--silent",
+          "--show-error",
+          "--max-time",
+          "5",
+          "http://127.0.0.1:3000/api/health",
         ]
       interval: 5s
       timeout: 5s
@@ -105,13 +98,13 @@ services:
       POSTGRES_PASSWORD: password
       POSTGRES_DB: mydb
     ports:
-      - '5432:5432'
+      - "5432:5432"
     volumes:
       - postgres_backend_data:/var/lib/postgresql
     networks:
       - webnet
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U user -d mydb']
+      test: ["CMD-SHELL", "pg_isready -U user -d mydb"]
       interval: 5s
       timeout: 5s
       retries: 3
@@ -123,13 +116,13 @@ services:
       POSTGRES_PASSWORD: password
       POSTGRES_DB: mydb
     ports:
-      - '5433:5432'
+      - "5433:5432"
     volumes:
       - postgres_auth_data:/var/lib/postgresql
     networks:
       - webnet
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U user -d mydb']
+      test: ["CMD-SHELL", "pg_isready -U user -d mydb"]
       interval: 5s
       timeout: 5s
       retries: 3

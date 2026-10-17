@@ -51,6 +51,10 @@ message UserRequest{
   string userId = 1;
 }
 
+message UserByEmailRequest{
+  string email = 1;
+}
+
 message UserResponse{
   oneof payload {
     User user = 1;
@@ -66,5 +70,6 @@ service AuthService {
   rpc Register(RegisterRequest) returns (RegisterResponse);
   rpc SignIn(SignInRequest) returns (SignInResponse);
   rpc GetUser(UserRequest) returns (UserResponse);
+  rpc GetUserByEmail(UserByEmailRequest) returns (UserResponse);
   rpc GetWsToken(TokenRequest) returns (TokenResponse);
 }
