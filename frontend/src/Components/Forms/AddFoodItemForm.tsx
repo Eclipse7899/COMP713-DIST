@@ -7,7 +7,7 @@ import {
 } from '../../models.ts';
 import { parseResponse } from 'hono/client';
 import { getClient } from '../../client.ts';
-import { titleCase } from '../../util.ts';
+import { getAuthentication, titleCase } from '../../util.ts';
 import ErrorMessage from '../ErrorMessage.tsx';
 import { getApiErrorMessage } from '../../apiError.ts';
 
@@ -29,6 +29,7 @@ export default function AddFoodItemForm({
   const [error, setError] = React.useState('');
   const [foodTypes, setFoodTypes] = React.useState<FoodType[]>([]);
   const client = React.useMemo(() => getClient(), []);
+  const userId = React.useMemo(() => getAuthentication()?.sub, []);
 
   const loadFoodTypes = async () => {
     const res = await parseResponse(client.api.food.$get()).catch(
@@ -49,8 +50,13 @@ export default function AddFoodItemForm({
   };
 
   const addItem = async () => {
+    if (!userId) {
+      setError('Not authenticated');
+      return;
+    }
     const res = await parseResponse(
-      client.api.items.$post({
+      client.api.items[':userId'].$post({
+        param: { userId },
         json: {
           foodId: form.foodId,
           quantity: Number(form.quantity),

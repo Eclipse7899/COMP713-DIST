@@ -2,7 +2,7 @@ import * as React from 'react';
 import { useCallback, useMemo, useState } from 'react';
 import { parseResponse } from 'hono/client';
 import { getClient, getWebSocketClient } from '../client';
-import { titleCase } from '../util';
+import { getAuthentication, titleCase } from '../util';
 import FoodItemBox from './FoodItemBox';
 import AddFoodItemForm from './Forms/AddFoodItemForm.tsx';
 import ErrorMessage from './ErrorMessage';
@@ -27,6 +27,7 @@ export default function FoodItems() {
   const [expiresBefore, setExpiresBefore] = useState('');
 
   const client = useMemo(() => getClient(), []);
+  const userId = useMemo(() => getAuthentication()?.sub, []);
 
   const hasActiveFilters = Boolean(
     search.trim() || category || expiresBefore || sort !== 'asc',
@@ -106,8 +107,15 @@ export default function FoodItems() {
         query.expiryDate = date.toISOString();
       }
 
+      if (!userId) {
+        setError('Not authenticated');
+        setLoading(false);
+        return;
+      }
+
       const res = await parseResponse(
-        client.api.items.$get({
+        client.api.items[':userId'].$get({
+          param: { userId },
           query,
         }),
       ).catch((error: unknown) => {
@@ -122,7 +130,7 @@ export default function FoodItems() {
       setItems(res);
       setLoading(false);
     },
-    [client, search, category, sort, expiresBefore],
+    [client, userId, search, category, sort, expiresBefore],
   );
 
   const clearFilters = useCallback(async () => {
@@ -160,8 +168,14 @@ export default function FoodItems() {
 
   const deleteItem = async (id: string) => {
     setError('');
+    if (!userId) {
+      setError('Not authenticated');
+      return;
+    }
     const res = await parseResponse(
-      client.api.items[':id'].$delete({ param: { id } }),
+      client.api.items[':userId'][':id'].$delete({
+        param: { userId, id },
+      }),
     ).catch((error: unknown) => {
       setError(getApiErrorMessage(error, 'delete item'));
     });
@@ -182,9 +196,14 @@ export default function FoodItems() {
   }
 
   const editItem = async (id: string, form: EditFoodItem) => {
+    if (!userId) {
+      setError('Not authenticated');
+      return;
+    }
     const res = await parseResponse(
-      client.api.items[':id'].$put({
+      client.api.items[':userId'][':id'].$put({
         param: {
+          userId,
           id,
         },
         json: {
