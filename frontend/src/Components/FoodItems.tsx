@@ -15,7 +15,13 @@ import {
 } from '../models.ts';
 import { getApiErrorMessage } from '../apiError';
 
-export default function FoodItems() {
+export default function FoodItems({
+  ownerId,
+  readOnly = false,
+}: {
+  ownerId?: string;
+  readOnly?: boolean;
+} = {}) {
   const [items, setItems] = useState<FoodItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -27,7 +33,7 @@ export default function FoodItems() {
   const [expiresBefore, setExpiresBefore] = useState('');
 
   const client = useMemo(() => getClient(), []);
-  const userId = useMemo(() => getAuthentication()?.sub, []);
+  const userId = useMemo(() => ownerId ?? getAuthentication()?.sub, [ownerId]);
 
   const hasActiveFilters = Boolean(
     search.trim() || category || expiresBefore || sort !== 'asc',
@@ -163,7 +169,9 @@ export default function FoodItems() {
 
   React.useEffect(() => {
     loadItemsOnMount();
-    connectWs();
+    if (!readOnly) {
+      connectWs();
+    }
   }, []);
 
   const deleteItem = async (id: string) => {
@@ -227,14 +235,18 @@ export default function FoodItems() {
   return (
     <div className="flex flex-col gap-4 items-stretch">
       <div className="flex justify-between items-center">
-        <h2 className="text-xl font-semibold text-(--text-h)">Stocked Items</h2>
-        <button
-          type="button"
-          onClick={() => setAddItemModalOpen(true)}
-          className="btn"
-        >
-          Add Item
-        </button>
+        <h2 className="text-xl font-semibold text-(--text-h)">
+          {readOnly ? 'Shared Items' : 'Stocked Items'}
+        </h2>
+        {!readOnly && (
+          <button
+            type="button"
+            onClick={() => setAddItemModalOpen(true)}
+            className="btn"
+          >
+            Add Item
+          </button>
+        )}
       </div>
 
       <div className="card flex flex-col gap-6 p-4">
@@ -357,6 +369,7 @@ export default function FoodItems() {
                   foodTypes={foodTypes}
                   onDelete={deleteItem}
                   onEdit={editItem}
+                  readOnly={readOnly}
                 />
               </li>
             ))}

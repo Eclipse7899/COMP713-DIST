@@ -4,12 +4,17 @@ import type { AppType } from '@stocked/backend/src';
 
 const typeClient = hc<AppType>('/');
 const itemsByUser = typeClient.api.items[':userId'];
+const sharedWithMeItems = typeClient.api.items['shared-with-me'];
 
 export type FoodType = InferResponseType<
   typeof typeClient.api.food.$get,
   200
 >[number];
 export type FoodItem = InferResponseType<typeof itemsByUser.$get, 200>[number];
+export type SharedInventory = InferResponseType<
+  typeof sharedWithMeItems.$get,
+  200
+>[number];
 
 export type AddFoodType = InferRequestType<
   typeof typeClient.api.food.$post

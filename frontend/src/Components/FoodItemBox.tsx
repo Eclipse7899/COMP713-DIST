@@ -9,11 +9,13 @@ export default function FoodItemBox({
   foodTypes,
   onDelete,
   onEdit,
+  readOnly = false,
 }: {
   item: FoodItem;
   foodTypes: FoodType[];
   onDelete: (id: string) => Promise<void>;
   onEdit: (id: string, item: EditFoodItem) => Promise<void>;
+  readOnly?: boolean;
 }) {
   const [isDeleting, setIsDeleting] = React.useState(false);
   const [now, setNow] = useState(Date.now());
@@ -95,27 +97,31 @@ export default function FoodItemBox({
             </div>
           )}
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setIsEditing(true)}
-            className="btn-secondary"
-          >
-            Edit
-          </button>
-        </div>
-        <div className="flex items-center">
-          <button
-            type="button"
-            onClick={() => handleDelete(item.id)}
-            disabled={isDeleting}
-            className="btn-danger"
-          >
-            {isDeleting ? 'Deleting...' : 'Delete'}
-          </button>
-        </div>
+        {!readOnly && (
+          <>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setIsEditing(true)}
+                className="btn-secondary"
+              >
+                Edit
+              </button>
+            </div>
+            <div className="flex items-center">
+              <button
+                type="button"
+                onClick={() => handleDelete(item.id)}
+                disabled={isDeleting}
+                className="btn-danger"
+              >
+                {isDeleting ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
+          </>
+        )}
       </div>
-      {isEditing && (
+      {isEditing && !readOnly && (
         <EditFoodItemForm
           item={item}
           foodTypes={foodTypes}
