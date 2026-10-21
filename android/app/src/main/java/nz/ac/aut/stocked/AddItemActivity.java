@@ -22,6 +22,10 @@ import android.widget.EditText;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 
+import android.app.DatePickerDialog;
+import java.util.Calendar;
+import java.util.Locale;
+
 public class AddItemActivity extends AppCompatActivity {
 
     private Spinner foodSpinner;
@@ -32,6 +36,8 @@ public class AddItemActivity extends AppCompatActivity {
 
     private String accessToken;
 
+    private String selectedExpiryDate = null;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -40,6 +46,35 @@ public class AddItemActivity extends AppCompatActivity {
         foodSpinner = findViewById(R.id.foodSpinner);
         unitSpinner = findViewById(R.id.unitSpinner);
         addItemStatus = findViewById(R.id.addItemStatus);
+
+        Button expiryDateButton = findViewById(R.id.expiryDateButton);
+        TextView expiryDateText = findViewById(R.id.expiryDateText);
+
+        expiryDateButton.setOnClickListener(v -> {
+            Calendar calendar = Calendar.getInstance();
+
+            DatePickerDialog datePicker = new DatePickerDialog(
+                    this,
+                    (view, year, month, dayOfMonth) -> {
+                        selectedExpiryDate = String.format(
+                                Locale.US,
+                                "%04d-%02d-%02d",
+                                year, month + 1, dayOfMonth
+                        );
+
+                        expiryDateText.setText(selectedExpiryDate);
+                    },
+                    calendar.get(Calendar.YEAR),
+                    calendar.get(Calendar.MONTH),
+                    calendar.get(Calendar.DAY_OF_MONTH)
+            );
+
+            datePicker.getDatePicker().setMinDate(
+                    System.currentTimeMillis() - 1000
+            );
+
+            datePicker.show();
+        });
 
         accessToken = getIntent().getStringExtra("accessToken");
 
@@ -99,7 +134,11 @@ public class AddItemActivity extends AppCompatActivity {
             addItemButton.setEnabled(false);
             addItemStatus.setText("Adding item...");
 
-            new Thread(() -> addItem(foodId, quantity, unit, addItemButton)).start();
+            String expiryDate = selectedExpiryDate;
+
+            new Thread(() ->
+                    addItem(foodId, quantity, unit, expiryDate, addItemButton)
+            ).start();
         });
 
         if (accessToken != null) {
@@ -198,7 +237,7 @@ public class AddItemActivity extends AppCompatActivity {
 
 
     private void addItem(String foodId, double quantity, String unit,
-                         Button addItemButton) {
+                         String expiryDate, Button addItemButton) {
 
         HttpURLConnection connection = null;
 
@@ -222,6 +261,10 @@ public class AddItemActivity extends AppCompatActivity {
             item.put("quantity", quantity);
             item.put("unit", unit);
 
+            if (expiryDate != null) {
+                item.put("expiryDate", expiryDate + "T00:00:00.000Z");
+            }
+
             byte[] body = item.toString().getBytes(StandardCharsets.UTF_8);
 
             try (OutputStream output = connection.getOutputStream()) {
@@ -229,6 +272,19 @@ public class AddItemActivity extends AppCompatActivity {
             }
 
             int responseCode = connection.getResponseCode();
+
+            if (responseCode >= 400) {
+                BufferedReader errorReader = new BufferedReader(
+                        new InputStreamReader(connection.getErrorStream())
+                );
+
+                String line;
+                while ((line = errorReader.readLine()) != null) {
+                    android.util.Log.e("StockedAPI", line);
+                }
+
+                errorReader.close();
+            }
 
             runOnUiThread(() -> {
                 if (responseCode == 201) {

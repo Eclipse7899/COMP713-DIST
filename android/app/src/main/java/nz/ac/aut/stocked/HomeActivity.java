@@ -20,6 +20,14 @@ import android.widget.LinearLayout;
 import android.view.Gravity;
 import android.graphics.Color;
 
+import android.Manifest;
+import android.content.pm.PackageManager;
+import android.os.Build;
+
+import androidx.work.Data;
+import androidx.work.OneTimeWorkRequest;
+import androidx.work.WorkManager;
+
 public class HomeActivity extends AppCompatActivity {
 
     private static final String ITEMS_URL =
@@ -34,6 +42,17 @@ public class HomeActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_home);
 
+        if (Build.VERSION.SDK_INT >= 33) {
+            if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
+                    != PackageManager.PERMISSION_GRANTED) {
+
+                requestPermissions(
+                        new String[]{Manifest.permission.POST_NOTIFICATIONS},
+                        100
+                );
+            }
+        }
+
         pantryItemsContainer = findViewById(R.id.pantryItemsContainer);
 
         TextView welcomeText = findViewById(R.id.welcomeText);
@@ -41,6 +60,19 @@ public class HomeActivity extends AppCompatActivity {
 
         String username = getIntent().getStringExtra("username");
         accessToken = getIntent().getStringExtra("accessToken");
+
+        if (accessToken != null) {
+            Data inputData = new Data.Builder()
+                    .putString("accessToken", accessToken)
+                    .build();
+
+            OneTimeWorkRequest reminderRequest =
+                    new OneTimeWorkRequest.Builder(ExpiryReminderWorker.class)
+                            .setInputData(inputData)
+                            .build();
+
+            WorkManager.getInstance(this).enqueue(reminderRequest);
+        }
 
         Button refreshButton = findViewById(R.id.refreshButton);
 
@@ -139,16 +171,33 @@ public class HomeActivity extends AppCompatActivity {
                             String quantity = item.getString("quantity");
                             String unit = item.getString("unit");
 
+                            String expiryDate = item.optString("expiryDate", "");
+
+                            if (expiryDate.equals("null")) {
+                                expiryDate = "";
+                            }
+
                             LinearLayout row = new LinearLayout(this);
                             row.setOrientation(LinearLayout.HORIZONTAL);
                             row.setGravity(Gravity.CENTER_VERTICAL);
                             row.setPadding(0, 12, 0, 12);
 
                             TextView itemText = new TextView(this);
-                            itemText.setText(getString(
+
+                            String details = getString(
                                     R.string.pantry_item_details,
                                     name, quantity, unit, category
-                            ));
+                            );
+
+                            if (!expiryDate.isEmpty()) {
+                                String date = expiryDate.length() >= 10
+                                        ? expiryDate.substring(0, 10)
+                                        : expiryDate;
+
+                                details += "\nExpires: " + date;
+                            }
+
+                            itemText.setText(details);
                             itemText.setTextColor(Color.WHITE);
                             itemText.setTextSize(16);
 
