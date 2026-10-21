@@ -18,6 +18,17 @@ import java.net.URL;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 
+import android.Manifest;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.content.pm.PackageManager;
+import android.os.Build;
+
+import androidx.core.app.NotificationCompat;
+import androidx.core.app.NotificationManagerCompat;
+
+import android.content.SharedPreferences;
+
 public class ExpiryReminderWorker extends Worker {
 
     public ExpiryReminderWorker(
@@ -98,6 +109,24 @@ public class ExpiryReminderWorker extends Worker {
                             "ExpiryReminder",
                             name + " expires in " + daysRemaining + " days"
                     );
+
+                    String itemId = item.optString("id");
+
+                    SharedPreferences preferences = getApplicationContext()
+                            .getSharedPreferences("expiry_reminders", Context.MODE_PRIVATE);
+
+                    String reminderKey = itemId + "_" + expiryDate.substring(0, 10);
+                    String todayString = today.toString();
+
+                    String lastNotified = preferences.getString(reminderKey, "");
+
+                    if (!todayString.equals(lastNotified)) {
+                        sendNotification(name, daysRemaining, itemId.hashCode());
+
+                        preferences.edit()
+                                .putString(reminderKey, todayString)
+                                .apply();
+                    }
                 }
             }
 
@@ -112,5 +141,50 @@ public class ExpiryReminderWorker extends Worker {
                 connection.disconnect();
             }
         }
+    }
+
+    private void sendNotification(String name, long daysRemaining, int notificationId) {
+        Context context = getApplicationContext();
+        String channelId = "expiry_reminders";
+
+        if (Build.VERSION.SDK_INT >= 26) {
+            NotificationChannel channel = new NotificationChannel(
+                    channelId,
+                    "Expiry Reminders",
+                    NotificationManager.IMPORTANCE_DEFAULT
+            );
+
+            NotificationManager manager =
+                    context.getSystemService(NotificationManager.class);
+
+            manager.createNotificationChannel(channel);
+        }
+
+        String message;
+
+        if (daysRemaining == 0) {
+            message = name + " expires today!";
+        } else if (daysRemaining == 1) {
+            message = name + " expires tomorrow.";
+        } else {
+            message = name + " expires in " + daysRemaining + " days.";
+        }
+
+        NotificationCompat.Builder notification =
+                new NotificationCompat.Builder(context, channelId)
+                        .setSmallIcon(R.drawable.ic_launcher_foreground)
+                        .setContentTitle("Stocked - Expiry Reminder")
+                        .setContentText(message)
+                        .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                        .setAutoCancel(true);
+
+        if (Build.VERSION.SDK_INT >= 33 &&
+                context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
+                        != PackageManager.PERMISSION_GRANTED) {
+            return;
+        }
+
+        NotificationManagerCompat.from(context)
+                .notify(notificationId, notification.build());
     }
 }

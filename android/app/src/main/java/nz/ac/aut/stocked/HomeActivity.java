@@ -25,8 +25,11 @@ import android.content.pm.PackageManager;
 import android.os.Build;
 
 import androidx.work.Data;
-import androidx.work.OneTimeWorkRequest;
 import androidx.work.WorkManager;
+
+import androidx.work.PeriodicWorkRequest;
+import androidx.work.ExistingPeriodicWorkPolicy;
+import java.util.concurrent.TimeUnit;
 
 public class HomeActivity extends AppCompatActivity {
 
@@ -66,12 +69,20 @@ public class HomeActivity extends AppCompatActivity {
                     .putString("accessToken", accessToken)
                     .build();
 
-            OneTimeWorkRequest reminderRequest =
-                    new OneTimeWorkRequest.Builder(ExpiryReminderWorker.class)
+            PeriodicWorkRequest reminderRequest =
+                    new PeriodicWorkRequest.Builder(
+                            ExpiryReminderWorker.class,
+                            24,
+                            TimeUnit.HOURS
+                    )
                             .setInputData(inputData)
                             .build();
 
-            WorkManager.getInstance(this).enqueue(reminderRequest);
+            WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+                    "expiry_reminders",
+                    ExistingPeriodicWorkPolicy.UPDATE,
+                    reminderRequest
+            );
         }
 
         Button refreshButton = findViewById(R.id.refreshButton);
