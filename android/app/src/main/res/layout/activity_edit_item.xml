@@ -63,6 +63,33 @@
             android:layout_height="wrap_content"
             android:layout_marginBottom="32dp" />
 
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Expiry date (optional)"
+            android:textColor="#FFFFFF"
+            android:layout_marginTop="16dp" />
+
+        <Button
+            android:id="@+id/expiryDateButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Choose expiry date" />
+
+        <TextView
+            android:id="@+id/expiryDateText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="No expiry date"
+            android:textColor="#FFFFFF"
+            android:padding="8dp" />
+
+        <Button
+            android:id="@+id/removeExpiryButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Remove expiry date" />
+
         <Button
             android:id="@+id/saveButton"
             android:layout_width="match_parent"

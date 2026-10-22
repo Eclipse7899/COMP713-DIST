@@ -29,6 +29,8 @@ import androidx.core.app.NotificationManagerCompat;
 
 import android.content.SharedPreferences;
 
+import java.io.IOException;
+
 public class ExpiryReminderWorker extends Worker {
 
     public ExpiryReminderWorker(
@@ -63,13 +65,18 @@ public class ExpiryReminderWorker extends Worker {
             int responseCode = connection.getResponseCode();
 
             if (responseCode == 401 || responseCode == 403) {
-                Log.e("ExpiryReminder", "Authentication failed");
+                Log.e("ExpiryReminder", "Session expired or access denied. Login required.");
                 return Result.failure();
             }
 
-            if (responseCode != 200) {
-                Log.e("ExpiryReminder", "API error: " + responseCode);
+            if (responseCode == 429 || responseCode >= 500) {
+                Log.w("ExpiryReminder", "Temporary API error: " + responseCode);
                 return Result.retry();
+            }
+
+            if (responseCode != 200) {
+                Log.e("ExpiryReminder", "Unexpected API response: " + responseCode);
+                return Result.failure();
             }
 
             StringBuilder response = new StringBuilder();
@@ -121,20 +128,26 @@ public class ExpiryReminderWorker extends Worker {
                     String lastNotified = preferences.getString(reminderKey, "");
 
                     if (!todayString.equals(lastNotified)) {
-                        sendNotification(name, daysRemaining, itemId.hashCode());
+                        boolean sent = sendNotification(name, daysRemaining, itemId.hashCode());
 
-                        preferences.edit()
-                                .putString(reminderKey, todayString)
-                                .apply();
+                        if (sent) {
+                            preferences.edit()
+                                    .putString(reminderKey, todayString)
+                                    .apply();
+                        }
                     }
                 }
             }
 
             return Result.success();
 
-        } catch (Exception e) {
-            Log.e("ExpiryReminder", "Could not check expiry dates", e);
+        } catch (IOException e) {
+            Log.w("ExpiryReminder", "Network unavailable. Retrying later.", e);
             return Result.retry();
+
+        } catch (Exception e) {
+            Log.e("ExpiryReminder", "Unexpected error checking expiry dates", e);
+            return Result.failure();
 
         } finally {
             if (connection != null) {
@@ -143,7 +156,7 @@ public class ExpiryReminderWorker extends Worker {
         }
     }
 
-    private void sendNotification(String name, long daysRemaining, int notificationId) {
+    private boolean sendNotification(String name, long daysRemaining, int notificationId) {
         Context context = getApplicationContext();
         String channelId = "expiry_reminders";
 
@@ -181,10 +194,12 @@ public class ExpiryReminderWorker extends Worker {
         if (Build.VERSION.SDK_INT >= 33 &&
                 context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
                         != PackageManager.PERMISSION_GRANTED) {
-            return;
+            return false;
         }
 
         NotificationManagerCompat.from(context)
                 .notify(notificationId, notification.build());
+
+        return true;
     }
 }

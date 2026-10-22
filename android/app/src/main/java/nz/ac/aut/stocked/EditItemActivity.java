@@ -25,6 +25,10 @@ import java.io.InputStreamReader;
 
 import androidx.annotation.NonNull;
 
+import android.app.DatePickerDialog;
+import java.util.Calendar;
+import java.util.Locale;
+
 public class EditItemActivity extends Activity {
 
     private final String baseUrl = "http://10.0.2.2:3000";
@@ -35,6 +39,10 @@ public class EditItemActivity extends Activity {
     private Spinner unitSpinner;
     private EditText quantityInput;
     private Button saveButton;
+    private Button expiryDateButton;
+    private Button removeExpiryButton;
+    private TextView expiryDateText;
+    private String selectedExpiryDate = null;
 
     private final ArrayList<JSONObject> items = new ArrayList<>();
     private final String[] units = {"ITEM", "KG", "G", "L", "ML", "PACK"};
@@ -52,6 +60,9 @@ public class EditItemActivity extends Activity {
         quantityInput = findViewById(R.id.quantityInput);
         saveButton = findViewById(R.id.saveButton);
 
+        expiryDateButton = findViewById(R.id.expiryDateButton);
+        removeExpiryButton = findViewById(R.id.removeExpiryButton);
+        expiryDateText = findViewById(R.id.expiryDateText);
 
         ArrayAdapter<String> unitAdapter = new ArrayAdapter<>(
                 this, android.R.layout.simple_spinner_item, units) {
@@ -75,6 +86,32 @@ public class EditItemActivity extends Activity {
         unitSpinner.setAdapter(unitAdapter);
 
         saveButton.setOnClickListener(v -> saveChanges());
+
+        expiryDateButton.setOnClickListener(v -> {
+            Calendar calendar = Calendar.getInstance();
+
+            DatePickerDialog datePicker = new DatePickerDialog(
+                    this,
+                    (view, year, month, dayOfMonth) -> {
+                        selectedExpiryDate = String.format(
+                                Locale.US, "%04d-%02d-%02d",
+                                year, month + 1, dayOfMonth
+                        );
+
+                        expiryDateText.setText(selectedExpiryDate);
+                    },
+                    calendar.get(Calendar.YEAR),
+                    calendar.get(Calendar.MONTH),
+                    calendar.get(Calendar.DAY_OF_MONTH)
+            );
+
+            datePicker.show();
+        });
+
+        removeExpiryButton.setOnClickListener(v -> {
+            selectedExpiryDate = null;
+            expiryDateText.setText("No expiry date");
+        });
 
         loadItems();
     }
@@ -188,6 +225,15 @@ public class EditItemActivity extends Activity {
                     break;
                 }
             }
+            String expiryDate = item.optString("expiryDate", "");
+
+            if (!expiryDate.isEmpty() && !expiryDate.equals("null")) {
+                selectedExpiryDate = expiryDate.substring(0, 10);
+                expiryDateText.setText(selectedExpiryDate);
+            } else {
+                selectedExpiryDate = null;
+                expiryDateText.setText("No expiry date");
+            }
 
         } catch (Exception e) {
             Toast.makeText(this,
@@ -232,6 +278,12 @@ public class EditItemActivity extends Activity {
             body.put("foodId", foodId);
             body.put("quantity", quantity);
             body.put("unit", unit);
+
+            if (selectedExpiryDate != null) {
+                body.put("expiryDate", selectedExpiryDate + "T00:00:00.000Z");
+            } else {
+                body.put("expiryDate", JSONObject.NULL);
+            }
 
             saveButton.setEnabled(false);
 
