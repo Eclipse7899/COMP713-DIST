@@ -18,9 +18,9 @@ export function getClient() {
 export async function getWebSocketClient(
   client: ReturnType<typeof getClient>,
 ): Promise<WebSocket | string> {
-  const res = await parseResponse(client.api.ws.token.$get()).catch(
+  const res = await parseResponse(client.api.ws.ticket.$get()).catch(
     (error: unknown) => {
-      return getApiErrorMessage(error, 'ws token');
+      return getApiErrorMessage(error, 'ws ticket');
     },
   );
 
@@ -28,9 +28,11 @@ export async function getWebSocketClient(
     return res;
   }
 
-  const token = res.token;
-  if (!token) {
-    return 'No token received for websocket connection';
+  const ticket = res.ticket;
+  if (!ticket) {
+    return 'No ticket received for websocket connection';
   }
-  return new WebSocket(client.api.ws.$url() + `?token=${token}`);
+  return new WebSocket(
+    client.api.ws.$url() + `?ticket=${encodeURIComponent(ticket)}`,
+  );
 }

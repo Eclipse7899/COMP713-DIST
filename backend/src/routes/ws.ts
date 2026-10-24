@@ -1,25 +1,20 @@
 import { Context, Hono } from 'hono';
 import type { Variables } from '../variables';
 import { upgradeWebSocket } from '@hono/bun';
-import type { RealtimeHub } from '../realtime/realtime-hub';
+import type { RealtimeHub, ServerCallback } from '../realtime/realtime-hub';
 import { describeRoute, resolver } from 'hono-openapi';
-import { unauthorizedResponse, wsTokenResponseSchema } from '../schemas';
-import { verify } from 'hono/jwt';
-import type { AuthService } from '../services/auth.service';
+import { unauthorizedResponse, wsTicketResponseSchema } from '../schemas';
+import type { WsTicketService } from '../services/ws-ticket.service';
 
-const wsTokenQueryParameter = {
-  name: 'token',
+const wsTicketQueryParameter = {
+  name: 'ticket',
   in: 'query' as const,
   required: true,
-  description: 'Connection token previously issued by GET /ws/token',
+  description: 'Single-use ticket previously issued by GET /ws/ticket',
   schema: { type: 'string' as const },
 };
 
-export function createWsRoute(
-  realtime: RealtimeHub,
-  jwtToken: string,
-  authService: AuthService,
-) {
+export function createWsRoute(realtime: RealtimeHub, tickets: WsTicketService) {
   return new Hono<{ Variables: Variables }>()
     .get(
       '/',
@@ -27,67 +22,74 @@ export function createWsRoute(
         tags: ['WebSocket'],
         summary: 'Open a realtime WebSocket connection',
         description:
-          'Upgrades the request to a WebSocket connection and streams realtime inventory events to the client as JSON messages. Authenticate by passing a connection token (obtained from GET /ws/token) as the token query parameter rather than an Authorization header.',
-        parameters: [wsTokenQueryParameter],
+          'Upgrades the request to a WebSocket connection and streams realtime inventory events to the client as JSON messages. Authenticate by passing a single-use ticket (obtained from GET /ws/ticket) as the ticket query parameter rather than an Authorization header.',
+        parameters: [wsTicketQueryParameter],
         responses: {
           101: {
             description:
               'Switching Protocols: the WebSocket connection was established',
           },
           400: {
-            description: 'The token query parameter is missing',
+            description: 'The ticket query parameter is missing',
             content: {
               'text/plain': { schema: { type: 'string' as const } },
             },
           },
           401: {
-            description: 'The provided connection token is invalid or expired',
+            description:
+              'The provided ticket is invalid, expired, or already used',
             content: {
               'text/plain': { schema: { type: 'string' as const } },
             },
           },
         },
       }),
-      upgradeWebSocket(async (c) => {
-        const token = c.req.query('token');
-        if (!token) {
-          throw new Error('Token is required');
+      async (c, next) => {
+        const ticket = c.req.query('ticket');
+        if (!ticket) {
+          return c.text('Ticket is required', 400);
         }
-        const payload = await verify(token, jwtToken, 'HS256');
-        const userId = payload.sub;
+
+        const userId = await tickets.consume(ticket);
         if (!userId) {
-          throw new Error('Invalid token');
+          return c.text('Invalid or expired ticket', 401);
         }
-        if (typeof userId !== 'string') {
-          throw new Error('Token user ID does not match');
-        }
+
+        c.set('wsUserId', userId);
+        await next();
+      },
+      upgradeWebSocket((c) => {
+        const userId = c.get('wsUserId');
+        let listener: ServerCallback | undefined;
+
         return {
           onOpen(_, ws) {
-            realtime.subscribe(userId, (event) => {
+            listener = (event) => {
               ws.send(JSON.stringify(event));
-            });
+            };
+            realtime.subscribe(userId, listener);
           },
-          onClose(_, ws) {
-            realtime.unsubscribe(userId, (event) => {
-              ws.send(JSON.stringify(event));
-            });
+          onClose() {
+            if (listener) {
+              realtime.unsubscribe(userId, listener);
+            }
           },
         };
       }),
     )
     .get(
-      '/token',
+      '/ticket',
       describeRoute({
         tags: ['WebSocket'],
-        summary: 'Issue a WebSocket connection token',
+        summary: 'Issue a WebSocket connection ticket',
         description:
-          'Generates a single-use connection token for the authenticated user, to be supplied as the token query parameter when opening the WebSocket connection at GET /ws.',
+          'Generates a single-use ticket for the authenticated user, valid for 30 seconds, to be supplied as the ticket query parameter when opening the WebSocket connection at GET /ws.',
         security: [{ bearerAuth: [] }],
         responses: {
           200: {
-            description: 'Connection token issued',
+            description: 'Connection ticket issued',
             content: {
-              'application/json': { schema: resolver(wsTokenResponseSchema) },
+              'application/json': { schema: resolver(wsTicketResponseSchema) },
             },
           },
           401: unauthorizedResponse,
@@ -95,8 +97,8 @@ export function createWsRoute(
       }),
       async (c: Context<{ Variables: Variables }>) => {
         const userId = c.get('jwtPayload').sub;
-        const { token } = await authService.getWsToken(userId);
-        return c.json({ token });
+        const { ticket } = await tickets.issue(userId);
+        return c.json({ ticket });
       },
     );
 }

@@ -73,17 +73,6 @@ export class AuthService {
     return { token };
   }
 
-  async createWsToken(id: string): Promise<{ wsToken: string }> {
-    const token = await new SignJWT()
-      .setProtectedHeader({ alg: 'HS256' })
-      .setExpirationTime('5m')
-      .setSubject(id)
-      .sign(new TextEncoder().encode(this.jwtSecret));
-    return {
-      wsToken: token,
-    };
-  }
-
   async getUser(
     userId: string,
   ): Promise<

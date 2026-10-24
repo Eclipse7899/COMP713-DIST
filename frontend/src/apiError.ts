@@ -13,7 +13,7 @@ type ErrorContext =
   | 'delete item'
   | 'load shared inventories'
   | 'share inventory'
-  | 'ws token';
+  | 'ws ticket';
 
 type ErrorDetails = {
   data?: {

@@ -5,4 +5,7 @@ import type { jwtSchema } from './schemas';
 
 export type JwtFields = z.infer<typeof jwtSchema> & JWTPayload;
 
-export type Variables = JwtVariables<JwtFields>;
+export type Variables = JwtVariables<JwtFields> & {
+  /** User resolved from a WebSocket ticket during the handshake. */
+  wsUserId: string;
+};

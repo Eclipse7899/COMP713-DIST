@@ -82,15 +82,17 @@ export const userDtoSchema = z
 
 export type UserDto = z.infer<typeof userDtoSchema>;
 
-export const wsTokenResponseSchema = z
+export const wsTicketResponseSchema = z
   .object({
-    token: z
+    ticket: z
       .string()
-      .describe('Connection token to pass as the token query parameter of /ws'),
+      .describe(
+        'Single-use ticket to pass as the ticket query parameter of /ws',
+      ),
   })
-  .brand('WsTokenResponse');
+  .brand('WsTicketResponse');
 
-export type WsTokenResponse = z.infer<typeof wsTokenResponseSchema>;
+export type WsTicketResponse = z.infer<typeof wsTicketResponseSchema>;
 
 export const authResponseSchema = z.object({
   user: userDtoSchema.describe('The authenticated user'),

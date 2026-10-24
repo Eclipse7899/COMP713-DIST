@@ -1,30 +1,20 @@
-import { AuthService } from '../services/service.ts';
-import type { sendUnaryData, ServerUnaryCall } from '@grpc/grpc-js';
+import { AuthService } from "../services/service.ts";
+import type { sendUnaryData, ServerUnaryCall } from "@grpc/grpc-js";
 import type {
   AuthServiceServer,
   RegisterRequest,
   RegisterResponse,
   SignInRequest,
   SignInResponse,
-  TokenRequest,
-  TokenResponse,
   UserByEmailRequest,
   UserRequest,
   UserResponse,
-} from '../generated/proto/auth.ts';
+} from "../generated/proto/auth.ts";
 
 export function createAuthHandlers(
   authService: AuthService,
 ): AuthServiceServer {
   return {
-    getWsToken(
-      call: ServerUnaryCall<TokenRequest, TokenResponse>,
-      callback: sendUnaryData<TokenResponse>,
-    ): void {
-      authService.createWsToken(call.request.userId).then(({ wsToken }) => {
-        callback(null, { token: wsToken });
-      });
-    },
     getUser(
       call: ServerUnaryCall<UserRequest, UserResponse>,
       callback: sendUnaryData<UserResponse>,
@@ -34,14 +24,14 @@ export function createAuthHandlers(
           callback(null, {
             payload: {
               error: getUserResponse.error,
-              $case: 'error',
+              $case: "error",
             },
           });
         } else {
           callback(null, {
             payload: {
               user: getUserResponse.data,
-              $case: 'user',
+              $case: "user",
             },
           });
         }
@@ -56,14 +46,14 @@ export function createAuthHandlers(
           callback(null, {
             payload: {
               error: getUserResponse.error,
-              $case: 'error',
+              $case: "error",
             },
           });
         } else {
           callback(null, {
             payload: {
               user: getUserResponse.data,
-              $case: 'user',
+              $case: "user",
             },
           });
         }
@@ -84,14 +74,14 @@ export function createAuthHandlers(
             callback(null, {
               payload: {
                 error: registerResponse.error,
-                $case: 'error',
+                $case: "error",
               },
             });
           } else {
             callback(null, {
               payload: {
                 success: registerResponse.data,
-                $case: 'success',
+                $case: "success",
               },
             });
           }
@@ -107,15 +97,15 @@ export function createAuthHandlers(
           if (!signInResponse.success) {
             callback(null, {
               payload: {
-                error: 'Invalid email or password',
-                $case: 'error',
+                error: "Invalid email or password",
+                $case: "error",
               },
             });
           } else {
             callback(null, {
               payload: {
                 success: signInResponse.data,
-                $case: 'success',
+                $case: "success",
               },
             });
           }

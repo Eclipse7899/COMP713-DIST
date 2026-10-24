@@ -253,14 +253,16 @@ The API also exposes a WebSocket endpoint that streams inventory changes
 (`item.created`, `item.updated`, `item.deleted`, `food.created`, `food.updated`,
 `food.deleted`) to the authenticated user.
 
-| Method | Endpoint        | Auth | Description                                       |
-| ------ | --------------- | ---- | ------------------------------------------------- |
-| `GET`  | `/api/ws/token` | Yes  | Issue a short-lived connection token              |
-| `GET`  | `/api/ws`       | No\* | Open the WebSocket connection with `?token=<jwt>` |
+| Method | Endpoint         | Auth | Description                                          |
+| ------ | ---------------- | ---- | ---------------------------------------------------- |
+| `GET`  | `/api/ws/ticket` | Yes  | Issue a single-use connection ticket (30s lifetime) |
+| `GET`  | `/api/ws`        | No\* | Open the WebSocket connection with `?ticket=<ticket>` |
 
-\* The WebSocket handshake authenticates with the `token` query parameter
+\* The WebSocket handshake authenticates with the `ticket` query parameter
 instead of the `Authorization` header, because browsers cannot set custom
-headers on WebSocket connections.
+headers on WebSocket connections. Tickets are opaque, stored by the backend,
+valid for 30 seconds, and can only be used once, so the longer-lived access
+token never appears in a URL or proxy log.
 
 ## Known Issues or Limitations
 
