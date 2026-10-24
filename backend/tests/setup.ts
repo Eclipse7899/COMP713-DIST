@@ -6,6 +6,7 @@ import { GenericContainer, Network, Wait } from 'testcontainers';
 const POSTGRES_ALIAS = 'postgres';
 const POSTGRES_PORT = 5432;
 const POSTGRES_DB = 'test';
+const AUTH_DB = 'auth';
 const POSTGRES_USER = 'postgres';
 const POSTGRES_PASSWORD = 'postgres';
 const AUTH_ALIAS = 'auth';
@@ -13,8 +14,15 @@ const AUTH_ALIAS = 'auth';
 let dbContainer: StartedPostgreSqlContainer;
 let authContainer: StartedTestContainer;
 
-function internalDatabaseUrl(): string {
-  return `postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_ALIAS}:${POSTGRES_PORT}/${POSTGRES_DB}`;
+function internalDatabaseUrl(database: string): string {
+  return `postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_ALIAS}:${POSTGRES_PORT}/${database}`;
+}
+
+function externalDatabaseUrl(
+  database: string,
+  container: StartedPostgreSqlContainer,
+): string {
+  return `postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${container.getHost()}:${container.getMappedPort(POSTGRES_PORT)}/${database}`;
 }
 
 export async function setupNetwork() {
@@ -30,13 +38,27 @@ export async function setupTestDatabase(network: StartedNetwork) {
     .withNetwork(network)
     .start();
 
-  // Run the two service migrations against the same shared test database.
-  // Order matters: the backend migration must run first (it creates and then
-  // drops the legacy `User` table), followed by the auth-service migration
-  // which creates the current `User` table.
-  for (const image of ['backend-db-init:latest', 'auth-db-init:latest']) {
+  // Each service owns its own database, mirroring production. The auth
+  // database has to be created explicitly because the container only creates
+  // the default one.
+  await dbContainer.exec([
+    'psql',
+    '-U',
+    POSTGRES_USER,
+    '-d',
+    POSTGRES_DB,
+    '-c',
+    `CREATE DATABASE "${AUTH_DB}"`,
+  ]);
+
+  const initContainers = [
+    { image: 'backend-db-init:latest', database: POSTGRES_DB },
+    { image: 'auth-db-init:latest', database: AUTH_DB },
+  ];
+
+  for (const { image, database } of initContainers) {
     await new GenericContainer(image)
-      .withEnvironment({ DATABASE_URL: internalDatabaseUrl() })
+      .withEnvironment({ DATABASE_URL: internalDatabaseUrl(database) })
       .withNetwork(network)
       .withWaitStrategy(
         Wait.forLogMessage('🌱  The seed command has been executed.'),
@@ -44,11 +66,14 @@ export async function setupTestDatabase(network: StartedNetwork) {
       .start();
   }
 
-  return `postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${dbContainer.getHost()}:${dbContainer.getMappedPort(POSTGRES_PORT)}/${POSTGRES_DB}`;
+  return {
+    backendDatabaseUrl: externalDatabaseUrl(POSTGRES_DB, dbContainer),
+    authDatabaseUrl: externalDatabaseUrl(AUTH_DB, dbContainer),
+  };
 }
 
 export async function setupTestAuth(
-  _database: string,
+  databaseUrl: string,
   jwtSecret: string,
   port: number,
   network: StartedNetwork,
@@ -58,7 +83,7 @@ export async function setupTestAuth(
     .withNetworkAliases(AUTH_ALIAS)
     .withEnvironment({
       PORT: port.toString(),
-      DATABASE_URL: internalDatabaseUrl(),
+      DATABASE_URL: databaseUrl,
       JWT_SECRET: jwtSecret,
     })
     .withNetwork(network)
@@ -68,21 +93,31 @@ export async function setupTestAuth(
 }
 
 export async function teardownTestDatabase() {
-  await dbContainer.stop();
+  if (dbContainer) {
+    await dbContainer.stop();
+  }
 }
 
 export async function teardownTestAuth() {
-  await authContainer.stop();
+  if (authContainer) {
+    await authContainer.stop();
+  }
 }
 
 let network: StartedNetwork;
 
 export async function setup(jwtSecret: string, port: number) {
   network = await setupNetwork();
-  const postgres = await setupTestDatabase(network);
-  const auth = await setupTestAuth(postgres, jwtSecret, port, network);
+  const { backendDatabaseUrl, authDatabaseUrl } =
+    await setupTestDatabase(network);
+  const auth = await setupTestAuth(
+    internalDatabaseUrl(AUTH_DB),
+    jwtSecret,
+    port,
+    network,
+  );
 
-  return { postgres, auth };
+  return { backendDatabaseUrl, authDatabaseUrl, auth };
 }
 
 export async function teardown() {

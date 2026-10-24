@@ -73,23 +73,36 @@ export class AuthService {
     return { token };
   }
 
-  async createWsToken(id: string): Promise<{ wsToken: string }> {
-    const token = await new SignJWT()
-      .setProtectedHeader({ alg: 'HS256' })
-      .setExpirationTime('5m')
-      .setSubject(id)
-      .sign(new TextEncoder().encode(this.jwtSecret));
-    return {
-      wsToken: token,
-    };
-  }
-
   async getUser(
     userId: string,
   ): Promise<
     Result<{ id: string; email: string; username: string }, 'NOT_FOUND'>
   > {
     const user = await this.userRepo.findById(userId);
+    if (!user) {
+      return {
+        success: false,
+        error: 'NOT_FOUND',
+      };
+    }
+    return {
+      success: true,
+      data: {
+        id: user.id,
+        email: user.email,
+        username: user.username,
+      },
+    };
+  }
+
+  async getUserByEmail(
+    email: string,
+  ): Promise<
+    Result<{ id: string; email: string; username: string }, 'NOT_FOUND'>
+  > {
+    const user = await this.userRepo.findUserByEmail(
+      this.normalizeEmail(email),
+    );
     if (!user) {
       return {
         success: false,

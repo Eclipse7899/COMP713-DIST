@@ -17,20 +17,23 @@ import { PrismaPg } from '@prisma/adapter-pg';
 jest.setTimeout(30000);
 
 let app: ReturnType<typeof createApp>['app'];
-let db: PrismaClient & { user: AuthPrismaClient['user'] };
+let db: PrismaClient;
+let authDb: AuthPrismaClient;
 const jwtSecret = 'test-secret';
 const authPort = 5051;
 
 beforeAll(async () => {
-  const { postgres, auth } = await setup(jwtSecret, authPort);
-  const backendDb = new PrismaClient({
-    adapter: new PrismaPg(postgres),
+  const { backendDatabaseUrl, authDatabaseUrl, auth } = await setup(
+    jwtSecret,
+    authPort,
+  );
+  db = new PrismaClient({
+    adapter: new PrismaPg(backendDatabaseUrl),
   });
-  const authDb = new AuthPrismaClient({
-    adapter: new PrismaPg(postgres),
+  authDb = new AuthPrismaClient({
+    adapter: new PrismaPg(authDatabaseUrl),
   });
-  db = Object.assign(backendDb, { user: authDb.user });
-  app = createApp(jwtSecret, auth, backendDb).app;
+  app = createApp(jwtSecret, auth, db).app;
 });
 
 afterAll(async () => {
@@ -42,6 +45,7 @@ beforeEach(async () => {
   await db.foodItem.deleteMany();
   await db.food.deleteMany();
   await db.user.deleteMany();
+  await authDb.user.deleteMany();
 });
 
 async function registerUser(
@@ -159,13 +163,19 @@ describe('Users Endpoints (/api/users)', () => {
         expect(data).not.toHaveProperty('hashed_password');
         expect(data).not.toHaveProperty('password');
 
-        // Verify against database
-        const dbUser = await db.user.findUnique({
+        // Verify against the auth database
+        const dbUser = await authDb.user.findUnique({
           where: { id: data.id },
         });
         expect(dbUser).not.toBeNull();
         expect(dbUser?.email).toBe('alice@example.com');
         expect(dbUser?.username).toBe('alice');
+
+        // The backend mirrors the auth user for referential integrity
+        const backendUser = await db.user.findUnique({
+          where: { id: data.id },
+        });
+        expect(backendUser).not.toBeNull();
       });
 
       it('should isolate profiles between different authenticated users', async () => {
@@ -213,8 +223,8 @@ describe('Users Endpoints (/api/users)', () => {
         const initialData = await initialRes.json();
         expect(initialData.username).toBe('initialname');
 
-        // Update user in database directly
-        await db.user.update({
+        // Update user in the auth database directly
+        await authDb.user.update({
           where: { id: initialData.id },
           data: { username: 'updatedname', email: 'updated@example.com' },
         });

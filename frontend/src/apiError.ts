@@ -11,7 +11,9 @@ type ErrorContext =
   | 'add item'
   | 'update item'
   | 'delete item'
-  | 'ws token';
+  | 'load shared inventories'
+  | 'share inventory'
+  | 'ws ticket';
 
 type ErrorDetails = {
   data?: {
@@ -49,6 +51,12 @@ export function getApiErrorMessage(
 
   switch (error.statusCode) {
     case 400:
+      if (context === 'share inventory') {
+        return (
+          serverMessage ??
+          'Enter a valid email address for someone you can share with.'
+        );
+      }
       return 'Some of the information is invalid. Please try again.';
     case 401:
       return context === 'login'
@@ -65,8 +73,14 @@ export function getApiErrorMessage(
       if (context === 'delete item' || context === 'update item') {
         return 'This stocked item could not be found. It may have already been removed.';
       }
+      if (context === 'share inventory') {
+        return 'No account exists with that email address.';
+      }
       return `We couldn't ${context} because the requested resource was not found.`;
     case 409:
+      if (context === 'share inventory') {
+        return 'You have already shared your stock with that user.';
+      }
       if (context === 'signup') {
         if (serverMessage === 'Email is already taken') {
           return 'That email address is already registered. Try signing in instead.';

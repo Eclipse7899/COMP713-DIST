@@ -19,18 +19,20 @@ import { FoodCategory } from '../../src/generated/prisma/enums';
 jest.setTimeout(30000);
 
 let app: ReturnType<typeof createApp>['app'];
-let db: PrismaClient & { user: AuthPrismaClient['user'] };
+let db: PrismaClient;
+let authDb: AuthPrismaClient;
 const jwtSecret = 'test-secret';
 const authPort = 5051;
 
 async function createTestUser(username: string, email: string) {
-  const user = await db.user.create({
+  const user = await authDb.user.create({
     data: {
       username,
       email,
       hashed_password: 'hashedpassword',
     },
   });
+  await db.user.create({ data: { id: user.id } });
 
   const payload: JwtFields = {
     sub: user.id,
@@ -44,15 +46,17 @@ async function createTestUser(username: string, email: string) {
 }
 
 beforeAll(async () => {
-  const { postgres, auth } = await setup(jwtSecret, authPort);
-  const backendDb = new PrismaClient({
-    adapter: new PrismaPg(postgres),
+  const { backendDatabaseUrl, authDatabaseUrl, auth } = await setup(
+    jwtSecret,
+    authPort,
+  );
+  db = new PrismaClient({
+    adapter: new PrismaPg(backendDatabaseUrl),
   });
-  const authDb = new AuthPrismaClient({
-    adapter: new PrismaPg(postgres),
+  authDb = new AuthPrismaClient({
+    adapter: new PrismaPg(authDatabaseUrl),
   });
-  db = Object.assign(backendDb, { user: authDb.user });
-  app = createApp(jwtSecret, auth, backendDb).app;
+  app = createApp(jwtSecret, auth, db).app;
 });
 
 afterAll(async () => {
@@ -63,6 +67,7 @@ beforeEach(async () => {
   await db.foodItem.deleteMany();
   await db.food.deleteMany();
   await db.user.deleteMany();
+  await authDb.user.deleteMany();
 });
 
 describe('Food Endpoints', () => {

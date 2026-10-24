@@ -43,12 +43,12 @@ message SignInResponse{
   }
 }
 
-message TokenRequest{
+message UserRequest{
   string userId = 1;
 }
 
-message UserRequest{
-  string userId = 1;
+message UserByEmailRequest{
+  string email = 1;
 }
 
 message UserResponse{
@@ -58,13 +58,9 @@ message UserResponse{
   }
 }
 
-message TokenResponse{
-  string token = 1;
-}
-
 service AuthService {
   rpc Register(RegisterRequest) returns (RegisterResponse);
   rpc SignIn(SignInRequest) returns (SignInResponse);
   rpc GetUser(UserRequest) returns (UserResponse);
-  rpc GetWsToken(TokenRequest) returns (TokenResponse);
+  rpc GetUserByEmail(UserByEmailRequest) returns (UserResponse);
 }

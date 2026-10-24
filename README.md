@@ -197,12 +197,31 @@ Supported categories are `FRUIT`, `VEGETABLE`, `MEAT`, `DAIRY`,
 
 #### Food Items
 
-| Method   | Endpoint         | Description                              |
-| -------- | ---------------- | ---------------------------------------- |
-| `GET`    | `/api/items`     | List the authenticated user's food items |
-| `POST`   | `/api/items`     | Add a food item to the inventory         |
-| `PUT`    | `/api/items/:id` | Update an inventory item                 |
-| `DELETE` | `/api/items/:id` | Delete an inventory item                 |
+| Method   | Endpoint                                      | Description                                   |
+| -------- | --------------------------------------------- | --------------------------------------------- |
+| `GET`    | `/api/items/shared-with-me`                   | List inventories other users shared with you  |
+| `GET`    | `/api/items/:userId`                          | List a user's food items, if shared with you  |
+| `POST`   | `/api/items/:userId`                          | Add a food item to your inventory             |
+| `PUT`    | `/api/items/:userId/:id`                      | Update an inventory item you own              |
+| `DELETE` | `/api/items/:userId/:id`                      | Delete an inventory item you own              |
+| `GET`    | `/api/items/:userId/shared`                   | List users your inventory is shared with      |
+| `POST`   | `/api/items/:userId/shared`                   | Share your inventory with an email address    |
+| `DELETE` | `/api/items/:userId/shared/:sharedWithUserId` | Stop sharing your inventory with another user |
+
+The user identity is always taken from the JWT. For item mutations and share
+management, `:userId` must match the authenticated user. Item reads are allowed
+for the owner or for a user the inventory has been shared with. When sharing,
+the recipient is identified by the email address of their auth-service account.
+`GET /api/items/shared-with-me` returns the `userId`, `username`, and `sharedAt`
+of each inventory shared with the authenticated user.
+
+Share request:
+
+```json
+{
+  "sharedWithEmail": "friend@example.com"
+}
+```
 
 Food item request:
 
@@ -232,16 +251,18 @@ The item endpoint supports these optional query parameters:
 
 The API also exposes a WebSocket endpoint that streams inventory changes
 (`item.created`, `item.updated`, `item.deleted`, `food.created`, `food.updated`,
-`food.deleted`) to the authenticated user.
+`food.deleted`, `share.created`, `share.deleted`) to the authenticated user.
 
-| Method | Endpoint        | Auth | Description                                       |
-| ------ | --------------- | ---- | ------------------------------------------------- |
-| `GET`  | `/api/ws/token` | Yes  | Issue a short-lived connection token              |
-| `GET`  | `/api/ws`       | No*  | Open the WebSocket connection with `?token=<jwt>` |
+| Method | Endpoint         | Auth | Description                                          |
+| ------ | ---------------- | ---- | ---------------------------------------------------- |
+| `GET`  | `/api/ws/ticket` | Yes  | Issue a single-use connection ticket (30s lifetime) |
+| `GET`  | `/api/ws`        | No\* | Open the WebSocket connection with `?ticket=<ticket>` |
 
-\* The WebSocket handshake authenticates with the `token` query parameter
+\* The WebSocket handshake authenticates with the `ticket` query parameter
 instead of the `Authorization` header, because browsers cannot set custom
-headers on WebSocket connections.
+headers on WebSocket connections. Tickets are opaque, stored by the backend,
+valid for 30 seconds, and can only be used once, so the longer-lived access
+token never appears in a URL or proxy log.
 
 ## Known Issues or Limitations
 

@@ -39,6 +39,39 @@ export const foodItemDtoSchema = z
 
 export type FoodItemDto = z.infer<typeof foodItemDtoSchema>;
 
+export const userShareDtoSchema = z
+  .object({
+    userId: z.string().describe('CUID2 identifier of the inventory owner'),
+    sharedWithUserId: z
+      .string()
+      .describe('CUID2 identifier of the user the inventory is shared with'),
+    sharedAt: z
+      .date()
+      .describe('Timestamp the inventory was shared (ISO 8601)'),
+  })
+  .brand('UserShareDto');
+
+export type UserShareDto = z.infer<typeof userShareDtoSchema>;
+
+export const sharedInventoryDtoSchema = z
+  .object({
+    userId: z.string().describe('CUID2 identifier of the inventory owner'),
+    username: z
+      .string()
+      .describe('Username of the inventory owner, used as the display label'),
+    sharedAt: z
+      .date()
+      .describe('Timestamp the inventory was shared (ISO 8601)'),
+  })
+  .brand('SharedInventoryDto');
+
+export type SharedInventoryDto = z.infer<typeof sharedInventoryDtoSchema>;
+
+export const createdShareResponseSchema = z.object({
+  success: z.literal(true).describe('Always true when the share was created'),
+  data: userShareDtoSchema.describe('The newly created inventory share'),
+});
+
 export const userDtoSchema = z
   .object({
     id: z.string().describe('User CUID2 identifier'),
@@ -49,15 +82,17 @@ export const userDtoSchema = z
 
 export type UserDto = z.infer<typeof userDtoSchema>;
 
-export const wsTokenResponseSchema = z
+export const wsTicketResponseSchema = z
   .object({
-    token: z
+    ticket: z
       .string()
-      .describe('Connection token to pass as the token query parameter of /ws'),
+      .describe(
+        'Single-use ticket to pass as the ticket query parameter of /ws',
+      ),
   })
-  .brand('WsTokenResponse');
+  .brand('WsTicketResponse');
 
-export type WsTokenResponse = z.infer<typeof wsTokenResponseSchema>;
+export type WsTicketResponse = z.infer<typeof wsTicketResponseSchema>;
 
 export const authResponseSchema = z.object({
   user: userDtoSchema.describe('The authenticated user'),

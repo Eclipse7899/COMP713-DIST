@@ -1,12 +1,13 @@
-import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
+import { PrismaClientKnownRequestError } from "@prisma/client/runtime/client";
 import type {
   Food,
   FoodCategory,
   FoodItem,
   FoodUnit,
   PrismaClient,
-} from '../generated/prisma/client';
-import type { Result } from '../util';
+  UserShare,
+} from "../generated/prisma/client";
+import type { Result } from "../util";
 
 type FoodItemWithFood = FoodItem & { food: Food };
 
@@ -17,10 +18,10 @@ export interface ItemsRepository {
     quantity: number;
     unit: FoodUnit;
     expiryDate: Date | null;
-  }): Promise<Result<FoodItemWithFood, 'FOOD_NOT_FOUND'>>;
+  }): Promise<Result<FoodItemWithFood, "FOOD_NOT_FOUND">>;
   listByUser(
     userId: string,
-    sort?: 'asc' | 'desc',
+    sort?: "asc" | "desc",
   ): Promise<FoodItemWithFood[]>;
   updateByUser(
     id: string,
@@ -31,7 +32,7 @@ export interface ItemsRepository {
       unit: FoodUnit;
       expiryDate: Date | null;
     },
-  ): Promise<Result<FoodItemWithFood, 'ITEM_NOT_FOUND' | 'FOOD_NOT_FOUND'>>;
+  ): Promise<Result<FoodItemWithFood, "ITEM_NOT_FOUND" | "FOOD_NOT_FOUND">>;
   deleteByUser(id: string, userId: string): Promise<boolean>;
   filterByUser(
     userId: string,
@@ -39,11 +40,22 @@ export interface ItemsRepository {
       categories?: FoodCategory[];
       expiresBefore?: Date | null;
       name_contains?: string | null;
-      sort?: 'asc' | 'desc';
+      sort?: "asc" | "desc";
     },
   ): Promise<FoodItemWithFood[]>;
 
   findById(id: string): Promise<FoodItemWithFood | null>;
+  findShare(
+    ownerId: string,
+    sharedWithUserId: string,
+  ): Promise<UserShare | null>;
+  listSharesByOwner(ownerId: string): Promise<UserShare[]>;
+  listSharesForUser(sharedWithUserId: string): Promise<UserShare[]>;
+  createShare(
+    ownerId: string,
+    sharedWithUserId: string,
+  ): Promise<Result<UserShare, "USER_NOT_FOUND" | "ALREADY_SHARED">>;
+  deleteShare(ownerId: string, sharedWithUserId: string): Promise<boolean>;
 }
 
 export class ItemsRepo implements ItemsRepository {
@@ -62,7 +74,7 @@ export class ItemsRepo implements ItemsRepository {
     quantity: number;
     unit: FoodUnit;
     expiryDate: Date | null;
-  }): Promise<Result<FoodItem & { food: Food }, 'FOOD_NOT_FOUND'>> {
+  }): Promise<Result<FoodItem & { food: Food }, "FOOD_NOT_FOUND">> {
     try {
       const foodItem = await this.prisma.foodItem.create({
         data: {
@@ -80,10 +92,10 @@ export class ItemsRepo implements ItemsRepository {
       };
     } catch (error: any) {
       if (error instanceof PrismaClientKnownRequestError) {
-        if (error.code === 'P2003') {
+        if (error.code === "P2003") {
           return {
             success: false,
-            error: 'FOOD_NOT_FOUND',
+            error: "FOOD_NOT_FOUND",
           };
         }
       }
@@ -93,7 +105,7 @@ export class ItemsRepo implements ItemsRepository {
 
   async listByUser(
     userId: string,
-    sort: 'asc' | 'desc' = 'asc',
+    sort: "asc" | "desc" = "asc",
   ): Promise<(FoodItem & { food: Food })[]> {
     return await this.prisma.foodItem.findMany({
       where: { userId },
@@ -112,7 +124,7 @@ export class ItemsRepo implements ItemsRepository {
       expiryDate: Date | null;
     },
   ): Promise<
-    Result<FoodItem & { food: Food }, 'ITEM_NOT_FOUND' | 'FOOD_NOT_FOUND'>
+    Result<FoodItem & { food: Food }, "ITEM_NOT_FOUND" | "FOOD_NOT_FOUND">
   > {
     try {
       const batch = await this.prisma.foodItem.updateManyAndReturn({
@@ -129,14 +141,14 @@ export class ItemsRepo implements ItemsRepository {
       }
       return {
         success: false,
-        error: 'ITEM_NOT_FOUND',
+        error: "ITEM_NOT_FOUND",
       };
     } catch (error: any) {
       if (error instanceof PrismaClientKnownRequestError) {
-        if (error.code === 'P2003') {
+        if (error.code === "P2003") {
           return {
             success: false,
-            error: 'FOOD_NOT_FOUND',
+            error: "FOOD_NOT_FOUND",
           };
         }
       }
@@ -157,7 +169,7 @@ export class ItemsRepo implements ItemsRepository {
       categories?: FoodCategory[];
       expiresBefore?: Date | null;
       name_contains?: string | null;
-      sort?: 'asc' | 'desc';
+      sort?: "asc" | "desc";
     },
   ) {
     const whereClause: any = { userId };
@@ -170,14 +182,74 @@ export class ItemsRepo implements ItemsRepository {
     if (data.name_contains) {
       whereClause.food = {
         ...whereClause.food,
-        name: { contains: data.name_contains, mode: 'insensitive' },
+        name: { contains: data.name_contains, mode: "insensitive" },
       };
     }
 
     return this.prisma.foodItem.findMany({
       where: whereClause,
       include: { food: true },
-      orderBy: { expiryDate: data.sort ? data.sort : 'asc' },
+      orderBy: { expiryDate: data.sort ? data.sort : "asc" },
     });
+  }
+
+  findShare(
+    ownerId: string,
+    sharedWithUserId: string,
+  ): Promise<UserShare | null> {
+    return this.prisma.userShare.findUnique({
+      where: {
+        userId_sharedWithUserId: {
+          userId: ownerId,
+          sharedWithUserId,
+        },
+      },
+    });
+  }
+
+  listSharesByOwner(ownerId: string): Promise<UserShare[]> {
+    return this.prisma.userShare.findMany({
+      where: { userId: ownerId },
+      orderBy: { sharedAt: "desc" },
+    });
+  }
+
+  listSharesForUser(sharedWithUserId: string): Promise<UserShare[]> {
+    return this.prisma.userShare.findMany({
+      where: { sharedWithUserId },
+      orderBy: { sharedAt: "desc" },
+    });
+  }
+
+  async createShare(
+    ownerId: string,
+    sharedWithUserId: string,
+  ): Promise<Result<UserShare, "USER_NOT_FOUND" | "ALREADY_SHARED">> {
+    try {
+      const share = await this.prisma.userShare.create({
+        data: { userId: ownerId, sharedWithUserId },
+      });
+      return { success: true, data: share };
+    } catch (error: any) {
+      if (error instanceof PrismaClientKnownRequestError) {
+        if (error.code === "P2003") {
+          return { success: false, error: "USER_NOT_FOUND" };
+        }
+        if (error.code === "P2002") {
+          return { success: false, error: "ALREADY_SHARED" };
+        }
+      }
+      throw error;
+    }
+  }
+
+  async deleteShare(
+    ownerId: string,
+    sharedWithUserId: string,
+  ): Promise<boolean> {
+    const batch = await this.prisma.userShare.deleteMany({
+      where: { userId: ownerId, sharedWithUserId },
+    });
+    return batch.count !== 0;
   }
 }

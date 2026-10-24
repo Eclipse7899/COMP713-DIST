@@ -105,6 +105,33 @@ describe('AuthService', () => {
     });
   });
 
+  it('gets a user by normalized email address', async () => {
+    mocked(userRepo.findUserByEmail).mockResolvedValue(user);
+
+    await expect(
+      service.getUserByEmail(`  ${USER_EMAIL.toUpperCase()}  `),
+    ).resolves.toEqual({
+      success: true,
+      data: {
+        id: user.id,
+        email: user.email,
+        username: user.username,
+      },
+    });
+    expect(userRepo.findUserByEmail).toHaveBeenCalledWith(USER_EMAIL);
+  });
+
+  it('rejects getting a user by an unknown email address', async () => {
+    mocked(userRepo.findUserByEmail).mockResolvedValue(null);
+
+    await expect(
+      service.getUserByEmail('missing@example.com'),
+    ).resolves.toEqual({
+      success: false,
+      error: 'NOT_FOUND',
+    });
+  });
+
   it('signs in with valid credentials', async () => {
     const hashedPassword = await hashPassword(PASSWORD);
     mocked(userRepo.findUserByEmail).mockResolvedValue({
