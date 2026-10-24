@@ -63,6 +63,15 @@ describe('FoodService', () => {
       category: food.category,
       createdByUserId: USER_ID,
     });
+    expect(realtime.broadcast).toHaveBeenCalledWith(USER_ID, {
+      type: 'food.created',
+      data: {
+        id: food.id,
+        name: food.name,
+        category: food.category,
+        createdByUserId: food.createdByUserId,
+      },
+    });
   });
 
   it('maps food visible to a user', async () => {
@@ -82,6 +91,7 @@ describe('FoodService', () => {
       USER_ID,
       FoodCategory.FRUIT,
     );
+    expect(realtime.broadcast).not.toHaveBeenCalled();
   });
 
   it('does not update food owned by another user', async () => {
@@ -94,6 +104,7 @@ describe('FoodService', () => {
       error: UNAUTHORIZED_ERROR,
     });
     expect(foodRepo.updateForUser).not.toHaveBeenCalled();
+    expect(realtime.broadcast).not.toHaveBeenCalled();
   });
 
   it('updates owned food', async () => {
@@ -119,6 +130,15 @@ describe('FoodService', () => {
         createdByUserId: food.createdByUserId,
       },
     });
+    expect(realtime.broadcast).toHaveBeenCalledWith(USER_ID, {
+      type: 'food.updated',
+      data: {
+        id: food.id,
+        name: UPDATED_FOOD_NAME,
+        category: food.category,
+        createdByUserId: food.createdByUserId,
+      },
+    });
   });
 
   it('does not delete food owned by another user', async () => {
@@ -129,6 +149,39 @@ describe('FoodService', () => {
       error: UNAUTHORIZED_ERROR,
     });
     expect(foodRepo.deleteForUser).not.toHaveBeenCalled();
+    expect(realtime.broadcast).not.toHaveBeenCalled();
+  });
+
+  it('deletes owned food and broadcasts food.deleted', async () => {
+    mocked(foodRepo.findById).mockResolvedValue(food);
+    mocked(foodRepo.deleteForUser).mockResolvedValue({
+      success: true,
+      data: undefined,
+    });
+
+    await expect(service.deleteFood(food.id, USER_ID)).resolves.toEqual({
+      success: true,
+      data: undefined,
+    });
+    expect(foodRepo.deleteForUser).toHaveBeenCalledWith(food.id, USER_ID);
+    expect(realtime.broadcast).toHaveBeenCalledWith(USER_ID, {
+      type: 'food.deleted',
+      data: { id: food.id },
+    });
+  });
+
+  it('does not broadcast when the repository refuses the delete', async () => {
+    mocked(foodRepo.findById).mockResolvedValue(food);
+    mocked(foodRepo.deleteForUser).mockResolvedValue({
+      success: false,
+      error: NOT_FOUND_ERROR,
+    });
+
+    await expect(service.deleteFood(food.id, USER_ID)).resolves.toEqual({
+      success: false,
+      error: NOT_FOUND_ERROR,
+    });
+    expect(realtime.broadcast).not.toHaveBeenCalled();
   });
 
   it('returns NOT_FOUND for an unknown food id', async () => {

@@ -8,6 +8,7 @@ import type { AuthService } from '../../../src/services/auth.service';
 import { FoodCategory, FoodUnit } from '../../../src/generated/prisma/enums';
 import {
   foodItemDtoSchema,
+  sharedInventoryDtoSchema,
   userDtoSchema,
   userShareDtoSchema,
 } from '../../../src/schemas';
@@ -55,6 +56,11 @@ const share = {
 
 const expectedItem = foodItemDtoSchema.parse(item);
 const expectedShare = userShareDtoSchema.parse(share);
+const expectedSharedInventory = sharedInventoryDtoSchema.parse({
+  userId: USER_ID,
+  username: 'owner',
+  sharedAt: share.sharedAt,
+});
 
 describe('ItemsService', () => {
   let itemsRepo: ItemsRepository;
@@ -114,6 +120,10 @@ describe('ItemsService', () => {
       success: true,
       data: expectedItem,
     });
+    expect(realtime.broadcast).toHaveBeenCalledWith(USER_ID, {
+      type: 'item.created',
+      data: expectedItem,
+    });
   });
 
   it('rejects creating an item for another user', async () => {
@@ -129,6 +139,7 @@ describe('ItemsService', () => {
       error: FORBIDDEN_ERROR,
     });
     expect(itemsRepo.create).not.toHaveBeenCalled();
+    expect(realtime.broadcast).not.toHaveBeenCalled();
   });
 
   it('rejects creating an item for another user’s food', async () => {
@@ -149,6 +160,7 @@ describe('ItemsService', () => {
       error: UNAUTHORIZED_FOOD_ERROR,
     });
     expect(itemsRepo.create).not.toHaveBeenCalled();
+    expect(realtime.broadcast).not.toHaveBeenCalled();
   });
 
   it('uses listByUser when no filters are supplied', async () => {
@@ -160,6 +172,7 @@ describe('ItemsService', () => {
     });
     expect(itemsRepo.listByUser).toHaveBeenCalledWith(USER_ID);
     expect(itemsRepo.filterByUser).not.toHaveBeenCalled();
+    expect(realtime.broadcast).not.toHaveBeenCalled();
   });
 
   it('uses filterByUser when filters are supplied', async () => {
@@ -220,6 +233,38 @@ describe('ItemsService', () => {
       success: false,
       error: FOOD_NOT_FOUND_ERROR,
     });
+    expect(realtime.broadcast).not.toHaveBeenCalled();
+  });
+
+  it('updates an owned item and broadcasts item.updated', async () => {
+    const updatedItem = { ...item, quantity: 5 };
+    mocked(foodRepo.findById).mockResolvedValue(food);
+    mocked(itemsRepo.updateByUser).mockResolvedValue({
+      success: true,
+      data: updatedItem,
+    });
+
+    await expect(
+      service.updateItem(USER_ID, USER_ID, item.id, {
+        foodId: updatedItem.foodId,
+        quantity: updatedItem.quantity,
+        unit: updatedItem.unit,
+        expiryDate: updatedItem.expiryDate,
+      }),
+    ).resolves.toEqual({
+      success: true,
+      data: foodItemDtoSchema.parse(updatedItem),
+    });
+    expect(itemsRepo.updateByUser).toHaveBeenCalledWith(item.id, USER_ID, {
+      foodId: updatedItem.foodId,
+      quantity: updatedItem.quantity,
+      unit: updatedItem.unit,
+      expiryDate: updatedItem.expiryDate,
+    });
+    expect(realtime.broadcast).toHaveBeenCalledWith(USER_ID, {
+      type: 'item.updated',
+      data: foodItemDtoSchema.parse(updatedItem),
+    });
   });
 
   it('rejects updating an item owned by another user', async () => {
@@ -235,6 +280,7 @@ describe('ItemsService', () => {
       error: FORBIDDEN_ERROR,
     });
     expect(itemsRepo.updateByUser).not.toHaveBeenCalled();
+    expect(realtime.broadcast).not.toHaveBeenCalled();
   });
 
   it('delegates item deletion to the repository', async () => {
@@ -248,6 +294,23 @@ describe('ItemsService', () => {
       data: true,
     });
     expect(itemsRepo.deleteByUser).toHaveBeenCalledWith(item.id, USER_ID);
+    expect(realtime.broadcast).toHaveBeenCalledWith(USER_ID, {
+      type: 'item.deleted',
+      data: { id: item.id },
+    });
+  });
+
+  it('does not broadcast when the repository refuses the delete', async () => {
+    mocked(itemsRepo.findById).mockResolvedValue(item);
+    mocked(itemsRepo.deleteByUser).mockResolvedValue(false);
+
+    await expect(
+      service.removeItem(USER_ID, USER_ID, item.id),
+    ).resolves.toEqual({
+      success: false,
+      error: 'ITEM_NOT_FOUND',
+    });
+    expect(realtime.broadcast).not.toHaveBeenCalled();
   });
 
   it('rejects deleting an item owned by another user', async () => {
@@ -258,6 +321,7 @@ describe('ItemsService', () => {
       error: FORBIDDEN_ERROR,
     });
     expect(itemsRepo.deleteByUser).not.toHaveBeenCalled();
+    expect(realtime.broadcast).not.toHaveBeenCalled();
   });
 
   it('lists shares owned by the authenticated user', async () => {
@@ -319,6 +383,14 @@ describe('ItemsService', () => {
         username: 'other',
       }),
     });
+    mocked(authService.getUser).mockResolvedValue({
+      success: true,
+      data: userDtoSchema.parse({
+        id: USER_ID,
+        email: 'owner@example.com',
+        username: 'owner',
+      }),
+    });
     mocked(itemsRepo.findShare).mockResolvedValue(null);
     mocked(itemsRepo.createShare).mockResolvedValue({
       success: true,
@@ -333,6 +405,10 @@ describe('ItemsService', () => {
     });
     expect(authService.getUserByEmail).toHaveBeenCalledWith(OTHER_USER_EMAIL);
     expect(itemsRepo.createShare).toHaveBeenCalledWith(USER_ID, OTHER_USER_ID);
+    expect(realtime.broadcast).toHaveBeenCalledWith(OTHER_USER_ID, {
+      type: 'share.created',
+      data: expectedSharedInventory,
+    });
   });
 
   it('rejects sharing inventory with yourself', async () => {
@@ -410,6 +486,10 @@ describe('ItemsService', () => {
       data: true,
     });
     expect(itemsRepo.deleteShare).toHaveBeenCalledWith(USER_ID, OTHER_USER_ID);
+    expect(realtime.broadcast).toHaveBeenCalledWith(OTHER_USER_ID, {
+      type: 'share.deleted',
+      data: { userId: USER_ID },
+    });
   });
 
   it('rejects removing a share that does not exist', async () => {
@@ -421,6 +501,7 @@ describe('ItemsService', () => {
       success: false,
       error: 'SHARE_NOT_FOUND',
     });
+    expect(realtime.broadcast).not.toHaveBeenCalled();
   });
 
   it('rejects removing another user’s share', async () => {
@@ -431,5 +512,6 @@ describe('ItemsService', () => {
       error: FORBIDDEN_ERROR,
     });
     expect(itemsRepo.deleteShare).not.toHaveBeenCalled();
+    expect(realtime.broadcast).not.toHaveBeenCalled();
   });
 });

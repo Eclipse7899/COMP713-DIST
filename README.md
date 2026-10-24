@@ -251,7 +251,7 @@ The item endpoint supports these optional query parameters:
 
 The API also exposes a WebSocket endpoint that streams inventory changes
 (`item.created`, `item.updated`, `item.deleted`, `food.created`, `food.updated`,
-`food.deleted`) to the authenticated user.
+`food.deleted`, `share.created`, `share.deleted`) to the authenticated user.
 
 | Method | Endpoint         | Auth | Description                                          |
 | ------ | ---------------- | ---- | ---------------------------------------------------- |
