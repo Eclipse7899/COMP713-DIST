@@ -1,10 +1,16 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { parseResponse } from 'hono/client';
 import FoodItems from '../Components/FoodItems';
 import FoodTypes from '../Components/FoodTypes';
 import ShareStock from '../Components/ShareStock';
-import { getClient } from '../client';
-import type { SharedInventory } from '../models';
+import ErrorMessage from '../Components/ErrorMessage';
+import { getClient, getWebSocketClient } from '../client';
+import type {
+  RealtimeEvent,
+  RealtimeListener,
+  RealtimeSubscribe,
+  SharedInventory,
+} from '../models';
 
 type TabType = 'items' | 'food' | 'share';
 
@@ -13,8 +19,67 @@ export default function DashboardPage() {
   const [selectedSharedStock, setSelectedSharedStock] =
     useState<SharedInventory | null>(null);
   const [sharedStocks, setSharedStocks] = useState<SharedInventory[]>([]);
+  const [error, setError] = useState('');
 
   const client = useMemo(() => getClient(), []);
+  const realtimeListeners = useRef(new Set<RealtimeListener>());
+
+  const subscribe = useCallback<RealtimeSubscribe>((listener) => {
+    realtimeListeners.current.add(listener);
+    return () => {
+      realtimeListeners.current.delete(listener);
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    let socket: WebSocket | null = null;
+
+    getWebSocketClient(client).then((ws) => {
+      if (typeof ws === 'string') {
+        if (!cancelled) {
+          setError(ws);
+        }
+        return;
+      }
+
+      if (cancelled) {
+        ws.close();
+        return;
+      }
+
+      socket = ws;
+      ws.onmessage = (event) => {
+        const realtimeEvent = JSON.parse(event.data) as RealtimeEvent;
+
+        if (realtimeEvent.type === 'share.created') {
+          const sharedStock = realtimeEvent.data;
+          setSharedStocks((current) =>
+            current.some((stock) => stock.userId === sharedStock.userId)
+              ? current
+              : [...current, sharedStock],
+          );
+        } else if (realtimeEvent.type === 'share.deleted') {
+          const { userId } = realtimeEvent.data;
+          setSharedStocks((current) =>
+            current.filter((stock) => stock.userId !== userId),
+          );
+          setSelectedSharedStock((current) =>
+            current?.userId === userId ? null : current,
+          );
+        }
+
+        for (const listener of realtimeListeners.current) {
+          listener(realtimeEvent);
+        }
+      };
+    });
+
+    return () => {
+      cancelled = true;
+      socket?.close();
+    };
+  }, [client]);
 
   useEffect(() => {
     let cancelled = false;
@@ -50,6 +115,8 @@ export default function DashboardPage() {
           Manage your food stock, categories, and sharing in one place.
         </p>
       </div>
+
+      <ErrorMessage message={error} />
 
       <div className="flex flex-col md:flex-row gap-8 items-start">
         <nav className="w-full md:w-56 shrink-0 flex flex-col gap-2 p-1.5 bg-(--bg) border border-(--border) rounded-xl shadow-sm">
@@ -119,12 +186,13 @@ export default function DashboardPage() {
                 key={selectedSharedStock.userId}
                 ownerId={selectedSharedStock.userId}
                 readOnly
+                realtime={subscribe}
               />
             </div>
           ) : activeTab === 'items' ? (
-            <FoodItems />
+            <FoodItems realtime={subscribe} />
           ) : activeTab === 'food' ? (
-            <FoodTypes />
+            <FoodTypes realtime={subscribe} />
           ) : (
             <ShareStock />
           )}

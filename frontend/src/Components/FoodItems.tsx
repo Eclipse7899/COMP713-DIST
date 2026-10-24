@@ -1,7 +1,6 @@
-import * as React from 'react';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { parseResponse } from 'hono/client';
-import { getClient, getWebSocketClient } from '../client';
+import { getClient } from '../client';
 import { getAuthentication, titleCase } from '../util';
 import FoodItemBox from './FoodItemBox';
 import AddFoodItemForm from './Forms/AddFoodItemForm.tsx';
@@ -12,15 +11,18 @@ import {
   type FoodCategory,
   type FoodItem,
   type FoodType,
+  type RealtimeSubscribe,
 } from '../models.ts';
 import { getApiErrorMessage } from '../apiError';
 
 export default function FoodItems({
   ownerId,
   readOnly = false,
+  realtime,
 }: {
   ownerId?: string;
   readOnly?: boolean;
+  realtime?: RealtimeSubscribe;
 } = {}) {
   const [items, setItems] = useState<FoodItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -53,33 +55,27 @@ export default function FoodItems({
     setFoodTypes(res);
   }, [client]);
 
-  const connectWs = useCallback(async () => {
-    getWebSocketClient(client).then((ws) => {
-      if (ws instanceof WebSocket) {
-        ws.onmessage = (event) => {
-          const raw = JSON.parse(event.data);
-          const type = raw.type;
-          const data = raw.data;
+  useEffect(() => {
+    if (readOnly || !realtime) {
+      return;
+    }
 
-          if (type === 'item.created') {
-            setItems((current) => [...current, data]);
-          } else if (type === 'item.updated') {
-            setItems((current) =>
-              current.map((item) => (item.id === data.id ? data : item)),
-            );
-          } else if (type === 'item.deleted') {
-            setItems((current) =>
-              current.filter((item) => item.id !== data.id),
-            );
-          }
-        };
-      }
-      if (typeof ws === 'string') {
-        setError(ws);
-        return;
+    return realtime((event) => {
+      if (event.type === 'item.created') {
+        setItems((current) => [...current, event.data]);
+      } else if (event.type === 'item.updated') {
+        setItems((current) =>
+          current.map((item) =>
+            item.id === event.data.id ? event.data : item,
+          ),
+        );
+      } else if (event.type === 'item.deleted') {
+        setItems((current) =>
+          current.filter((item) => item.id !== event.data.id),
+        );
       }
     });
-  }, [client]);
+  }, [readOnly, realtime]);
 
   const loadItems = useCallback(
     async ({
@@ -167,11 +163,8 @@ export default function FoodItems({
     });
   };
 
-  React.useEffect(() => {
+  useEffect(() => {
     loadItemsOnMount();
-    if (!readOnly) {
-      connectWs();
-    }
   }, []);
 
   const deleteItem = async (id: string) => {

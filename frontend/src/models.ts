@@ -16,6 +16,19 @@ export type SharedInventory = InferResponseType<
   200
 >[number];
 
+export type RealtimeEvent =
+  | { type: 'item.created'; data: FoodItem }
+  | { type: 'item.updated'; data: FoodItem }
+  | { type: 'item.deleted'; data: { id: string } }
+  | { type: 'food.created'; data: FoodType }
+  | { type: 'food.updated'; data: FoodType }
+  | { type: 'food.deleted'; data: { id: string } }
+  | { type: 'share.created'; data: SharedInventory }
+  | { type: 'share.deleted'; data: { userId: string } };
+
+export type RealtimeListener = (event: RealtimeEvent) => void;
+export type RealtimeSubscribe = (listener: RealtimeListener) => () => void;
+
 export type AddFoodType = InferRequestType<
   typeof typeClient.api.food.$post
 >['json'];

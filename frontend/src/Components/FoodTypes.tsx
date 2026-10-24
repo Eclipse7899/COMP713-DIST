@@ -1,14 +1,18 @@
 import * as React from 'react';
-import { useCallback, useEffect } from 'react';
+import { useEffect } from 'react';
 import { parseResponse } from 'hono/client';
-import type { EditFoodType, FoodType } from '../models';
-import { getClient, getWebSocketClient } from '../client';
+import type { EditFoodType, FoodType, RealtimeSubscribe } from '../models';
+import { getClient } from '../client';
 import { AddFoodTypeForm } from './Forms/AddFoodTypeForm.tsx';
 import FoodTypeBox from './FoodTypeBox';
 import ErrorMessage from './ErrorMessage';
 import { getApiErrorMessage } from '../apiError';
 
-export default function FoodTypes() {
+export default function FoodTypes({
+  realtime,
+}: {
+  realtime?: RealtimeSubscribe;
+} = {}) {
   const [types, setTypes] = React.useState<FoodType[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState('');
@@ -44,33 +48,27 @@ export default function FoodTypes() {
     setTypes((current) => current.filter((type) => type.id !== id));
   };
 
-  const connectWs = useCallback(async () => {
-    getWebSocketClient(client).then((ws) => {
-      if (ws instanceof WebSocket) {
-        ws.onmessage = (event) => {
-          const raw = JSON.parse(event.data);
-          const type = raw.type;
-          const data = raw.data;
+  useEffect(() => {
+    if (!realtime) {
+      return;
+    }
 
-          if (type === 'food.created') {
-            setTypes((current) => [...current, data]);
-          } else if (type === 'food.updated') {
-            setTypes((current) =>
-              current.map((type) => (type.id === data.id ? data : type)),
-            );
-          } else if (type === 'food.deleted') {
-            setTypes((current) =>
-              current.filter((type) => type.id !== data.id),
-            );
-          }
-        };
-      }
-      if (typeof ws === 'string') {
-        setError(ws);
-        return;
+    return realtime((event) => {
+      if (event.type === 'food.created') {
+        setTypes((current) => [...current, event.data]);
+      } else if (event.type === 'food.updated') {
+        setTypes((current) =>
+          current.map((type) =>
+            type.id === event.data.id ? event.data : type,
+          ),
+        );
+      } else if (event.type === 'food.deleted') {
+        setTypes((current) =>
+          current.filter((type) => type.id !== event.data.id),
+        );
       }
     });
-  }, []);
+  }, [realtime]);
 
   const editType = async (id: string, form: EditFoodType) => {
     setError('');
@@ -86,7 +84,6 @@ export default function FoodTypes() {
 
   useEffect(() => {
     loadTypes();
-    connectWs();
   }, []);
 
   if (addTypeModalOpen) {
