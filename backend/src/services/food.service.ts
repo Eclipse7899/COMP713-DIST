@@ -92,11 +92,14 @@ export class FoodService {
         error: 'UNAUTHORIZED',
       };
     }
-    this.realtime.broadcast(userId, {
-      type: 'food.deleted',
-      data: existing,
-    });
-    return await this.foodRepo.deleteForUser(id, userId);
+    const deleted = await this.foodRepo.deleteForUser(id, userId);
+    if (deleted.success) {
+      this.realtime.broadcast(userId, {
+        type: 'food.deleted',
+        data: { id: existing.id },
+      });
+    }
+    return deleted;
   }
 
   async getFoodById(id: string): Promise<Result<FoodDto, 'NOT_FOUND'>> {

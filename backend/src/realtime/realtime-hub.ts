@@ -1,4 +1,4 @@
-import type { FoodDto, FoodItemDto } from '../schemas';
+import type { FoodDto, FoodItemDto, SharedInventoryDto } from '../schemas';
 
 export type Event<T, K> = {
   type: T;
@@ -11,7 +11,9 @@ export type ServerEvent =
   | Event<'item.deleted', { id: string }>
   | Event<'food.created', FoodDto>
   | Event<'food.updated', FoodDto>
-  | Event<'food.deleted', { id: string }>;
+  | Event<'food.deleted', { id: string }>
+  | Event<'share.created', SharedInventoryDto>
+  | Event<'share.deleted', { userId: string }>;
 
 export type ServerCallback = (event: ServerEvent) => void;
 
