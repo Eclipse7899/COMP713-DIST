@@ -1,6 +1,9 @@
 services:
   auth:
     image: auth-service:latest
+    build:
+      context: .
+      dockerfile: ./auth-service/Dockerfile
     ports:
       - "5051:5051"
     environment:
@@ -20,6 +23,9 @@ services:
 
   frontend:
     image: frontend:latest
+    build:
+      context: .
+      dockerfile: ./frontend/Dockerfile
     ports:
       - "80:80"
     volumes:
@@ -34,6 +40,9 @@ services:
 
   backend:
     image: backend:latest
+    build:
+      context: .
+      dockerfile: ./backend/Dockerfile
     ports:
       - "3000:3000"
     environment:
