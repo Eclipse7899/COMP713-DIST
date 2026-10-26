@@ -92,10 +92,11 @@ export function getApiErrorMessage(
       }
       return `We couldn't ${context} because it conflicts with existing data.`;
     case 500:
+      return `We couldn't ${context} because the server encountered an error. Please try again.`;
     case 502:
     case 503:
     case 504:
-      return 'The services is temporarily unavailable. Please try again in a moment.';
+      return 'The service is temporarily unavailable. Please try again in a moment.';
     default:
       return `We couldn't ${context}. Please try again.`;
   }

@@ -5,6 +5,7 @@ import FoodTypes from '../Components/FoodTypes';
 import ShareStock from '../Components/ShareStock';
 import ErrorMessage from '../Components/ErrorMessage';
 import { getClient, getWebSocketClient } from '../client';
+import { getApiErrorMessage } from '../apiError';
 import type {
   RealtimeEvent,
   RealtimeListener,
@@ -49,6 +50,13 @@ export default function DashboardPage() {
       }
 
       socket = ws;
+      ws.onerror = () => {
+        if (!cancelled) {
+          setError(
+            'Live updates are temporarily unavailable. Refresh the page to reconnect.',
+          );
+        }
+      };
       ws.onmessage = (event) => {
         const realtimeEvent = JSON.parse(event.data) as RealtimeEvent;
 
@@ -90,9 +98,9 @@ export default function DashboardPage() {
           setSharedStocks(shares);
         }
       })
-      .catch(() => {
+      .catch((error: unknown) => {
         if (!cancelled) {
-          setSharedStocks([]);
+          setError(getApiErrorMessage(error, 'load shared inventories'));
         }
       });
 

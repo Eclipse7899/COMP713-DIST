@@ -32,7 +32,12 @@ export async function getWebSocketClient(
   if (!ticket) {
     return 'No ticket received for websocket connection';
   }
-  return new WebSocket(
-    client.api.ws.$url() + `?ticket=${encodeURIComponent(ticket)}`,
-  );
+
+  try {
+    return new WebSocket(
+      client.api.ws.$url() + `?ticket=${encodeURIComponent(ticket)}`,
+    );
+  } catch {
+    return 'Live updates are temporarily unavailable. Refresh the page to reconnect.';
+  }
 }
