@@ -38,6 +38,6 @@ export async function getWebSocketClient(
       client.api.ws.$url() + `?ticket=${encodeURIComponent(ticket)}`,
     );
   } catch {
-    return 'Live updates are temporarily unavailable. Refresh the page to reconnect.';
+    return 'Live updates are temporarily unavailable. Reconnecting...';
   }
 }

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { parseResponse } from 'hono/client';
 import { getClient } from '../client';
 import { getAuthentication, titleCase } from '../util';
@@ -54,28 +54,6 @@ export default function FoodItems({
 
     setFoodTypes(res);
   }, [client]);
-
-  useEffect(() => {
-    if (readOnly || !realtime) {
-      return;
-    }
-
-    return realtime((event) => {
-      if (event.type === 'item.created') {
-        setItems((current) => [...current, event.data]);
-      } else if (event.type === 'item.updated') {
-        setItems((current) =>
-          current.map((item) =>
-            item.id === event.data.id ? event.data : item,
-          ),
-        );
-      } else if (event.type === 'item.deleted') {
-        setItems((current) =>
-          current.filter((item) => item.id !== event.data.id),
-        );
-      }
-    });
-  }, [readOnly, realtime]);
 
   const loadItems = useCallback(
     async ({
@@ -153,6 +131,42 @@ export default function FoodItems({
     loadItems();
     loadFoodTypes();
   }, [loadItems, loadFoodTypes]);
+
+  const reloadRef = useRef(loadItemsOnMount);
+  useEffect(() => {
+    reloadRef.current = loadItemsOnMount;
+  }, [loadItemsOnMount]);
+
+  useEffect(() => {
+    if (!realtime) {
+      return;
+    }
+
+    return realtime((event) => {
+      if (event.type === 'reconnected') {
+        void reloadRef.current();
+        return;
+      }
+
+      if (readOnly) {
+        return;
+      }
+
+      if (event.type === 'item.created') {
+        setItems((current) => [...current, event.data]);
+      } else if (event.type === 'item.updated') {
+        setItems((current) =>
+          current.map((item) =>
+            item.id === event.data.id ? event.data : item,
+          ),
+        );
+      } else if (event.type === 'item.deleted') {
+        setItems((current) =>
+          current.filter((item) => item.id !== event.data.id),
+        );
+      }
+    });
+  }, [readOnly, realtime]);
 
   const filterItems = async () => {
     await loadItems({

@@ -1,26 +1,26 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { parseResponse } from 'hono/client';
-import FoodItems from '../Components/FoodItems';
-import FoodTypes from '../Components/FoodTypes';
-import ShareStock from '../Components/ShareStock';
-import ErrorMessage from '../Components/ErrorMessage';
-import { getClient, getWebSocketClient } from '../client';
-import { getApiErrorMessage } from '../apiError';
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { parseResponse } from "hono/client";
+import FoodItems from "../Components/FoodItems";
+import FoodTypes from "../Components/FoodTypes";
+import ShareStock from "../Components/ShareStock";
+import ErrorMessage from "../Components/ErrorMessage";
+import { getClient, getWebSocketClient } from "../client";
+import { getApiErrorMessage } from "../apiError";
 import type {
   RealtimeEvent,
   RealtimeListener,
   RealtimeSubscribe,
   SharedInventory,
-} from '../models';
+} from "../models";
 
-type TabType = 'items' | 'food' | 'share';
+type TabType = "items" | "food" | "share";
 
 export default function DashboardPage() {
-  const [activeTab, setActiveTab] = useState<TabType>('items');
+  const [activeTab, setActiveTab] = useState<TabType>("items");
   const [selectedSharedStock, setSelectedSharedStock] =
     useState<SharedInventory | null>(null);
   const [sharedStocks, setSharedStocks] = useState<SharedInventory[]>([]);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   const client = useMemo(() => getClient(), []);
   const realtimeListeners = useRef(new Set<RealtimeListener>());
@@ -32,42 +32,117 @@ export default function DashboardPage() {
     };
   }, []);
 
+  const loadSharedStocks = useCallback(async () => {
+    const shares = await parseResponse(
+      client.api.items["shared-with-me"].$get(),
+    ).catch((error: unknown) => {
+      setError(getApiErrorMessage(error, "load shared inventories"));
+    });
+
+    if (!shares) {
+      return;
+    }
+
+    setSharedStocks(shares);
+    setSelectedSharedStock((current) =>
+      current && !shares.some((stock) => stock.userId === current.userId)
+        ? null
+        : current,
+    );
+  }, [client]);
+
+  useEffect(() => {
+    void loadSharedStocks();
+  }, [loadSharedStocks]);
+
   useEffect(() => {
     let cancelled = false;
     let socket: WebSocket | null = null;
+    let reconnectTimer: ReturnType<typeof setTimeout> | undefined;
+    let reconnectAttempt = 0;
+    let connectionAttempts = 0;
 
-    getWebSocketClient(client).then((ws) => {
-      if (typeof ws === 'string') {
+    const notifyReconnected = () => {
+      for (const listener of realtimeListeners.current) {
+        listener({ type: "reconnected" });
+      }
+    };
+
+    const scheduleReconnect = () => {
+      if (cancelled || reconnectTimer !== undefined) {
+        return;
+      }
+
+      const delay = Math.min(1000 * 2 ** reconnectAttempt, 30_000);
+      reconnectAttempt += 1;
+
+      reconnectTimer = setTimeout(() => {
+        reconnectTimer = undefined;
+        void connect();
+      }, delay);
+    };
+
+    const connect = async () => {
+      if (cancelled) {
+        return;
+      }
+
+      connectionAttempts += 1;
+
+      let ws: WebSocket | string;
+      try {
+        ws = await getWebSocketClient(client);
+      } catch {
         if (!cancelled) {
-          setError(ws);
+          setError("Live updates are temporarily unavailable. Reconnecting...");
+          scheduleReconnect();
         }
         return;
       }
 
       if (cancelled) {
-        ws.close();
+        if (typeof ws !== "string") {
+          ws.close();
+        }
+        return;
+      }
+
+      if (typeof ws === "string") {
+        setError(ws);
+        scheduleReconnect();
         return;
       }
 
       socket = ws;
+      ws.onopen = () => {
+        if (cancelled) {
+          return;
+        }
+
+        reconnectAttempt = 0;
+        setError("");
+
+        if (connectionAttempts > 1) {
+          void loadSharedStocks();
+          notifyReconnected();
+        }
+      };
       ws.onerror = () => {
         if (!cancelled) {
-          setError(
-            'Live updates are temporarily unavailable. Refresh the page to reconnect.',
-          );
+          setError("Live updates disconnected. Reconnecting...");
         }
       };
       ws.onmessage = (event) => {
         const realtimeEvent = JSON.parse(event.data) as RealtimeEvent;
 
-        if (realtimeEvent.type === 'share.created') {
+        if (realtimeEvent.type === "share.created") {
           const sharedStock = realtimeEvent.data;
           setSharedStocks((current) =>
             current.some((stock) => stock.userId === sharedStock.userId)
               ? current
               : [...current, sharedStock],
           );
-        } else if (realtimeEvent.type === 'share.deleted') {
+        } else if (realtimeEvent.type === "share.deleted") {
           const { userId } = realtimeEvent.data;
           setSharedStocks((current) =>
             current.filter((stock) => stock.userId !== userId),
@@ -81,38 +156,32 @@ export default function DashboardPage() {
           listener(realtimeEvent);
         }
       };
-    });
+      ws.onclose = () => {
+        if (cancelled) {
+          return;
+        }
+
+        socket = null;
+        setError("Live updates disconnected. Reconnecting...");
+        scheduleReconnect();
+      };
+    };
+
+    void connect();
 
     return () => {
       cancelled = true;
+      if (reconnectTimer !== undefined) {
+        clearTimeout(reconnectTimer);
+      }
       socket?.close();
     };
-  }, [client]);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    parseResponse(client.api.items['shared-with-me'].$get())
-      .then((shares) => {
-        if (!cancelled) {
-          setSharedStocks(shares);
-        }
-      })
-      .catch((error: unknown) => {
-        if (!cancelled) {
-          setError(getApiErrorMessage(error, 'load shared inventories'));
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [client]);
+  }, [client, loadSharedStocks]);
 
   const tabs: { label: string; value: TabType }[] = [
-    { label: 'My Stock', value: 'items' },
-    { label: 'My Food Types', value: 'food' },
-    { label: 'Share', value: 'share' },
+    { label: "My Stock", value: "items" },
+    { label: "My Food Types", value: "food" },
+    { label: "Share", value: "share" },
   ];
 
   return (
@@ -142,8 +211,8 @@ export default function DashboardPage() {
                   }}
                   className={`w-full px-4 py-2.5 rounded-lg text-sm font-medium transition-all text-left ${
                     isActive
-                      ? 'bg-(--primary) text-white shadow-sm'
-                      : 'text-(--text) hover:bg-(--secondary)/10 hover:text-(--text-h)'
+                      ? "bg-(--primary) text-white shadow-sm"
+                      : "text-(--text) hover:bg-(--secondary)/10 hover:text-(--text-h)"
                   }`}
                 >
                   {tab.label}
@@ -166,8 +235,8 @@ export default function DashboardPage() {
                     onClick={() => setSelectedSharedStock(stock)}
                     className={`w-full px-4 py-2.5 rounded-lg text-sm font-medium transition-all text-left ${
                       isActive
-                        ? 'bg-(--primary) text-white shadow-sm'
-                        : 'text-(--text) hover:bg-(--secondary)/10 hover:text-(--text-h)'
+                        ? "bg-(--primary) text-white shadow-sm"
+                        : "text-(--text) hover:bg-(--secondary)/10 hover:text-(--text-h)"
                     }`}
                   >
                     {stock.username}&apos;s stock
@@ -197,9 +266,9 @@ export default function DashboardPage() {
                 realtime={subscribe}
               />
             </div>
-          ) : activeTab === 'items' ? (
+          ) : activeTab === "items" ? (
             <FoodItems realtime={subscribe} />
-          ) : activeTab === 'food' ? (
+          ) : activeTab === "food" ? (
             <FoodTypes realtime={subscribe} />
           ) : (
             <ShareStock />

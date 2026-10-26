@@ -19,7 +19,7 @@ export default function FoodTypes({
   const client = React.useMemo(() => getClient(), []);
   const [addTypeModalOpen, setAddTypeModalOpen] = React.useState(false);
 
-  const loadTypes = async () => {
+  const loadTypes = React.useCallback(async () => {
     setLoading(true);
     setError('');
     const res = await parseResponse(client.api.food.$get()).catch(
@@ -33,7 +33,7 @@ export default function FoodTypes({
     }
     setTypes(res);
     setLoading(false);
-  };
+  }, [client]);
 
   const deleteType = async (id: string) => {
     setError('');
@@ -54,7 +54,9 @@ export default function FoodTypes({
     }
 
     return realtime((event) => {
-      if (event.type === 'food.created') {
+      if (event.type === 'reconnected') {
+        void loadTypes();
+      } else if (event.type === 'food.created') {
         setTypes((current) => [...current, event.data]);
       } else if (event.type === 'food.updated') {
         setTypes((current) =>
@@ -68,7 +70,7 @@ export default function FoodTypes({
         );
       }
     });
-  }, [realtime]);
+  }, [realtime, loadTypes]);
 
   const editType = async (id: string, form: EditFoodType) => {
     setError('');
@@ -83,8 +85,8 @@ export default function FoodTypes({
   };
 
   useEffect(() => {
-    loadTypes();
-  }, []);
+    void loadTypes();
+  }, [loadTypes]);
 
   if (addTypeModalOpen) {
     return (
