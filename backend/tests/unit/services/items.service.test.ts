@@ -21,6 +21,7 @@ import type {
 const USER_ID = 'user-1';
 const OTHER_USER_ID = 'other-user';
 const OTHER_USER_EMAIL = 'other@example.com';
+const OTHER_USERNAME = 'other';
 const FOOD_ID = 'food-1';
 const ITEM_ID = 'item-1';
 const FOOD_NAME = 'Apple';
@@ -55,7 +56,10 @@ const share = {
 } satisfies UserShare;
 
 const expectedItem = foodItemDtoSchema.parse(item);
-const expectedShare = userShareDtoSchema.parse(share);
+const expectedShare = userShareDtoSchema.parse({
+  ...share,
+  sharedWithUsername: OTHER_USERNAME,
+});
 const expectedSharedInventory = sharedInventoryDtoSchema.parse({
   userId: USER_ID,
   username: 'owner',
@@ -326,12 +330,34 @@ describe('ItemsService', () => {
 
   it('lists shares owned by the authenticated user', async () => {
     mocked(itemsRepo.listSharesByOwner).mockResolvedValue([share]);
+    mocked(authService.getUser).mockResolvedValue({
+      success: true,
+      data: userDtoSchema.parse({
+        id: OTHER_USER_ID,
+        email: OTHER_USER_EMAIL,
+        username: OTHER_USERNAME,
+      }),
+    });
 
     await expect(service.listShares(USER_ID, USER_ID)).resolves.toEqual({
       success: true,
       data: [expectedShare],
     });
     expect(itemsRepo.listSharesByOwner).toHaveBeenCalledWith(USER_ID);
+    expect(authService.getUser).toHaveBeenCalledWith(OTHER_USER_ID);
+  });
+
+  it('omits shares whose recipient no longer exists', async () => {
+    mocked(itemsRepo.listSharesByOwner).mockResolvedValue([share]);
+    mocked(authService.getUser).mockResolvedValue({
+      success: false,
+      error: 'NOT_FOUND',
+    });
+
+    await expect(service.listShares(USER_ID, USER_ID)).resolves.toEqual({
+      success: true,
+      data: [],
+    });
   });
 
   it('rejects listing shares owned by another user', async () => {
@@ -394,7 +420,7 @@ describe('ItemsService', () => {
     mocked(itemsRepo.findShare).mockResolvedValue(null);
     mocked(itemsRepo.createShare).mockResolvedValue({
       success: true,
-      data: userShareDtoSchema.parse(share),
+      data: share,
     });
 
     await expect(

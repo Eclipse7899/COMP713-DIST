@@ -132,7 +132,7 @@ export function createItemsRoute(itemsService: ItemsService) {
         tags: ['Items'],
         summary: 'List users an inventory is shared with',
         description:
-          'Returns the inventory shares owned by the user in the path. Only the authenticated owner may list their shares. The user identity is taken from the JWT, never from the path.',
+          'Returns the inventory shares owned by the user in the path, including the username of each recipient. Only the authenticated owner may list their shares. The user identity is taken from the JWT, never from the path.',
         security: [{ bearerAuth: [] }],
         parameters: [userIdPathParameter],
         responses: {

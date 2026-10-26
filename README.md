@@ -213,7 +213,9 @@ management, `:userId` must match the authenticated user. Item reads are allowed
 for the owner or for a user the inventory has been shared with. When sharing,
 the recipient is identified by the email address of their auth-service account.
 `GET /api/items/shared-with-me` returns the `userId`, `username`, and `sharedAt`
-of each inventory shared with the authenticated user.
+of each inventory shared with the authenticated user. `GET /api/items/:userId/shared`
+returns the `sharedWithUserId`, `sharedWithUsername`, and `sharedAt` of each
+inventory share owned by the authenticated user.
 
 Share request:
 

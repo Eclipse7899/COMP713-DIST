@@ -45,6 +45,9 @@ export const userShareDtoSchema = z
     sharedWithUserId: z
       .string()
       .describe('CUID2 identifier of the user the inventory is shared with'),
+    sharedWithUsername: z
+      .string()
+      .describe('Username of the user the inventory is shared with'),
     sharedAt: z
       .date()
       .describe('Timestamp the inventory was shared (ISO 8601)'),

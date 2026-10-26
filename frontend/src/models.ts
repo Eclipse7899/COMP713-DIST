@@ -15,6 +15,10 @@ export type SharedInventory = InferResponseType<
   typeof sharedWithMeItems.$get,
   200
 >[number];
+export type SharedUser = InferResponseType<
+  typeof itemsByUser.shared.$get,
+  200
+>[number];
 
 export type RealtimeEvent =
   | { type: "item.created"; data: FoodItem }

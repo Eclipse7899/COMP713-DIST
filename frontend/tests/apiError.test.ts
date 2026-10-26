@@ -53,4 +53,18 @@ describe('getApiErrorMessage', () => {
       ),
     ).toBe('Enter a valid email address');
   });
+
+  it('reports a missing share when removing a shared user', () => {
+    expect(getApiErrorMessage(apiError(404), 'remove shared user')).toBe(
+      'This share could not be found. It may have already been removed.',
+    );
+  });
+
+  it('includes the requested action when loading shared users fails', () => {
+    expect(
+      getApiErrorMessage(new TypeError('Failed to fetch'), 'load shared users'),
+    ).toBe(
+      "We couldn't load shared users. Check your connection and try again.",
+    );
+  });
 });

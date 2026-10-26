@@ -1048,6 +1048,7 @@ describe('Items Endpoints', () => {
       expect(data).toHaveLength(1);
       expect(data[0].userId).toBe(owner.id);
       expect(data[0].sharedWithUserId).toBe(sharedUser.id);
+      expect(data[0].sharedWithUsername).toBe(sharedUser.username);
       expect(data[0]).toHaveProperty('sharedAt');
     });
 
@@ -1142,6 +1143,7 @@ describe('Items Endpoints', () => {
       expect(data.success).toBe(true);
       expect(data.data.userId).toBe(owner.id);
       expect(data.data.sharedWithUserId).toBe(sharedUser.id);
+      expect(data.data.sharedWithUsername).toBe(sharedUser.username);
 
       const dbShare = await db.userShare.findFirst({
         where: { userId: owner.id, sharedWithUserId: sharedUser.id },

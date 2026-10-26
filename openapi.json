@@ -696,7 +696,7 @@
           "Items"
         ],
         "summary": "List users an inventory is shared with",
-        "description": "Returns the inventory shares owned by the user in the path. Only the authenticated owner may list their shares. The user identity is taken from the JWT, never from the path.",
+        "description": "Returns the inventory shares owned by the user in the path, including the username of each recipient. Only the authenticated owner may list their shares. The user identity is taken from the JWT, never from the path.",
         "security": [
           {
             "bearerAuth": []
@@ -732,6 +732,10 @@
                         "type": "string",
                         "description": "CUID2 identifier of the user the inventory is shared with"
                       },
+                      "sharedWithUsername": {
+                        "type": "string",
+                        "description": "Username of the user the inventory is shared with"
+                      },
                       "sharedAt": {
                         "description": "Timestamp the inventory was shared (ISO 8601)",
                         "type": "string",
@@ -741,6 +745,7 @@
                     "required": [
                       "userId",
                       "sharedWithUserId",
+                      "sharedWithUsername",
                       "sharedAt"
                     ]
                   }
@@ -874,6 +879,10 @@
                           "type": "string",
                           "description": "CUID2 identifier of the user the inventory is shared with"
                         },
+                        "sharedWithUsername": {
+                          "type": "string",
+                          "description": "Username of the user the inventory is shared with"
+                        },
                         "sharedAt": {
                           "description": "Timestamp the inventory was shared (ISO 8601)",
                           "type": "string",
@@ -883,6 +892,7 @@
                       "required": [
                         "userId",
                         "sharedWithUserId",
+                        "sharedWithUsername",
                         "sharedAt"
                       ],
                       "description": "The newly created inventory share"

@@ -215,9 +215,27 @@ export class ItemsService {
       };
     }
     const shares = await this.itemsRepo.listSharesByOwner(ownerId);
+    const shareDtos = await Promise.all(
+      shares.map(async (share) => {
+        const recipient = await this.authService.getUser(
+          share.sharedWithUserId,
+        );
+        if (!recipient.success) {
+          return null;
+        }
+        return userShareDtoSchema.parse({
+          userId: share.userId,
+          sharedWithUserId: share.sharedWithUserId,
+          sharedWithUsername: recipient.data.username,
+          sharedAt: share.sharedAt,
+        });
+      }),
+    );
     return {
       success: true,
-      data: shares.map((share) => userShareDtoSchema.parse(share)),
+      data: shareDtos.filter(
+        (share): share is UserShareDto => share !== null,
+      ),
     };
   }
 
@@ -300,7 +318,12 @@ export class ItemsService {
     }
     return {
       success: true,
-      data: userShareDtoSchema.parse(share.data),
+      data: userShareDtoSchema.parse({
+        userId: share.data.userId,
+        sharedWithUserId: share.data.sharedWithUserId,
+        sharedWithUsername: recipient.data.username,
+        sharedAt: share.data.sharedAt,
+      }),
     };
   }
 

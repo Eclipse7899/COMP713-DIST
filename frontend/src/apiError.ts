@@ -12,7 +12,9 @@ type ErrorContext =
   | 'update item'
   | 'delete item'
   | 'load shared inventories'
+  | 'load shared users'
   | 'share inventory'
+  | 'remove shared user'
   | 'ws ticket';
 
 type ErrorDetails = {
@@ -75,6 +77,9 @@ export function getApiErrorMessage(
       }
       if (context === 'share inventory') {
         return 'No account exists with that email address.';
+      }
+      if (context === 'remove shared user') {
+        return 'This share could not be found. It may have already been removed.';
       }
       return `We couldn't ${context} because the requested resource was not found.`;
     case 409:
