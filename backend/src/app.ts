@@ -1,5 +1,7 @@
 import { Hono } from 'hono';
+import { HTTPException } from 'hono/http-exception';
 
+import { isServiceUnavailable } from './errors';
 import { createApi } from './routes';
 import { ItemsService } from './services/items.service';
 import { FoodService } from './services/food.service';
@@ -18,6 +20,17 @@ export function createApp(
   database: PrismaClient,
 ) {
   const app = new Hono();
+
+  app.onError((error, c) => {
+    if (error instanceof HTTPException) {
+      return error.getResponse();
+    }
+    if (isServiceUnavailable(error)) {
+      return c.json({ error: 'Service Unavailable' }, 503);
+    }
+    console.error(error);
+    return c.json({ error: 'Internal Server Error' }, 500);
+  });
 
   const realtime = new RealtimeHub();
 

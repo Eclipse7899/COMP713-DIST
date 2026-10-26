@@ -1,5 +1,6 @@
-import { AuthService } from "../services/service.ts";
-import type { sendUnaryData, ServerUnaryCall } from "@grpc/grpc-js";
+import { AuthService } from '../services/service.ts';
+import { toGrpcError } from '../errors.ts';
+import type { sendUnaryData, ServerUnaryCall } from '@grpc/grpc-js';
 import type {
   AuthServiceServer,
   RegisterRequest,
@@ -9,7 +10,11 @@ import type {
   UserByEmailRequest,
   UserRequest,
   UserResponse,
-} from "../generated/proto/auth.ts";
+} from '../generated/proto/auth.ts';
+
+function fail<T>(callback: sendUnaryData<T>) {
+  return (error: unknown) => callback(toGrpcError(error));
+}
 
 export function createAuthHandlers(
   authService: AuthService,
@@ -24,18 +29,18 @@ export function createAuthHandlers(
           callback(null, {
             payload: {
               error: getUserResponse.error,
-              $case: "error",
+              $case: 'error',
             },
           });
         } else {
           callback(null, {
             payload: {
               user: getUserResponse.data,
-              $case: "user",
+              $case: 'user',
             },
           });
         }
-      });
+      }, fail(callback));
     },
     getUserByEmail(
       call: ServerUnaryCall<UserByEmailRequest, UserResponse>,
@@ -46,18 +51,18 @@ export function createAuthHandlers(
           callback(null, {
             payload: {
               error: getUserResponse.error,
-              $case: "error",
+              $case: 'error',
             },
           });
         } else {
           callback(null, {
             payload: {
               user: getUserResponse.data,
-              $case: "user",
+              $case: 'user',
             },
           });
         }
-      });
+      }, fail(callback));
     },
     register(
       call: ServerUnaryCall<RegisterRequest, RegisterResponse>,
@@ -74,18 +79,18 @@ export function createAuthHandlers(
             callback(null, {
               payload: {
                 error: registerResponse.error,
-                $case: "error",
+                $case: 'error',
               },
             });
           } else {
             callback(null, {
               payload: {
                 success: registerResponse.data,
-                $case: "success",
+                $case: 'success',
               },
             });
           }
-        });
+        }, fail(callback));
     },
     signIn(
       call: ServerUnaryCall<SignInRequest, SignInResponse>,
@@ -97,19 +102,19 @@ export function createAuthHandlers(
           if (!signInResponse.success) {
             callback(null, {
               payload: {
-                error: "Invalid email or password",
-                $case: "error",
+                error: 'Invalid email or password',
+                $case: 'error',
               },
             });
           } else {
             callback(null, {
               payload: {
                 success: signInResponse.data,
-                $case: "success",
+                $case: 'success',
               },
             });
           }
-        });
+        }, fail(callback));
     },
   };
 }
