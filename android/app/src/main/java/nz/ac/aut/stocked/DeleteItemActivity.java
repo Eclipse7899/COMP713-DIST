@@ -26,6 +26,7 @@ public class DeleteItemActivity extends AppCompatActivity {
 
     private ArrayList<String> itemIds = new ArrayList<>();
     private String accessToken;
+    private String userId;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,6 +38,7 @@ public class DeleteItemActivity extends AppCompatActivity {
         deleteItemButton = findViewById(R.id.deleteItemButton);
 
         accessToken = getIntent().getStringExtra("accessToken");
+        userId = getIntent().getStringExtra("userId");
 
         // Disable deletion until the items have loaded
         deleteItemButton.setEnabled(false);
@@ -59,7 +61,7 @@ public class DeleteItemActivity extends AppCompatActivity {
         });
 
 
-        if (accessToken != null) {
+        if (accessToken != null && userId != null) {
             deleteItemStatus.setText("Loading pantry items...");
             new Thread(this::loadItems).start();
         } else {
@@ -71,7 +73,7 @@ public class DeleteItemActivity extends AppCompatActivity {
         HttpURLConnection connection = null;
 
         try {
-            URL url = new URL("http://10.0.2.2:3000/api/items");
+            URL url = new URL("http://10.0.2.2:3000/api/items/" + userId);
             connection = (HttpURLConnection) url.openConnection();
 
             connection.setRequestMethod("GET");
@@ -169,7 +171,7 @@ public class DeleteItemActivity extends AppCompatActivity {
         HttpURLConnection connection = null;
 
         try {
-            URL url = new URL("http://10.0.2.2:3000/api/items/" + itemId);
+            URL url = new URL("http://10.0.2.2:3000/api/items/" + userId + "/" + itemId);
             connection = (HttpURLConnection) url.openConnection();
 
             connection.setRequestMethod("DELETE");

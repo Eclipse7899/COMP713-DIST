@@ -43,16 +43,17 @@ public class ExpiryReminderWorker extends Worker {
     @Override
     public Result doWork() {
         String accessToken = getInputData().getString("accessToken");
+        String userId = getInputData().getString("userId");
 
-        if (accessToken == null) {
-            Log.e("ExpiryReminder", "No access token available");
+        if (accessToken == null || userId == null) {
+            Log.e("ExpiryReminder", "No access token or user id available");
             return Result.failure();
         }
 
         HttpURLConnection connection = null;
 
         try {
-            URL url = new URL("http://10.0.2.2:3000/api/items");
+            URL url = new URL("http://10.0.2.2:3000/api/items/" + userId);
             connection = (HttpURLConnection) url.openConnection();
 
             connection.setRequestMethod("GET");

@@ -111,7 +111,7 @@ public class MainActivity extends AppCompatActivity {
                         new JSONObject(response.toString());
 
                 String accessToken =
-                        json.getString("accessToken");
+                        json.getString("token");
 
                 loadCurrentUser(
                         accessToken,
@@ -185,6 +185,8 @@ public class MainActivity extends AppCompatActivity {
 
                 String username =
                         currentUser.getString("username");
+                String userId =
+                        currentUser.getString("id");
 
                 runOnUiThread(() -> {
                     Intent intent = new Intent(
@@ -193,6 +195,7 @@ public class MainActivity extends AppCompatActivity {
                     );
 
                     intent.putExtra("username", username);
+                    intent.putExtra("userId", userId);
                     intent.putExtra("accessToken", accessToken);
                     startActivity(intent);
                     finish();

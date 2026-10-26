@@ -35,6 +35,7 @@ public class AddItemActivity extends AppCompatActivity {
     private ArrayList<String> foodIds = new ArrayList<>();
 
     private String accessToken;
+    private String userId;
 
     private String selectedExpiryDate = null;
 
@@ -77,6 +78,7 @@ public class AddItemActivity extends AppCompatActivity {
         });
 
         accessToken = getIntent().getStringExtra("accessToken");
+        userId = getIntent().getStringExtra("userId");
 
         String[] units = {"ITEM", "KG", "G", "L", "ML", "PACK"};
 
@@ -141,7 +143,7 @@ public class AddItemActivity extends AppCompatActivity {
             ).start();
         });
 
-        if (accessToken != null) {
+        if (accessToken != null && userId != null) {
             addItemStatus.setText("Loading foods...");
             new Thread(() -> loadFoods()).start();
         } else {
@@ -242,7 +244,7 @@ public class AddItemActivity extends AppCompatActivity {
         HttpURLConnection connection = null;
 
         try {
-            URL url = new URL("http://10.0.2.2:3000/api/items");
+            URL url = new URL("http://10.0.2.2:3000/api/items/" + userId);
             connection = (HttpURLConnection) url.openConnection();
 
             connection.setRequestMethod("POST");

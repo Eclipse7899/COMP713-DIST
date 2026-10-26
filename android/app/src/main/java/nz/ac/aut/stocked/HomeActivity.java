@@ -42,6 +42,7 @@ public class HomeActivity extends AppCompatActivity {
     private TextView pantryStatusText;
     private LinearLayout pantryItemsContainer;
     private String accessToken;
+    private String userId;
     private LinearLayout expandedItemActions = null;
 
     @Override
@@ -67,10 +68,12 @@ public class HomeActivity extends AppCompatActivity {
 
         String username = getIntent().getStringExtra("username");
         accessToken = getIntent().getStringExtra("accessToken");
+        userId = getIntent().getStringExtra("userId");
 
-        if (accessToken != null) {
+        if (accessToken != null && userId != null) {
             Data inputData = new Data.Builder()
                     .putString("accessToken", accessToken)
+                    .putString("userId", userId)
                     .build();
 
             PeriodicWorkRequest reminderRequest =
@@ -95,7 +98,7 @@ public class HomeActivity extends AppCompatActivity {
             refreshButton.setEnabled(false);
             pantryStatusText.setText(R.string.loading_pantry);
 
-            if (accessToken != null) {
+            if (accessToken != null && userId != null) {
                 new Thread(() -> {
                     loadItems(accessToken);
 
@@ -115,6 +118,7 @@ public class HomeActivity extends AppCompatActivity {
         addItemNavButton.setOnClickListener(v -> {
             Intent intent = new Intent(HomeActivity.this, AddItemActivity.class);
             intent.putExtra("accessToken", accessToken);
+            intent.putExtra("userId", userId);
             startActivity(intent);
         });
 
@@ -129,7 +133,7 @@ public class HomeActivity extends AppCompatActivity {
         HttpURLConnection connection = null;
 
         try {
-            URL url = new URL(ITEMS_URL);
+            URL url = new URL(ITEMS_URL + "/" + userId);
             connection = (HttpURLConnection) url.openConnection();
 
             connection.setRequestMethod("GET");
@@ -262,6 +266,7 @@ public class HomeActivity extends AppCompatActivity {
                                 Intent intent = new Intent(
                                         HomeActivity.this, EditItemActivity.class);
                                 intent.putExtra("accessToken", accessToken);
+                                intent.putExtra("userId", userId);
                                 intent.putExtra("itemId", item.optString("id"));
                                 startActivity(intent);
                             });
@@ -351,7 +356,7 @@ public class HomeActivity extends AppCompatActivity {
         HttpURLConnection connection = null;
 
         try {
-            URL url = new URL(ITEMS_URL + "/" + itemId);
+            URL url = new URL(ITEMS_URL + "/" + userId + "/" + itemId);
             connection = (HttpURLConnection) url.openConnection();
 
             connection.setRequestMethod("DELETE");
@@ -409,7 +414,7 @@ public class HomeActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
 
-        if (accessToken != null && pantryStatusText != null) {
+        if (accessToken != null && userId != null && pantryStatusText != null) {
             pantryStatusText.setVisibility(View.VISIBLE);
             pantryStatusText.setText(R.string.loading_pantry);
             new Thread(() -> loadItems(accessToken)).start();

@@ -33,6 +33,7 @@ public class EditItemActivity extends Activity {
 
     private final String baseUrl = "http://10.0.2.2:3000";
     private String accessToken;
+    private String userId;
 
     private TextView selectedItemText;
     private int selectedItemPosition = -1;
@@ -53,6 +54,7 @@ public class EditItemActivity extends Activity {
         setContentView(R.layout.activity_edit_item);
 
         accessToken = getIntent().getStringExtra("accessToken");
+        userId = getIntent().getStringExtra("userId");
 
 
         selectedItemText = findViewById(R.id.selectedItemText);
@@ -121,7 +123,7 @@ public class EditItemActivity extends Activity {
 
         new Thread(() -> {
             try {
-                URL url = new URL(baseUrl + "/api/items");
+                URL url = new URL(baseUrl + "/api/items/" + userId);
                 HttpURLConnection connection =
                         (HttpURLConnection) url.openConnection();
 
@@ -291,7 +293,7 @@ public class EditItemActivity extends Activity {
                 HttpURLConnection connection = null;
 
                 try {
-                    URL url = new URL(baseUrl + "/api/items/" + itemId);
+                    URL url = new URL(baseUrl + "/api/items/" + userId + "/" + itemId);
                     connection = (HttpURLConnection) url.openConnection();
 
                     connection.setRequestMethod("PUT");
