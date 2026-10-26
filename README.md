@@ -114,6 +114,40 @@ without polling.
 
 3. Open the application in your browser at `http://localhost`
 
+### Android App
+
+The Android client lives in the `android` directory and is developed with Android Studio.
+
+#### Prerequisites
+
+- Android Studio
+- An Android emulator (or a physical device) running Android 7.0 (API 24) or newer
+- The backend running (see the steps above)
+
+#### Steps
+
+1. Start the stack so the API is available on the host machine:
+
+   ```bash
+   docker compose up -d
+   ```
+
+2. In Android Studio, choose **File → Open** and select the `android` directory (not the repository root).
+
+3. Wait for the Gradle sync to finish. If prompted, install any missing SDK
+   platforms or accept the SDK licences.
+
+4. Start an emulator from **Device Manager**, or connect a physical device with
+   USB debugging enabled.
+
+5. Select the `app` run configuration and click **Run** (Shift+F10); the app
+   launches on the selected device.
+
+The Android app calls the API at `http://10.0.2.2:3000`, which is the emulator's
+alias for the host machine's `localhost`. Cleartext HTTP is enabled for local
+development. On a physical device, change `10.0.2.2` to the host machine's LAN IP
+address in the source files under `android/app/src/main/java/nz/ac/aut/stocked`.
+
 ## Tests
 
 ### Pre-requisites
@@ -255,9 +289,9 @@ The API also exposes a WebSocket endpoint that streams inventory changes
 (`item.created`, `item.updated`, `item.deleted`, `food.created`, `food.updated`,
 `food.deleted`, `share.created`, `share.deleted`) to the authenticated user.
 
-| Method | Endpoint         | Auth | Description                                          |
-| ------ | ---------------- | ---- | ---------------------------------------------------- |
-| `GET`  | `/api/ws/ticket` | Yes  | Issue a single-use connection ticket (30s lifetime) |
+| Method | Endpoint         | Auth | Description                                           |
+| ------ | ---------------- | ---- | ----------------------------------------------------- |
+| `GET`  | `/api/ws/ticket` | Yes  | Issue a single-use connection ticket (30s lifetime)   |
 | `GET`  | `/api/ws`        | No\* | Open the WebSocket connection with `?ticket=<ticket>` |
 
 \* The WebSocket handshake authenticates with the `ticket` query parameter
