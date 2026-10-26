@@ -1,23 +1,27 @@
 import * as React from 'react';
-import { FoodUnit } from '@stocked/backend/src/generated/prisma/enums.ts';
-import type { AddFoodItem, FoodType } from '../../models.ts';
+import {
+  type AddFoodItem,
+  FOOD_UNITS,
+  type FoodType,
+  type FoodUnit,
+} from '../../models.ts';
 import { parseResponse } from 'hono/client';
 import { getClient } from '../../client.ts';
-import { titleCase } from '../../util.ts';
+import { getAuthentication, titleCase } from '../../util.ts';
 import ErrorMessage from '../ErrorMessage.tsx';
 import { getApiErrorMessage } from '../../apiError.ts';
 
 export default function AddFoodItemForm({
-                                          onCancel,
-                                          onDone,
-                                        }: {
+  onCancel,
+  onDone,
+}: {
   onCancel: () => void;
   onDone: () => void;
 }) {
   const initialFormState: AddFoodItem = {
     foodId: '',
     quantity: 1,
-    unit: FoodUnit.ITEM as FoodUnit,
+    unit: FOOD_UNITS[0] as FoodUnit,
     expiryDate: '',
   };
   const [form, setForm] = React.useState(initialFormState);
@@ -25,6 +29,7 @@ export default function AddFoodItemForm({
   const [error, setError] = React.useState('');
   const [foodTypes, setFoodTypes] = React.useState<FoodType[]>([]);
   const client = React.useMemo(() => getClient(), []);
+  const userId = React.useMemo(() => getAuthentication()?.sub, []);
 
   const loadFoodTypes = async () => {
     const res = await parseResponse(client.api.food.$get()).catch(
@@ -45,8 +50,13 @@ export default function AddFoodItemForm({
   };
 
   const addItem = async () => {
+    if (!userId) {
+      setError('Not authenticated');
+      return;
+    }
     const res = await parseResponse(
-      client.api.items.$post({
+      client.api.items[':userId'].$post({
+        param: { userId },
         json: {
           foodId: form.foodId,
           quantity: Number(form.quantity),
@@ -84,12 +94,14 @@ export default function AddFoodItemForm({
       <h2 className="text-xl font-semibold text-(--text-h)">
         Add stocked item
       </h2>
-      <ErrorMessage message={error}/>
+      <ErrorMessage message={error} />
       <form onSubmit={submit} className="flex flex-col gap-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-(--text-h)"
-                   htmlFor="foodId">
+            <label
+              className="text-sm font-medium text-(--text-h)"
+              htmlFor="foodId"
+            >
               Food Type
             </label>
             <select
@@ -109,8 +121,10 @@ export default function AddFoodItemForm({
           </div>
 
           <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-(--text-h)"
-                   htmlFor="quantity">
+            <label
+              className="text-sm font-medium text-(--text-h)"
+              htmlFor="quantity"
+            >
               Quantity
             </label>
             <input
@@ -132,8 +146,10 @@ export default function AddFoodItemForm({
           </div>
 
           <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-(--text-h)"
-                   htmlFor="unit">
+            <label
+              className="text-sm font-medium text-(--text-h)"
+              htmlFor="unit"
+            >
               Unit
             </label>
             <select
@@ -148,7 +164,7 @@ export default function AddFoodItemForm({
               }
               required
             >
-              {Object.values(FoodUnit).map((unit) => (
+              {FOOD_UNITS.map((unit) => (
                 <option key={unit} value={unit}>
                   {titleCase(unit)}
                 </option>
@@ -157,8 +173,10 @@ export default function AddFoodItemForm({
           </div>
 
           <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-(--text-h)"
-                   htmlFor="expiryDate">
+            <label
+              className="text-sm font-medium text-(--text-h)"
+              htmlFor="expiryDate"
+            >
               Expiry Date
             </label>
             <input
@@ -172,18 +190,10 @@ export default function AddFoodItemForm({
         </div>
 
         <div className="flex flex-row gap-3 pt-2">
-          <button
-            type="submit"
-            disabled={isDisabled}
-            className="btn"
-          >
+          <button type="submit" disabled={isDisabled} className="btn">
             {isDisabled ? 'Adding...' : 'Add item'}
           </button>
-          <button
-            type="button"
-            onClick={onCancel}
-            className="btn-secondary"
-          >
+          <button type="button" onClick={onCancel} className="btn-secondary">
             Cancel
           </button>
         </div>

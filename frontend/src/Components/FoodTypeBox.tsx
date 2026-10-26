@@ -34,13 +34,13 @@ export default function FoodTypeBox({
       <div className="flex flex-row items-center gap-4">
         <div className="flex flex-col gap-1 flex-1 min-w-0">
           <div className="flex items-center gap-2">
-          <span className="text-base font-semibold text-(--text-h) truncate">
-            {foodType.name}
-          </span>
+            <span className="text-base font-semibold text-(--text-h) truncate">
+              {foodType.name}
+            </span>
             {foodType.createdByUserId && (
               <span className="chip bg-(--accent-bg) text-(--accent)">
-              Custom
-            </span>
+                Custom
+              </span>
             )}
           </div>
           <div className="text-sm text-(--text)">
@@ -50,7 +50,10 @@ export default function FoodTypeBox({
         {foodType.createdByUserId && (
           <div className="flex flex-row gap-4 items-center">
             <div className="flex items-center">
-              <button className="btn-secondary" onClick={() => setIsEditing(true)}>
+              <button
+                className="btn-secondary"
+                onClick={() => setIsEditing(true)}
+              >
                 Edit
               </button>
             </div>
@@ -58,17 +61,22 @@ export default function FoodTypeBox({
               type="button"
               onClick={() => handleDelete(foodType.id)}
               disabled={isDeleting}
-              className="btn-danger">
+              className="btn-danger"
+            >
               {isDeleting ? 'Deleting...' : 'Delete'}
             </button>
           </div>
         )}
       </div>
-      {(isEditing && (
+      {isEditing && (
         <div>
-          <EditFoodTypeForm id={foodType.id} foodType={foodType} onCancel={() => setIsEditing(false)} onEdit={handleEdit} />
+          <EditFoodTypeForm
+            id={foodType.id}
+            foodType={foodType}
+            onCancel={() => setIsEditing(false)}
+            onEdit={handleEdit}
+          />
         </div>
-        )
       )}
     </div>
   );

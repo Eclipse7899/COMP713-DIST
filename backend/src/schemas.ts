@@ -1,44 +1,102 @@
 import { z } from 'zod';
-import { FoodCategory, FoodUnit } from './generated/prisma/enums';
+import { FoodCategory, FoodUnit } from './generated/prisma/client';
 
+export const jwtSchema = z.object({
+  sub: z.string(),
+  email: z.email(),
+  username: z.string(),
+});
 
 export const foodCategorySchema = z.enum(FoodCategory);
 
 export const foodUnitSchema = z.enum(FoodUnit);
 
-export const foodDtoSchema = z.object({
-  id: z.string().describe('Food CUID2 identifier'),
-  name: z.string().describe('Display name of the food'),
-  category: foodCategorySchema.describe('Category the food belongs to'),
-  createdByUserId: z
-    .string()
-    .nullable()
-    .describe('Owner user id, or null for a globally available food'),
+export const foodDtoSchema = z
+  .object({
+    id: z.string().describe('Food CUID2 identifier'),
+    name: z.string().describe('Display name of the food'),
+    category: foodCategorySchema.describe('Category the food belongs to'),
+    createdByUserId: z
+      .string()
+      .nullable()
+      .describe('Owner user id, or null for a globally available food'),
+  })
+  .brand('FoodDto');
+
+export type FoodDto = z.infer<typeof foodDtoSchema>;
+
+export const foodItemDtoSchema = z
+  .object({
+    id: z.string().describe('Food item CUID2 identifier'),
+    foodId: z.string().describe('Referenced food CUID2 identifier'),
+    quantity: z.number().describe('Quantity currently on hand'),
+    unit: foodUnitSchema.describe('Unit the quantity is expressed in'),
+    expiryDate: z.date().nullable().describe('Expiry timestamp (ISO 8601)'),
+    addedAt: z.date().describe('Timestamp the item was added (ISO 8601)'),
+    food: foodDtoSchema.describe('Food this item refers to'),
+  })
+  .brand('FoodItemDto');
+
+export type FoodItemDto = z.infer<typeof foodItemDtoSchema>;
+
+export const userShareDtoSchema = z
+  .object({
+    userId: z.string().describe('CUID2 identifier of the inventory owner'),
+    sharedWithUserId: z
+      .string()
+      .describe('CUID2 identifier of the user the inventory is shared with'),
+    sharedAt: z
+      .date()
+      .describe('Timestamp the inventory was shared (ISO 8601)'),
+  })
+  .brand('UserShareDto');
+
+export type UserShareDto = z.infer<typeof userShareDtoSchema>;
+
+export const sharedInventoryDtoSchema = z
+  .object({
+    userId: z.string().describe('CUID2 identifier of the inventory owner'),
+    username: z
+      .string()
+      .describe('Username of the inventory owner, used as the display label'),
+    sharedAt: z
+      .date()
+      .describe('Timestamp the inventory was shared (ISO 8601)'),
+  })
+  .brand('SharedInventoryDto');
+
+export type SharedInventoryDto = z.infer<typeof sharedInventoryDtoSchema>;
+
+export const createdShareResponseSchema = z.object({
+  success: z.literal(true).describe('Always true when the share was created'),
+  data: userShareDtoSchema.describe('The newly created inventory share'),
 });
 
-export const foodItemDtoSchema = z.object({
-  id: z.string().describe('Food item CUID2 identifier'),
-  foodId: z.string().describe('Referenced food CUID2 identifier'),
-  quantity: z.number().describe('Quantity currently on hand'),
-  unit: foodUnitSchema.describe('Unit the quantity is expressed in'),
-  expiryDate: z
-    .iso
-    .datetime()
-    .nullable()
-    .describe('Expiry timestamp (ISO 8601) or null when it does not expire'),
-  addedAt: z.iso.datetime().describe('Timestamp the item was added (ISO 8601)'),
-  food: foodDtoSchema.describe('Food this item refers to'),
-});
+export const userDtoSchema = z
+  .object({
+    id: z.string().describe('User CUID2 identifier'),
+    email: z.string().describe('User email address'),
+    username: z.string().describe('Unique username'),
+  })
+  .brand('UserDto');
 
-export const userSchema = z.object({
-  id: z.string().describe('User CUID2 identifier'),
-  email: z.string().describe('User email address'),
-  username: z.string().describe('Unique username'),
-});
+export type UserDto = z.infer<typeof userDtoSchema>;
+
+export const wsTicketResponseSchema = z
+  .object({
+    ticket: z
+      .string()
+      .describe(
+        'Single-use ticket to pass as the ticket query parameter of /ws',
+      ),
+  })
+  .brand('WsTicketResponse');
+
+export type WsTicketResponse = z.infer<typeof wsTicketResponseSchema>;
 
 export const authResponseSchema = z.object({
-  user: userSchema.describe('The authenticated user'),
-  accessToken: z.string().describe('JWT access token, valid for one hour'),
+  user: userDtoSchema.describe('The authenticated user'),
+  token: z.string().describe('JWT access token, valid for one hour'),
 });
 
 export const messageSchema = z.object({

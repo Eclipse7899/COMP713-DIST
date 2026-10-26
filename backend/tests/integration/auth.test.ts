@@ -1,29 +1,51 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { setupTestDatabase, teardownTestDatabase } from '../setup';
-import { createDb } from '../../src/db';
+import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  jest,
+} from 'bun:test';
+import { setup, teardown } from '../setup';
 import { createApp } from '../../src/app';
-import type { PrismaClient } from '../../src/generated/prisma/client';
 import { verify } from 'hono/jwt';
-import bcrypt from 'bcrypt';
+import { comparePasswords } from '../../../auth-service/src/util';
+import { PrismaClient } from '../../src/generated/prisma/client';
+import { PrismaClient as AuthPrismaClient } from '../../../auth-service/src/generated/prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
+
+jest.setTimeout(30000);
 
 let app: ReturnType<typeof createApp>['app'];
 let db: PrismaClient;
+let authDb: AuthPrismaClient;
 const jwtSecret = 'test-secret';
+const authPort = 5051;
 
 beforeAll(async () => {
-  const dbUrl = await setupTestDatabase();
-  db = createDb(dbUrl);
-  app = createApp(jwtSecret, db).app;
+  const { backendDatabaseUrl, authDatabaseUrl, auth } = await setup(
+    jwtSecret,
+    authPort,
+  );
+  db = new PrismaClient({
+    adapter: new PrismaPg(backendDatabaseUrl),
+  });
+  authDb = new AuthPrismaClient({
+    adapter: new PrismaPg(authDatabaseUrl),
+  });
+  app = createApp(jwtSecret, auth, db).app;
 });
 
 afterAll(async () => {
-  await teardownTestDatabase();
+  await teardown();
 });
 
 beforeEach(async () => {
   await db.foodItem.deleteMany();
   await db.food.deleteMany();
   await db.user.deleteMany();
+  await authDb.user.deleteMany();
 });
 
 describe('Auth Endpoints', () => {
@@ -252,31 +274,39 @@ describe('Auth Endpoints', () => {
 
         expect(response.status).toBe(201);
         const data = await response.json();
-        expect(data).toHaveProperty('accessToken');
-        expect(typeof data.accessToken).toBe('string');
+        expect(data).toHaveProperty('token');
+        expect(typeof data.token).toBe('string');
 
         // Verify token payload
-        const decoded = await verify(data.accessToken, jwtSecret, 'HS256');
+        const decoded = await verify(data.token, jwtSecret, 'HS256');
+        const userId = decoded.sub as string;
         expect(decoded.email).toBe('testuser@example.com');
         expect(decoded.username).toBe('testuser');
-        expect(decoded).toHaveProperty('sub');
+        expect(userId).toEqual(expect.any(String));
 
-        // Verify database state
-        const dbUser = await db.user.findUnique({
+        // Verify auth database state
+        const dbUser = await authDb.user.findUnique({
           where: { email: 'testuser@example.com' },
         });
         expect(dbUser).not.toBeNull();
         expect(dbUser?.username).toBe('testuser');
         expect(dbUser?.email).toBe('testuser@example.com');
-        expect(dbUser?.id).toBe(decoded.sub);
+        expect(dbUser?.id).toBe(userId);
         // Ensure raw password is NOT stored in plain text
         expect(dbUser?.hashed_password).not.toBe(rawPassword);
         // Ensure password is correctly hashed
-        const isPasswordMatch = await bcrypt.compare(
+        const isPasswordMatch = await comparePasswords(
           rawPassword,
           dbUser!.hashed_password,
         );
         expect(isPasswordMatch).toBe(true);
+
+        // The backend must mirror the auth user for referential integrity
+        const backendUser = await db.user.findUnique({
+          where: { id: userId },
+        });
+        expect(backendUser).not.toBeNull();
+        expect(backendUser?.id).toBe(userId);
       });
 
       it('should allow valid usernames with alphanumeric characters, underscores, and dashes', async () => {
@@ -295,7 +325,7 @@ describe('Auth Endpoints', () => {
 
           expect(response.status).toBe(201);
           const data = await response.json();
-          expect(data).toHaveProperty('accessToken');
+          expect(data).toHaveProperty('token');
         }
       });
     });
@@ -427,13 +457,52 @@ describe('Auth Endpoints', () => {
         expect(response.status).toBe(200);
 
         const data = await response.json();
-        expect(data).toHaveProperty('accessToken');
-        expect(typeof data.accessToken).toBe('string');
+        expect(data).toHaveProperty('token');
+        expect(typeof data.token).toBe('string');
 
         // Verify token payload
-        const decoded = await verify(data.accessToken, jwtSecret, 'HS256');
+        const decoded = await verify(data.token, jwtSecret, 'HS256');
         expect(decoded.email).toBe('testuser2@example.com');
         expect(decoded.username).toBe('testuser2');
+      });
+
+      it('should recreate the backend user row when signing in', async () => {
+        const registerResponse = await app.request('/api/auth/register', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            username: 'syncuser',
+            email: 'syncuser@example.com',
+            password: 'testpassword',
+          }),
+        });
+
+        expect(registerResponse.status).toBe(201);
+        const { user } = await registerResponse.json();
+
+        // Simulate a user that only exists in the auth service
+        await db.user.delete({ where: { id: user.id } });
+        expect(await db.user.findUnique({ where: { id: user.id } })).toBeNull();
+
+        const response = await app.request('/api/auth/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email: 'syncuser@example.com',
+            password: 'testpassword',
+          }),
+        });
+
+        expect(response.status).toBe(200);
+        const backendUser = await db.user.findUnique({
+          where: { id: user.id },
+        });
+        expect(backendUser).not.toBeNull();
+        expect(backendUser?.id).toBe(user.id);
       });
     });
   });

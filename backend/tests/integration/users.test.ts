@@ -1,22 +1,43 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { setupTestDatabase, teardownTestDatabase } from '../setup';
-import { createDb } from '../../src/db';
+import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  jest,
+} from 'bun:test';
+import { setup, teardown } from '../setup';
 import { createApp } from '../../src/app';
-import type { PrismaClient } from '../../src/generated/prisma/client';
 import { sign } from 'hono/jwt';
+import { PrismaClient } from '../../src/generated/prisma/client';
+import { PrismaClient as AuthPrismaClient } from '../../../auth-service/src/generated/prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
+
+jest.setTimeout(30000);
 
 let app: ReturnType<typeof createApp>['app'];
 let db: PrismaClient;
+let authDb: AuthPrismaClient;
 const jwtSecret = 'test-secret';
+const authPort = 5051;
 
 beforeAll(async () => {
-  const dbUrl = await setupTestDatabase();
-  db = createDb(dbUrl);
-  app = createApp(jwtSecret, db).app;
+  const { backendDatabaseUrl, authDatabaseUrl, auth } = await setup(
+    jwtSecret,
+    authPort,
+  );
+  db = new PrismaClient({
+    adapter: new PrismaPg(backendDatabaseUrl),
+  });
+  authDb = new AuthPrismaClient({
+    adapter: new PrismaPg(authDatabaseUrl),
+  });
+  app = createApp(jwtSecret, auth, db).app;
 });
 
 afterAll(async () => {
-  await teardownTestDatabase();
+  await teardown();
 });
 
 beforeEach(async () => {
@@ -24,6 +45,7 @@ beforeEach(async () => {
   await db.foodItem.deleteMany();
   await db.food.deleteMany();
   await db.user.deleteMany();
+  await authDb.user.deleteMany();
 });
 
 async function registerUser(
@@ -37,7 +59,7 @@ async function registerUser(
     body: JSON.stringify({ username, email, password }),
   });
   const data = await response.json();
-  return { status: response.status, token: data.accessToken };
+  return { status: response.status, token: data.token };
 }
 
 describe('Users Endpoints (/api/users)', () => {
@@ -141,13 +163,19 @@ describe('Users Endpoints (/api/users)', () => {
         expect(data).not.toHaveProperty('hashed_password');
         expect(data).not.toHaveProperty('password');
 
-        // Verify against database
-        const dbUser = await db.user.findUnique({
+        // Verify against the auth database
+        const dbUser = await authDb.user.findUnique({
           where: { id: data.id },
         });
         expect(dbUser).not.toBeNull();
         expect(dbUser?.email).toBe('alice@example.com');
         expect(dbUser?.username).toBe('alice');
+
+        // The backend mirrors the auth user for referential integrity
+        const backendUser = await db.user.findUnique({
+          where: { id: data.id },
+        });
+        expect(backendUser).not.toBeNull();
       });
 
       it('should isolate profiles between different authenticated users', async () => {
@@ -195,8 +223,8 @@ describe('Users Endpoints (/api/users)', () => {
         const initialData = await initialRes.json();
         expect(initialData.username).toBe('initialname');
 
-        // Update user in database directly
-        await db.user.update({
+        // Update user in the auth database directly
+        await authDb.user.update({
           where: { id: initialData.id },
           data: { username: 'updatedname', email: 'updated@example.com' },
         });

@@ -1,13 +1,11 @@
 import { z } from 'zod';
 import type { JwtVariables } from 'hono/jwt';
 import type { JWTPayload } from 'hono/utils/jwt/types';
-
-const jwtSchema = z.object({
-  sub: z.string(),
-  email: z.email(),
-  username: z.string(),
-});
+import type { jwtSchema } from './schemas';
 
 export type JwtFields = z.infer<typeof jwtSchema> & JWTPayload;
 
-export type Variables = JwtVariables<JwtFields>;
+export type Variables = JwtVariables<JwtFields> & {
+  /** User resolved from a WebSocket ticket during the handshake. */
+  wsUserId: string;
+};

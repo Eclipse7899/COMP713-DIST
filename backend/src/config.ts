@@ -6,6 +6,8 @@ const schema = z.object({
     .default('development'),
   PORT: z.coerce.number().int().min(1).max(65535).default(3000),
   DATABASE_URL: z.url(),
+  AUTH_HOST: z.string().min(1),
+  AUTH_PORT: z.coerce.number().int().min(1).max(65535),
   JWT_SECRET: z.string().min(32),
 });
 

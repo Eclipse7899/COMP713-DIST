@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import { comparePasswords, hashPassword } from '../../src/util';
+import { describe, expect, it } from 'bun:test';
+import { comparePasswords, hashPassword } from '../src/util';
 
 describe('Hashing', () => {
   it('hashes a password correctly', async () => {
@@ -14,7 +14,7 @@ describe('Hashing', () => {
     const compare = await comparePasswords('wrongpassword', hashed);
     expect(compare).toBe(false);
   });
-  it ('successfully compares the same password with different hashes', async () => {
+  it('successfully compares the same password with different hashes', async () => {
     const password = '123';
     const hashed1 = await hashPassword(password);
     const hashed2 = await hashPassword(password);

@@ -1,4 +1,3 @@
-import { hashPassword } from '../src/util';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { FoodCategory, PrismaClient } from '../src/generated/prisma/client';
 
@@ -7,18 +6,6 @@ const adapter = new PrismaPg(connectionString);
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
-  const user = await prisma.user.upsert({
-    where: { email: 'jon@example.com' },
-    update: {},
-    create: {
-      email: 'jon@example.com',
-      username: 'jon',
-      hashed_password: await hashPassword('123'),
-    },
-  });
-
-  console.log('Created user:', user);
-
   const foodTypes = [
     { name: 'Apple', category: FoodCategory.FRUIT },
     { name: 'Banana', category: FoodCategory.FRUIT },

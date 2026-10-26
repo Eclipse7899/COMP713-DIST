@@ -10,7 +10,10 @@ type ErrorContext =
   | 'load stocked items'
   | 'add item'
   | 'update item'
-  | 'delete item';
+  | 'delete item'
+  | 'load shared inventories'
+  | 'share inventory'
+  | 'ws ticket';
 
 type ErrorDetails = {
   data?: {
@@ -36,7 +39,10 @@ function getServerMessage(error: unknown): string | undefined {
   return undefined;
 }
 
-export function getApiErrorMessage(error: unknown, context: ErrorContext): string {
+export function getApiErrorMessage(
+  error: unknown,
+  context: ErrorContext,
+): string {
   if (!isDetailedError(error) || typeof error.statusCode !== 'number') {
     return `We couldn't ${context}. Check your connection and try again.`;
   }
@@ -45,6 +51,12 @@ export function getApiErrorMessage(error: unknown, context: ErrorContext): strin
 
   switch (error.statusCode) {
     case 400:
+      if (context === 'share inventory') {
+        return (
+          serverMessage ??
+          'Enter a valid email address for someone you can share with.'
+        );
+      }
       return 'Some of the information is invalid. Please try again.';
     case 401:
       return context === 'login'
@@ -61,8 +73,14 @@ export function getApiErrorMessage(error: unknown, context: ErrorContext): strin
       if (context === 'delete item' || context === 'update item') {
         return 'This stocked item could not be found. It may have already been removed.';
       }
+      if (context === 'share inventory') {
+        return 'No account exists with that email address.';
+      }
       return `We couldn't ${context} because the requested resource was not found.`;
     case 409:
+      if (context === 'share inventory') {
+        return 'You have already shared your stock with that user.';
+      }
       if (context === 'signup') {
         if (serverMessage === 'Email is already taken') {
           return 'That email address is already registered. Try signing in instead.';
@@ -74,6 +92,7 @@ export function getApiErrorMessage(error: unknown, context: ErrorContext): strin
       }
       return `We couldn't ${context} because it conflicts with existing data.`;
     case 500:
+      return `We couldn't ${context} because the server encountered an error. Please try again.`;
     case 502:
     case 503:
     case 504:

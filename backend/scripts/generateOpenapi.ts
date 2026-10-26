@@ -11,7 +11,7 @@ const outputPath = path.resolve(
   '../../openapi.json',
 );
 
-const { app } = createApp('a'.repeat(32), {} as PrismaClient);
+const { app } = createApp('a'.repeat(32), '127.0.0.1:5051', {} as PrismaClient);
 
 async function main() {
   const specs = await generateSpecs(app, {
@@ -28,6 +28,10 @@ async function main() {
         { name: 'Users', description: 'Authenticated user profile' },
         { name: 'Food', description: 'Food catalog management' },
         { name: 'Items', description: 'Food inventory management' },
+        {
+          name: 'WebSocket',
+          description: 'Realtime inventory event streaming',
+        },
       ],
       servers: [
         {

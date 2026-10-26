@@ -1,54 +1,60 @@
-import type { PrismaClient } from '@prisma/client/extension';
 import { Hono } from 'hono';
-import { describeRoute, resolver } from 'hono-openapi';
-import { z } from 'zod';
-import UserRepo from './repositories/users.repo';
-import { FoodRepo } from './repositories/food.repo';
-import { ItemsRepo } from './repositories/items.repo';
+import { HTTPException } from 'hono/http-exception';
+
+import { isServiceUnavailable } from './errors';
 import { createApi } from './routes';
-import { AuthService } from './services/auth.service';
 import { ItemsService } from './services/items.service';
 import { FoodService } from './services/food.service';
-import { UserService } from './services/user.service';
+import { AuthService } from './services/auth.service';
+import { RealtimeHub } from './realtime/realtime-hub';
+import type { PrismaClient } from './generated/prisma/client';
+import { ItemsRepo } from './repositories/items.repo';
+import { FoodRepo } from './repositories/food.repo';
+import { UsersRepo } from './repositories/users.repo';
+import { WsTicketRepo } from './repositories/ws-ticket.repo';
+import { WsTicketService } from './services/ws-ticket.service';
 
-export function createApp(jwt_secret: string, database: PrismaClient) {
+export function createApp(
+  jwt_secret: string,
+  auth_url: string,
+  database: PrismaClient,
+) {
   const app = new Hono();
 
-  app.get(
-    '/health',
-    describeRoute({
-      tags: ['Health'],
-      summary: 'Health check',
-      description:
-        'Returns a static status payload. Does not touch the database or require authentication.',
-      responses: {
-        200: {
-          description: 'Service is running',
-          content: {
-            'application/json': {
-              schema: resolver(z.object({ status: z.literal('ok') })),
-            },
-          },
-        },
-      },
-    }),
-    (context) => context.json({ status: 'ok' }),
-  );
+  app.onError((error, c) => {
+    if (error instanceof HTTPException) {
+      return error.getResponse();
+    }
+    if (isServiceUnavailable(error)) {
+      return c.json({ error: 'Service Unavailable' }, 503);
+    }
+    console.error(error);
+    return c.json({ error: 'Internal Server Error' }, 500);
+  });
 
-  const userRepo = new UserRepo(database);
+  const realtime = new RealtimeHub();
+
   const foodRepo = new FoodRepo(database);
   const itemsRepo = new ItemsRepo(database);
+  const usersRepo = new UsersRepo(database);
+  const wsTicketRepo = new WsTicketRepo(database);
 
-  const userService = new UserService(userRepo);
-  const foodService = new FoodService(foodRepo);
-  const itemsService = new ItemsService(itemsRepo, foodRepo);
-  const authService = new AuthService(jwt_secret, userRepo);
+  const authService = new AuthService(auth_url, usersRepo);
+  const wsTicketService = new WsTicketService(wsTicketRepo);
+  const foodService = new FoodService(foodRepo, realtime);
+  const itemsService = new ItemsService(
+    itemsRepo,
+    foodRepo,
+    authService,
+    realtime,
+  );
 
   const api = createApi(jwt_secret, {
-    userService,
     foodService,
     itemsService,
+    realtime,
     authService,
+    wsTicketService,
   });
 
   const routes = app.route('/api', api);

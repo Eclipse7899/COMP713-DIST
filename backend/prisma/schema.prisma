@@ -13,16 +13,6 @@ datasource db {
   provider = "postgresql"
 }
 
-model User {
-  id              String     @id @default(cuid(2))
-  createdAt       DateTime   @default(now())
-  email           String     @unique
-  username        String     @unique
-  hashed_password String
-  foodItems       FoodItem[]
-  food            Food[]
-}
-
 model FoodItem {
   id         String    @id @default(cuid(2))
   userId     String
@@ -33,11 +23,46 @@ model FoodItem {
   addedAt    DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   food Food @relation(fields: [foodId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([expiryDate])
+}
+
+model User {
+  id         String      @id @default(cuid(2))
+  foodItems  FoodItem[]
+  sharedWithOthers UserShare[] @relation("UserSharedOwner")
+  sharedWithMe   UserShare[] @relation("UserSharedWith")
+  foods     Food[]
+  wsTickets WsTicket[]
+}
+
+model WsTicket {
+  ticket    String    @id
+  userId    String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model UserShare {
+  userId     String
+  sharedWithUserId String
+  sharedAt   DateTime @default(now())
+
+  user User @relation("UserSharedOwner", fields: [userId], references: [id], onDelete: Cascade)
+  sharedUser User @relation("UserSharedWith", fields: [sharedWithUserId], references: [id], onDelete: Cascade)
+
+  @@id([userId, sharedWithUserId])
+  @@index([userId])
+  @@index([sharedWithUserId])
 }
 
 model Food {
@@ -45,10 +70,10 @@ model Food {
   name            String
   category        FoodCategory
   createdByUserId String?
-  createdBy       User?        @relation(fields: [createdByUserId], references: [id], onDelete: Cascade)
   createdAt       DateTime     @default(now())
   foodItems       FoodItem[]
 
+  user User? @relation(fields: [createdByUserId], references: [id], onDelete: SetNull)
   @@index([createdByUserId])
 }
 

@@ -1,4 +1,5 @@
 # Stocked – Food Management System
+
 > Developed by Eclipse7899 for AUT COMP713 - Individual Project
 
 ## Brief
@@ -9,10 +10,12 @@ The system allows users to add, update and delete food items and find items that
 ## Features
 
 ### Authentication
+
 - User registration and login
 - Password hashing and secure storage
 
 ### Food Items
+
 - Adding new food items to the inventory
 - Updating existing food items
 - Track expiry dates and quantity of food items
@@ -21,6 +24,7 @@ The system allows users to add, update and delete food items and find items that
 - Separate users do not have access to each other's food items
 
 ### Food Types
+
 - Categorizing food types by categories, fruits, vegetables, dairy, etc.
 - Adding custom food types to the system
 - Viewing a list of all food types
@@ -31,25 +35,32 @@ The system allows users to add, update and delete food items and find items that
 ## Tech Stack
 
 ### Database/Persistence
+
 - PostgreSQL database
 - Prisma ORM
 
 ### Backend
-- Bun ts/js runtime
+
+- Bun JavaScript/TypeScript runtime
 - Hono web framework
 - Zod validation library
+- gRPC (protobuf) for communication with the Auth service
 
 ### Frontend
+
 - React
-- Typescript
+- TypeScript
 - React Router
 - Tailwind CSS
 
 ### Testing and Development
-- Vitest testing framework
+
+- Bun's built-in test runner (`bun:test`)
+- Testcontainers for integration tests
 - Vite development server
 
 ### Tooling
+
 - Git for version control
 - Docker for containerization
 - Oxlint (rust-based eslint drop-in) for code quality
@@ -57,27 +68,48 @@ The system allows users to add, update and delete food items and find items that
 - Mise for tooling and runtime management
 
 ## Architecture
-The application follows a modern web architecture, with frontend and backend components communicating via a RESTful API.
+
+The application follows a modern web architecture. The frontend is a React single-page application built with Vite and served by nginx, which also reverse-proxies `/api` requests to the backend. The frontend talks to the backend over a RESTful API and receives realtime inventory updates over a WebSocket.
 
 Client → HTTP → Route → Handler → Service → Repository → Database
 
+The backend is split into two services:
+
+- **API** – the Hono REST API. It validates requests with Zod, applies
+  authorisation, and handles food and inventory operations. It reads from and
+  writes to PostgreSQL directly through Prisma.
+- **Auth service** – a gRPC service that owns registration, login, password
+  hashing, and JWT issuance. The API calls it over gRPC.
+
+Each service owns its own PostgreSQL database, accessed through Prisma: the API
+owns the food catalogue and inventory, while the auth service owns user
+accounts. Two short-lived `db-init` containers apply each service's Prisma
+migrations and seed the initial user and food catalogue before the other
+services start.
+
+Inventory changes (items and food types being created, updated, or deleted) are
+pushed to a user's connected clients over a WebSocket, so the UI stays in sync
+without polling.
+
 ## Installation
 
-### Prerequisites
-- Bun
+### Run Prerequisites
+
 - Docker
 
 ### Steps
 
 1. Clone the repository:
+
    ```bash
    git clone https://github.com/Eclipse7899/COMP713-DIST.git
    cd COMP713-DIST
    ```
-   
+
 2. Start the application
+
    ```bash
-   docker-compose up -d
+   docker compose up -d
    ```
 
 3. Open the application in your browser at `http://localhost`
@@ -85,22 +117,22 @@ Client → HTTP → Route → Handler → Service → Repository → Database
 ## Tests
 
 ### Pre-requisites
+
 - Bun
 - Docker
+- Protoc (Protobuf Compiler)
 
-### Backend Tests
+### Tests
 
 ```
-cd backend
-cp .env.example .env
-bun install
-bun prisma:generate
-bun run test
+bun generate
+bun build:images
+bun test
 ```
 
 ## Api
 
-Uses a RESTful API to manage food items and food types.
+Uses a RESTful API to manage food items and food types, and a WebSocket endpoint for realtime inventory updates.
 
 ### Endpoints
 
@@ -113,7 +145,7 @@ Authorization: Bearer <jwt>
 #### Authentication
 
 | Method | Endpoint             | Auth | Description              |
-|--------|----------------------|------|--------------------------|
+| ------ | -------------------- | ---- | ------------------------ |
 | `POST` | `/api/auth/register` | No   | Create a user account    |
 | `POST` | `/api/auth/login`    | No   | Log in and receive a JWT |
 
@@ -139,13 +171,13 @@ Login request:
 #### Users
 
 | Method | Endpoint        | Description                          |
-|--------|-----------------|--------------------------------------|
+| ------ | --------------- | ------------------------------------ |
 | `GET`  | `/api/users/me` | Get the currently authenticated user |
 
 #### Food Types
 
 | Method   | Endpoint        | Description                            |
-|----------|-----------------|----------------------------------------|
+| -------- | --------------- | -------------------------------------- |
 | `GET`    | `/api/food`     | List available food types for the user |
 | `POST`   | `/api/food`     | Create a custom food type              |
 | `PUT`    | `/api/food/:id` | Update a user-created food type        |
@@ -165,51 +197,92 @@ Supported categories are `FRUIT`, `VEGETABLE`, `MEAT`, `DAIRY`,
 
 #### Food Items
 
-| Method   | Endpoint         | Description                              |
-|----------|------------------|------------------------------------------|
-| `GET`    | `/api/items`     | List the authenticated user's food items |
-| `POST`   | `/api/items`     | Add a food item to the inventory         |
-| `PUT`    | `/api/items/:id` | Update an inventory item                 |
-| `DELETE` | `/api/items/:id` | Delete an inventory item                 |
+| Method   | Endpoint                                      | Description                                   |
+| -------- | --------------------------------------------- | --------------------------------------------- |
+| `GET`    | `/api/items/shared-with-me`                   | List inventories other users shared with you  |
+| `GET`    | `/api/items/:userId`                          | List a user's food items, if shared with you  |
+| `POST`   | `/api/items/:userId`                          | Add a food item to your inventory             |
+| `PUT`    | `/api/items/:userId/:id`                      | Update an inventory item you own              |
+| `DELETE` | `/api/items/:userId/:id`                      | Delete an inventory item you own              |
+| `GET`    | `/api/items/:userId/shared`                   | List users your inventory is shared with      |
+| `POST`   | `/api/items/:userId/shared`                   | Share your inventory with an email address    |
+| `DELETE` | `/api/items/:userId/shared/:sharedWithUserId` | Stop sharing your inventory with another user |
+
+The user identity is always taken from the JWT. For item mutations and share
+management, `:userId` must match the authenticated user. Item reads are allowed
+for the owner or for a user the inventory has been shared with. When sharing,
+the recipient is identified by the email address of their auth-service account.
+`GET /api/items/shared-with-me` returns the `userId`, `username`, and `sharedAt`
+of each inventory shared with the authenticated user.
+
+Share request:
+
+```json
+{
+  "sharedWithEmail": "friend@example.com"
+}
+```
 
 Food item request:
 
 ```json
 {
-  "foodId": "clxxxxxxxxxxxxxxxxxxxxxxxx",
+  "foodId": "m5x9w3r1t00000abcd1234ef",
   "quantity": 2,
   "unit": "ITEM",
-  "expiryDate": "2026-12-31"
+  "expiryDate": "2026-12-31T00:00:00.000Z"
 }
 ```
 
-`expiryDate` is optional and may be `null`. Supported units are `ITEM`,
-`KG`, `G`, `L`, `ML`, and `PACK`.
+`foodId` is the CUID2 identifier of a food the user can access. `expiryDate`
+is optional and may be `null`; when provided it must be a full ISO 8601
+datetime. Supported units are `ITEM`, `KG`, `G`, `L`, `ML`, and `PACK`.
 
 The item endpoint supports these optional query parameters:
 
-| Parameter    | Description                                         |
-|--------------|-----------------------------------------------------|
-| `contains`   | Filter by food name                                 |
-| `categories` | Filter by category; may be supplied multiple times  |
-| `sort`       | Sort by expiry date using `asc` or `desc`           |
-| `expiryDate` | Return items expiring before the specified ISO date |
+| Parameter    | Description                                                         |
+| ------------ | ------------------------------------------------------------------- |
+| `contains`   | Filter by food name                                                 |
+| `categories` | Filter by category; may be supplied multiple times                  |
+| `sort`       | Sort by expiry date using `asc` or `desc`                           |
+| `expiryDate` | Return items expiring on or before the specified ISO 8601 timestamp |
+
+#### Realtime (WebSocket)
+
+The API also exposes a WebSocket endpoint that streams inventory changes
+(`item.created`, `item.updated`, `item.deleted`, `food.created`, `food.updated`,
+`food.deleted`, `share.created`, `share.deleted`) to the authenticated user.
+
+| Method | Endpoint         | Auth | Description                                          |
+| ------ | ---------------- | ---- | ---------------------------------------------------- |
+| `GET`  | `/api/ws/ticket` | Yes  | Issue a single-use connection ticket (30s lifetime) |
+| `GET`  | `/api/ws`        | No\* | Open the WebSocket connection with `?ticket=<ticket>` |
+
+\* The WebSocket handshake authenticates with the `ticket` query parameter
+instead of the `Authorization` header, because browsers cannot set custom
+headers on WebSocket connections. Tickets are opaque, stored by the backend,
+valid for 30 seconds, and can only be used once, so the longer-lived access
+token never appears in a URL or proxy log.
 
 ## Known Issues or Limitations
+
 - JWT tokens are basic, do not offer refresh tokens or revocation
 - Integration tests rely on docker to create test containers
 
 ## Future Features
+
 - Notifications for items nearing expiration
 - Barcode scanning for easier item addition
 - Visualization of inventory data such as charts or graphs
 
 ## AI usage disclaimer
+
 This project was developed with the assistance of AI tools, including ChatGPT and GitHub Copilot
 
 All generated artifacts were reviewed and modified to ensure standard and correctness.
 
 ### AI Assisted
+
 - Unit and integration tests
 - Readme elements
 - UI components
@@ -217,6 +290,7 @@ All generated artifacts were reviewed and modified to ensure standard and correc
 - Debugging and troubleshooting
 
 ### Solely Human authored
+
 - App idea
 - Validation and error handling
 - System architecture and design

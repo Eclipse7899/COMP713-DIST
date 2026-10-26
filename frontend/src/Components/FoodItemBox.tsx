@@ -9,11 +9,13 @@ export default function FoodItemBox({
   foodTypes,
   onDelete,
   onEdit,
+  readOnly = false,
 }: {
   item: FoodItem;
   foodTypes: FoodType[];
   onDelete: (id: string) => Promise<void>;
   onEdit: (id: string, item: EditFoodItem) => Promise<void>;
+  readOnly?: boolean;
 }) {
   const [isDeleting, setIsDeleting] = React.useState(false);
   const [now, setNow] = useState(Date.now());
@@ -62,17 +64,21 @@ export default function FoodItemBox({
               {item.food.name}
             </div>
             <div className="flex flex-wrap items-center gap-2 text-sm text-(--text)">
-            <span>
-              {item.quantity} {item.unit} · {titleCase(item.food.category)}
-            </span>
+              <span>
+                {item.quantity} {item.unit} · {titleCase(item.food.category)}
+              </span>
               {isExpired ? (
                 <span className="chip bg-red-100 text-red-700 dark:bg-red-950/60 dark:text-red-400">
-                Expired
-              </span>
+                  Expired
+                </span>
               ) : item.expiryDate ? (
                 <span className="text-(--secondary)">
-                · expires {new Date(item.expiryDate).toLocaleDateString()} {new Date(item.expiryDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-              </span>
+                  · expires {new Date(item.expiryDate).toLocaleDateString()}{' '}
+                  {new Date(item.expiryDate).toLocaleTimeString([], {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
+                </span>
               ) : null}
             </div>
           </div>
@@ -91,27 +97,37 @@ export default function FoodItemBox({
             </div>
           )}
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setIsEditing(true)}
-            className="btn-secondary"
-          >
-            Edit
-          </button>
-        </div>
-        <div className="flex items-center">
-          <button
-            type="button"
-            onClick={() => handleDelete(item.id)}
-            disabled={isDeleting}
-            className="btn-danger"        >
-            {isDeleting ? 'Deleting...' : 'Delete'}
-          </button>
-        </div>
+        {!readOnly && (
+          <>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setIsEditing(true)}
+                className="btn-secondary"
+              >
+                Edit
+              </button>
+            </div>
+            <div className="flex items-center">
+              <button
+                type="button"
+                onClick={() => handleDelete(item.id)}
+                disabled={isDeleting}
+                className="btn-danger"
+              >
+                {isDeleting ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
+          </>
+        )}
       </div>
-      {(isEditing) && (
-        <EditFoodItemForm item={item} foodTypes={foodTypes} onEdit={handleEdit} onCancel={() => setIsEditing(false)} />
+      {isEditing && !readOnly && (
+        <EditFoodItemForm
+          item={item}
+          foodTypes={foodTypes}
+          onEdit={handleEdit}
+          onCancel={() => setIsEditing(false)}
+        />
       )}
     </div>
   );

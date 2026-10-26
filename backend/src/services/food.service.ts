@@ -1,40 +1,37 @@
-import type { FoodRepository } from '../repositories/food.repo';
 import type { FoodCategory } from '../generated/prisma/enums';
+import type { RealtimeHub } from '../realtime/realtime-hub';
+import type { FoodRepository } from '../repositories/food.repo';
+import { type FoodDto, foodDtoSchema } from '../schemas';
 import type { Result } from '../util';
-import type { FoodDto } from '../dtos';
 
 export class FoodService {
-  constructor(private readonly foodRepo: FoodRepository) {}
+  constructor(
+    private readonly foodRepo: FoodRepository,
+    private readonly realtime: RealtimeHub,
+  ) {}
 
   async createFood(
     userId: string,
     data: {
       name: string;
       category: FoodCategory;
-    }
+    },
   ): Promise<FoodDto> {
     const food = await this.foodRepo.create({
       name: data.name,
       category: data.category,
       createdByUserId: userId,
     });
-
-    return {
-      id: food.id,
-      name: food.name,
-      category: food.category,
-      createdByUserId: food.createdByUserId,
-    };
+    this.realtime.broadcast(userId, {
+      type: 'food.created',
+      data: foodDtoSchema.parse(food),
+    });
+    return foodDtoSchema.parse(food);
   }
 
   async getFood(userId: string, category?: FoodCategory): Promise<FoodDto[]> {
     const food = this.foodRepo.findForUser(userId, category);
-    return (await food).map((f) => ({
-      id: f.id,
-      name: f.name,
-      category: f.category,
-      createdByUserId: f.createdByUserId,
-    }));
+    return (await food).map((f) => foodDtoSchema.parse(f));
   }
 
   async updateFood(
@@ -50,7 +47,7 @@ export class FoodService {
       return {
         success: false,
         error: 'NOT_FOUND',
-      }
+      };
     }
     const existing = result.data;
     if (existing.createdByUserId !== userId) {
@@ -67,18 +64,20 @@ export class FoodService {
       };
     }
     const updatedFood = updateResult.data;
+    this.realtime.broadcast(userId, {
+      type: 'food.updated',
+      data: foodDtoSchema.parse(updatedFood),
+    });
     return {
       success: true,
-      data: {
-        id: updatedFood.id,
-        name: updatedFood.name,
-        category: updatedFood.category,
-        createdByUserId: updatedFood.createdByUserId,
-      },
+      data: foodDtoSchema.parse(updatedFood),
     };
   }
 
-  async deleteFood(id: string, userId: string): Promise<Result<void, 'NOT_FOUND' | 'UNAUTHORIZED'>> {
+  async deleteFood(
+    id: string,
+    userId: string,
+  ): Promise<Result<void, 'NOT_FOUND' | 'UNAUTHORIZED'>> {
     const result = await this.getFoodById(id);
     if (!result.success) {
       return {
@@ -93,7 +92,14 @@ export class FoodService {
         error: 'UNAUTHORIZED',
       };
     }
-    return await this.foodRepo.deleteForUser(id, userId);
+    const deleted = await this.foodRepo.deleteForUser(id, userId);
+    if (deleted.success) {
+      this.realtime.broadcast(userId, {
+        type: 'food.deleted',
+        data: { id: existing.id },
+      });
+    }
+    return deleted;
   }
 
   async getFoodById(id: string): Promise<Result<FoodDto, 'NOT_FOUND'>> {
@@ -106,12 +112,7 @@ export class FoodService {
     }
     return {
       success: true,
-      data: {
-        id: food.id,
-        name: food.name,
-        category: food.category,
-        createdByUserId: food.createdByUserId,
-      },
+      data: foodDtoSchema.parse(food),
     };
   }
 }

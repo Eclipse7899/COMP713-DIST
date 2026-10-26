@@ -28,19 +28,15 @@ export default function Navbar() {
           {authenticated ? (
             <div className="flex items-center space-x-3 sm:space-x-4">
               <span className="text-sm sm:text-base font-medium text-(--text)">
-                Welcome, <span className="font-semibold text-(--text-h)">{authenticated.username}</span>
+                Welcome,{' '}
+                <span className="font-semibold text-(--text-h)">
+                  {authenticated.username}
+                </span>
               </span>
-              <Link
-                to="/dashboard"
-                className="btn-secondary"
-              >
+              <Link to="/dashboard" className="btn-secondary">
                 Dashboard
               </Link>
-              <button
-                type="button"
-                onClick={logout}
-                className="btn"
-              >
+              <button type="button" onClick={logout} className="btn">
                 Logout
               </button>
             </div>

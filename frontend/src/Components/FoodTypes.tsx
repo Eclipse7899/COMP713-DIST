@@ -1,14 +1,18 @@
 import * as React from 'react';
 import { useEffect } from 'react';
 import { parseResponse } from 'hono/client';
-import type { EditFoodType, FoodType } from '../models';
+import type { EditFoodType, FoodType, RealtimeSubscribe } from '../models';
 import { getClient } from '../client';
 import { AddFoodTypeForm } from './Forms/AddFoodTypeForm.tsx';
 import FoodTypeBox from './FoodTypeBox';
 import ErrorMessage from './ErrorMessage';
 import { getApiErrorMessage } from '../apiError';
 
-export default function FoodTypes() {
+export default function FoodTypes({
+  realtime,
+}: {
+  realtime?: RealtimeSubscribe;
+} = {}) {
   const [types, setTypes] = React.useState<FoodType[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState('');
@@ -44,6 +48,28 @@ export default function FoodTypes() {
     setTypes((current) => current.filter((type) => type.id !== id));
   };
 
+  useEffect(() => {
+    if (!realtime) {
+      return;
+    }
+
+    return realtime((event) => {
+      if (event.type === 'food.created') {
+        setTypes((current) => [...current, event.data]);
+      } else if (event.type === 'food.updated') {
+        setTypes((current) =>
+          current.map((type) =>
+            type.id === event.data.id ? event.data : type,
+          ),
+        );
+      } else if (event.type === 'food.deleted') {
+        setTypes((current) =>
+          current.filter((type) => type.id !== event.data.id),
+        );
+      }
+    });
+  }, [realtime]);
+
   const editType = async (id: string, form: EditFoodType) => {
     setError('');
     const res = await parseResponse(
@@ -54,9 +80,6 @@ export default function FoodTypes() {
     if (!res) {
       return;
     }
-    setTypes((current) =>
-      current.map((type) => (type.id === id ? { ...type, ...form } : type)),
-    );
   };
 
   useEffect(() => {
@@ -69,7 +92,6 @@ export default function FoodTypes() {
         onCancel={() => setAddTypeModalOpen(false)}
         onDone={() => {
           setAddTypeModalOpen(false);
-          loadTypes();
         }}
       />
     );
@@ -88,22 +110,29 @@ export default function FoodTypes() {
         </button>
       </div>
 
-      <ErrorMessage message={error}/>
+      <ErrorMessage message={error} />
 
       <div className="card">
         {loading ? (
-          <div className="p-8 text-center text-(--secondary)">Loading food
-            types...</div>
+          <div className="p-8 text-center text-(--secondary)">
+            Loading food types...
+          </div>
         ) : types.length === 0 ? (
-          <div className="p-8 text-center text-(--secondary)">No food types yet.
-            Add one above!</div>
+          <div className="p-8 text-center text-(--secondary)">
+            No food types yet. Add one above!
+          </div>
         ) : (
           <ul className="divide-y divide-(--border)">
             {types.map((type) => (
-              <li key={type.id}
-                  className="p-4 hover:bg-(--secondary)/5 transition-colors">
-                <FoodTypeBox foodType={type} onDelete={deleteType}
-                             onEdit={editType}/>
+              <li
+                key={type.id}
+                className="p-4 hover:bg-(--secondary)/5 transition-colors"
+              >
+                <FoodTypeBox
+                  foodType={type}
+                  onDelete={deleteType}
+                  onEdit={editType}
+                />
               </li>
             ))}
           </ul>

@@ -1,8 +1,19 @@
 {
   "name": "comp713",
   "private": true,
+  "scripts": {
+    "generate": "bun run --cwd auth-service prisma:generate && bun run --cwd backend prisma:generate && bun run --cwd auth-service proto:generate && bun run --cwd backend proto:generate && bun run --cwd backend openapi:generate",
+    "build:images": "bun run --cwd auth-service build:image && bun run --cwd backend build:image && bun run --cwd frontend build:image && bun run --cwd auth-service build:init-image && bun run --cwd backend build:init-image",
+    "lint": "oxlint",
+    "format": "oxfmt"
+  },
   "workspaces": [
     "frontend",
-    "backend"
-  ]
+    "backend",
+    "auth-service"
+  ],
+  "devDependencies": {
+    "oxfmt": "^0.64.0",
+    "oxlint": "^1.79.0"
+  }
 }

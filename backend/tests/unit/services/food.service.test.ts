@@ -1,8 +1,10 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Food } from '../../../src/generated/prisma/client';
+import { beforeEach, describe, expect, it, vi } from 'bun:test';
+import { mocked } from '../../mocked';
+import { FoodService } from '../../../src/services/food.service';
+import type { RealtimeHub } from '../../../src/realtime/realtime-hub';
 import { FoodCategory } from '../../../src/generated/prisma/enums';
 import type { FoodRepository } from '../../../src/repositories/food.repo';
-import { FoodService } from '../../../src/services/food.service';
+import type { Food } from '../../../src/generated/prisma/client';
 
 const USER_ID = 'user-1';
 const OTHER_USER_ID = 'other-user';
@@ -24,6 +26,7 @@ const food = {
 describe('FoodService', () => {
   let foodRepo: FoodRepository;
   let service: FoodService;
+  let realtime: RealtimeHub;
 
   beforeEach(() => {
     foodRepo = {
@@ -33,11 +36,16 @@ describe('FoodService', () => {
       deleteForUser: vi.fn(),
       findById: vi.fn(),
     };
-    service = new FoodService(foodRepo);
+    realtime = {
+      broadcast: vi.fn(),
+      subscribe: vi.fn(),
+      unsubscribe: vi.fn(),
+    } as unknown as RealtimeHub;
+    service = new FoodService(foodRepo, realtime);
   });
 
   it('creates food owned by the current user', async () => {
-    vi.mocked(foodRepo.create).mockResolvedValue(food);
+    mocked(foodRepo.create).mockResolvedValue(food);
 
     await expect(
       service.createFood(USER_ID, {
@@ -55,10 +63,19 @@ describe('FoodService', () => {
       category: food.category,
       createdByUserId: USER_ID,
     });
+    expect(realtime.broadcast).toHaveBeenCalledWith(USER_ID, {
+      type: 'food.created',
+      data: {
+        id: food.id,
+        name: food.name,
+        category: food.category,
+        createdByUserId: food.createdByUserId,
+      },
+    });
   });
 
   it('maps food visible to a user', async () => {
-    vi.mocked(foodRepo.findForUser).mockResolvedValue([food]);
+    mocked(foodRepo.findForUser).mockResolvedValue([food]);
 
     await expect(service.getFood(USER_ID, FoodCategory.FRUIT)).resolves.toEqual(
       [
@@ -74,10 +91,11 @@ describe('FoodService', () => {
       USER_ID,
       FoodCategory.FRUIT,
     );
+    expect(realtime.broadcast).not.toHaveBeenCalled();
   });
 
   it('does not update food owned by another user', async () => {
-    vi.mocked(foodRepo.findById).mockResolvedValue(food);
+    mocked(foodRepo.findById).mockResolvedValue(food);
 
     await expect(
       service.updateFood(food.id, { name: UPDATED_FOOD_NAME }, OTHER_USER_ID),
@@ -86,12 +104,13 @@ describe('FoodService', () => {
       error: UNAUTHORIZED_ERROR,
     });
     expect(foodRepo.updateForUser).not.toHaveBeenCalled();
+    expect(realtime.broadcast).not.toHaveBeenCalled();
   });
 
   it('updates owned food', async () => {
     const updatedFood = { ...food, name: UPDATED_FOOD_NAME };
-    vi.mocked(foodRepo.findById).mockResolvedValue(food);
-    vi.mocked(foodRepo.updateForUser).mockResolvedValue({
+    mocked(foodRepo.findById).mockResolvedValue(food);
+    mocked(foodRepo.updateForUser).mockResolvedValue({
       success: true,
       data: updatedFood,
     });
@@ -111,20 +130,62 @@ describe('FoodService', () => {
         createdByUserId: food.createdByUserId,
       },
     });
+    expect(realtime.broadcast).toHaveBeenCalledWith(USER_ID, {
+      type: 'food.updated',
+      data: {
+        id: food.id,
+        name: UPDATED_FOOD_NAME,
+        category: food.category,
+        createdByUserId: food.createdByUserId,
+      },
+    });
   });
 
   it('does not delete food owned by another user', async () => {
-    vi.mocked(foodRepo.findById).mockResolvedValue(food);
+    mocked(foodRepo.findById).mockResolvedValue(food);
 
     await expect(service.deleteFood(food.id, OTHER_USER_ID)).resolves.toEqual({
       success: false,
       error: UNAUTHORIZED_ERROR,
     });
     expect(foodRepo.deleteForUser).not.toHaveBeenCalled();
+    expect(realtime.broadcast).not.toHaveBeenCalled();
+  });
+
+  it('deletes owned food and broadcasts food.deleted', async () => {
+    mocked(foodRepo.findById).mockResolvedValue(food);
+    mocked(foodRepo.deleteForUser).mockResolvedValue({
+      success: true,
+      data: undefined,
+    });
+
+    await expect(service.deleteFood(food.id, USER_ID)).resolves.toEqual({
+      success: true,
+      data: undefined,
+    });
+    expect(foodRepo.deleteForUser).toHaveBeenCalledWith(food.id, USER_ID);
+    expect(realtime.broadcast).toHaveBeenCalledWith(USER_ID, {
+      type: 'food.deleted',
+      data: { id: food.id },
+    });
+  });
+
+  it('does not broadcast when the repository refuses the delete', async () => {
+    mocked(foodRepo.findById).mockResolvedValue(food);
+    mocked(foodRepo.deleteForUser).mockResolvedValue({
+      success: false,
+      error: NOT_FOUND_ERROR,
+    });
+
+    await expect(service.deleteFood(food.id, USER_ID)).resolves.toEqual({
+      success: false,
+      error: NOT_FOUND_ERROR,
+    });
+    expect(realtime.broadcast).not.toHaveBeenCalled();
   });
 
   it('returns NOT_FOUND for an unknown food id', async () => {
-    vi.mocked(foodRepo.findById).mockResolvedValue(null);
+    mocked(foodRepo.findById).mockResolvedValue(null);
 
     await expect(service.getFoodById(MISSING_FOOD_ID)).resolves.toEqual({
       success: false,

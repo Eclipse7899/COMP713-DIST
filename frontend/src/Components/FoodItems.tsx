@@ -1,16 +1,29 @@
-import * as React from 'react';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { parseResponse } from 'hono/client';
-import { FoodCategory } from '@stocked/backend/src/generated/prisma/enums';
 import { getClient } from '../client';
-import { titleCase } from '../util';
+import { getAuthentication, titleCase } from '../util';
 import FoodItemBox from './FoodItemBox';
 import AddFoodItemForm from './Forms/AddFoodItemForm.tsx';
 import ErrorMessage from './ErrorMessage';
-import type { EditFoodItem, FoodType, FoodItem } from '../models.ts';
+import {
+  type EditFoodItem,
+  FOOD_CATEGORIES,
+  type FoodCategory,
+  type FoodItem,
+  type FoodType,
+  type RealtimeSubscribe,
+} from '../models.ts';
 import { getApiErrorMessage } from '../apiError';
 
-export default function FoodItems() {
+export default function FoodItems({
+  ownerId,
+  readOnly = false,
+  realtime,
+}: {
+  ownerId?: string;
+  readOnly?: boolean;
+  realtime?: RealtimeSubscribe;
+} = {}) {
   const [items, setItems] = useState<FoodItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -22,6 +35,7 @@ export default function FoodItems() {
   const [expiresBefore, setExpiresBefore] = useState('');
 
   const client = useMemo(() => getClient(), []);
+  const userId = useMemo(() => ownerId ?? getAuthentication()?.sub, [ownerId]);
 
   const hasActiveFilters = Boolean(
     search.trim() || category || expiresBefore || sort !== 'asc',
@@ -41,15 +55,35 @@ export default function FoodItems() {
     setFoodTypes(res);
   }, [client]);
 
+  useEffect(() => {
+    if (readOnly || !realtime) {
+      return;
+    }
+
+    return realtime((event) => {
+      if (event.type === 'item.created') {
+        setItems((current) => [...current, event.data]);
+      } else if (event.type === 'item.updated') {
+        setItems((current) =>
+          current.map((item) =>
+            item.id === event.data.id ? event.data : item,
+          ),
+        );
+      } else if (event.type === 'item.deleted') {
+        setItems((current) =>
+          current.filter((item) => item.id !== event.data.id),
+        );
+      }
+    });
+  }, [readOnly, realtime]);
+
   const loadItems = useCallback(
-    async (
-      {
-        searchValue = search,
-        categoryValue = category,
-        sortValue = sort,
-        expiresBeforeValue = expiresBefore,
-      } = {},
-    ) => {
+    async ({
+      searchValue = search,
+      categoryValue = category,
+      sortValue = sort,
+      expiresBeforeValue = expiresBefore,
+    } = {}) => {
       setLoading(true);
       setError('');
 
@@ -75,8 +109,15 @@ export default function FoodItems() {
         query.expiryDate = date.toISOString();
       }
 
+      if (!userId) {
+        setError('Not authenticated');
+        setLoading(false);
+        return;
+      }
+
       const res = await parseResponse(
-        client.api.items.$get({
+        client.api.items[':userId'].$get({
+          param: { userId },
           query,
         }),
       ).catch((error: unknown) => {
@@ -91,7 +132,7 @@ export default function FoodItems() {
       setItems(res);
       setLoading(false);
     },
-    [client],
+    [client, userId, search, category, sort, expiresBefore],
   );
 
   const clearFilters = useCallback(async () => {
@@ -111,7 +152,7 @@ export default function FoodItems() {
   const loadItemsOnMount = useCallback(() => {
     loadItems();
     loadFoodTypes();
-  }, [loadItems]);
+  }, [loadItems, loadFoodTypes]);
 
   const filterItems = async () => {
     await loadItems({
@@ -122,21 +163,26 @@ export default function FoodItems() {
     });
   };
 
-  React.useEffect(() => {
+  useEffect(() => {
     loadItemsOnMount();
-  }, [loadItemsOnMount]);
+  }, []);
 
   const deleteItem = async (id: string) => {
     setError('');
+    if (!userId) {
+      setError('Not authenticated');
+      return;
+    }
     const res = await parseResponse(
-      client.api.items[':id'].$delete({ param: { id } }),
+      client.api.items[':userId'][':id'].$delete({
+        param: { userId, id },
+      }),
     ).catch((error: unknown) => {
       setError(getApiErrorMessage(error, 'delete item'));
     });
     if (!res) {
       return;
     }
-    setItems((current) => current.filter((item) => item.id !== id));
   };
 
   if (addItemModalOpen) {
@@ -145,16 +191,20 @@ export default function FoodItems() {
         onCancel={() => setAddItemModalOpen(false)}
         onDone={() => {
           setAddItemModalOpen(false);
-          loadItems();
         }}
       />
     );
   }
 
   const editItem = async (id: string, form: EditFoodItem) => {
+    if (!userId) {
+      setError('Not authenticated');
+      return;
+    }
     const res = await parseResponse(
-      client.api.items[':id'].$put({
+      client.api.items[':userId'][':id'].$put({
         param: {
+          userId,
           id,
         },
         json: {
@@ -173,28 +223,32 @@ export default function FoodItems() {
     if (!res) {
       return;
     }
-    setItems((current) => current.map((item) => (item.id === id ? res : item)));
   };
 
   return (
     <div className="flex flex-col gap-4 items-stretch">
       <div className="flex justify-between items-center">
-        <h2 className="text-xl font-semibold text-(--text-h)">Stocked Items</h2>
-        <button
-          type="button"
-          onClick={() => setAddItemModalOpen(true)}
-          className="btn"
-        >
-          Add Item
-        </button>
+        <h2 className="text-xl font-semibold text-(--text-h)">
+          {readOnly ? 'Shared Items' : 'Stocked Items'}
+        </h2>
+        {!readOnly && (
+          <button
+            type="button"
+            onClick={() => setAddItemModalOpen(true)}
+            className="btn"
+          >
+            Add Item
+          </button>
+        )}
       </div>
 
-      <div
-        className="card flex flex-col gap-6 p-4">
+      <div className="card flex flex-col gap-6 p-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="search-items"
-                   className="text-xs font-semibold uppercase tracking-wider text-(--secondary)">
+            <label
+              htmlFor="search-items"
+              className="text-xs font-semibold uppercase tracking-wider text-(--secondary)"
+            >
               Search
             </label>
             <input
@@ -208,8 +262,10 @@ export default function FoodItems() {
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="category-filter"
-                   className="text-xs font-semibold uppercase tracking-wider text-(--secondary)">
+            <label
+              htmlFor="category-filter"
+              className="text-xs font-semibold uppercase tracking-wider text-(--secondary)"
+            >
               Category
             </label>
             <select
@@ -219,7 +275,7 @@ export default function FoodItems() {
               className="dropdown text-sm"
             >
               <option value="">All Categories</option>
-              {Object.values(FoodCategory).map((category) => (
+              {FOOD_CATEGORIES.map((category) => (
                 <option key={category} value={category}>
                   {titleCase(category)}
                 </option>
@@ -228,8 +284,10 @@ export default function FoodItems() {
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="sort-filter"
-                   className="text-xs font-semibold uppercase tracking-wider text-(--secondary)">
+            <label
+              htmlFor="sort-filter"
+              className="text-xs font-semibold uppercase tracking-wider text-(--secondary)"
+            >
               Sort By Expiry
             </label>
             <select
@@ -244,8 +302,10 @@ export default function FoodItems() {
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="expires-before-filter"
-                   className="text-xs font-semibold uppercase tracking-wider text-(--secondary)">
+            <label
+              htmlFor="expires-before-filter"
+              className="text-xs font-semibold uppercase tracking-wider text-(--secondary)"
+            >
               Expires Before
             </label>
             <input
@@ -273,12 +333,13 @@ export default function FoodItems() {
         </div>
       </div>
 
-      <ErrorMessage message={error}/>
+      <ErrorMessage message={error} />
 
       <div className="card">
         {loading ? (
-          <div className="p-8 text-center text-(--secondary)">Loading stocked
-            items...</div>
+          <div className="p-8 text-center text-(--secondary)">
+            Loading stocked items...
+          </div>
         ) : items.length === 0 ? (
           <div className="p-8 text-center text-(--secondary)">
             {hasActiveFilters ? (
@@ -292,10 +353,17 @@ export default function FoodItems() {
         ) : (
           <ul className="divide-y divide-(--border)">
             {items.map((item) => (
-              <li key={item.id}
-                  className="p-4 hover:bg-(--secondary)/5 transition-colors">
-                <FoodItemBox item={item} foodTypes={foodTypes}
-                             onDelete={deleteItem} onEdit={editItem}/>
+              <li
+                key={item.id}
+                className="p-4 hover:bg-(--secondary)/5 transition-colors"
+              >
+                <FoodItemBox
+                  item={item}
+                  foodTypes={foodTypes}
+                  onDelete={deleteItem}
+                  onEdit={editItem}
+                  readOnly={readOnly}
+                />
               </li>
             ))}
           </ul>

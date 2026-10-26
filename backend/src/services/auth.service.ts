@@ -1,100 +1,187 @@
-import { comparePasswords, hashPassword, type Result } from '../util';
-import type { UserRepository } from '../repositories/users.repo';
-import type { JwtFields } from '../variables';
-import { sign } from 'hono/jwt';
+import { ChannelCredentials, Metadata } from "@grpc/grpc-js";
+import { AuthServiceClient } from "../generated/proto/auth";
+import type { UserRepository } from "../repositories/users.repo";
+import { type UserDto, userDtoSchema } from "../schemas";
+import type { Result } from "../util";
+
+const AUTH_RPC_TIMEOUT_MS = 5_000;
+
+function rpcOptions() {
+  return { deadline: Date.now() + AUTH_RPC_TIMEOUT_MS };
+}
 
 export class AuthService {
-  constructor(private readonly jwtSecret: string, private readonly userRepo: UserRepository) {
+  private client: AuthServiceClient;
+
+  constructor(
+    authUrl: string,
+    private readonly usersRepo: UserRepository,
+  ) {
+    this.client = new AuthServiceClient(
+      authUrl,
+      ChannelCredentials.createInsecure(),
+    );
   }
 
-  normalizeEmail(email: string): string {
-    return email.trim().toLowerCase();
-  }
-
-  async registerUser(email: string, password: string, username: string,
-  ): Promise<Result<{
-    user: {
-      id: string
-      email: string
-      username: string
-    }
-    accessToken: string
-  }, 'USERNAME_TAKEN' | 'EMAIL_TAKEN'>> {
-    const hashedPassword = await hashPassword(password);
-    const normalizedEmail = this.normalizeEmail(email);
-    const result = await this.userRepo.createUser(normalizedEmail, hashedPassword, username);
-    if (!result.success) {
-      return {
-        success: false,
-        error: result.error,
-      };
-    }
-    const accessToken = await this.createAccessToken(result.data);
-    return {
-      success: true,
-      data: {
-        user: {
-          id: result.data.id,
-          email: result.data.email,
-          username: result.data.username,
-        },
-        accessToken: accessToken.accessToken,
-      },
-    };
-  }
-
-  async createAccessToken(
-    user_data: { id: string; email: string; username: string },
-  ): Promise<{ accessToken: string }> {
-    const payload: JwtFields = {
-      sub: user_data.id,
-      email: user_data.email,
-      username: user_data.username,
-      exp: Math.floor(Date.now() / 1000) + 60 * 60,
-    };
-    return {
-      accessToken: await sign(payload, this.jwtSecret),
-    };
-  }
-
-  async signInUser(
+  async register(
     email: string,
     password: string,
-  ): Promise<Result<{ accessToken: string, user: { id: string; email: string; username: string } }, void>> {
-    const normalizedEmail = this.normalizeEmail(email);
-    const user = await this.userRepo.findUserByEmail(normalizedEmail);
-    if (!user) {
-      return {
-        success: false,
-        error: undefined,
-      };
-    }
-
-    const isMatch = await comparePasswords(password, user.hashed_password);
-    if (!isMatch) {
-      return {
-        success: false,
-        error: undefined,
-      };
-    }
-
-    const { accessToken } = await this.createAccessToken(
+    username: string,
+  ): Promise<
+    Result<
       {
-        id: user.id,
-        email: user.email,
-        username: user.username,
+        token: string;
+        user: UserDto;
       },
-    );
-    return {
-      success: true,
-      data: {
-        user: {
-          id: user.id,
-          email: user.email,
-          username: user.username,
+      string
+    >
+  > {
+    return new Promise<
+      Result<
+        {
+          token: string;
+          user: UserDto;
         },
-        accessToken: accessToken,
+        string
+      >
+    >((resolve, reject) => {
+      this.client.register(
+        { email, password, username },
+        new Metadata(),
+        rpcOptions(),
+        async (err, response) => {
+          if (err) {
+            reject(err);
+          } else {
+            if (response.payload?.$case === "success") {
+              const user = userDtoSchema.parse(response.payload.success.user);
+              try {
+                await this.usersRepo.ensureUser(user.id);
+              } catch (error) {
+                reject(error);
+                return;
+              }
+              resolve({
+                success: true,
+                data: {
+                  token: response.payload.success.token,
+                  user,
+                },
+              });
+            } else if (response.payload?.$case === "error") {
+              resolve({ success: false, error: response.payload.error });
+            }
+          }
+        },
+      );
+    });
+  }
+
+  async getUser(userId: string): Promise<Result<UserDto, "NOT_FOUND">> {
+    return new Promise<Result<UserDto, "NOT_FOUND">>((resolve, reject) => {
+      this.client.getUser(
+        { userId },
+        new Metadata(),
+        rpcOptions(),
+        (err, response) => {
+          if (err) {
+            reject(err);
+          } else {
+            if (response.payload?.$case === "user") {
+              resolve({
+                success: true,
+                data: userDtoSchema.parse(response.payload.user),
+              });
+            } else if (response.payload?.$case === "error") {
+              resolve({ success: false, error: "NOT_FOUND" });
+            }
+          }
+        },
+      );
+    });
+  }
+
+  async getUserByEmail(email: string): Promise<Result<UserDto, "NOT_FOUND">> {
+    return new Promise<Result<UserDto, "NOT_FOUND">>((resolve, reject) => {
+      this.client.getUserByEmail(
+        { email },
+        new Metadata(),
+        rpcOptions(),
+        async (err, response) => {
+          if (err) {
+            reject(err);
+          } else {
+            if (response.payload?.$case === "user") {
+              const user = userDtoSchema.parse(response.payload.user);
+              try {
+                await this.usersRepo.ensureUser(user.id);
+              } catch (error) {
+                reject(error);
+                return;
+              }
+              resolve({
+                success: true,
+                data: user,
+              });
+            } else if (response.payload?.$case === "error") {
+              resolve({ success: false, error: "NOT_FOUND" });
+            }
+          }
+        },
+      );
+    });
+  }
+
+  async signIn(
+    email: string,
+    password: string,
+  ): Promise<
+    Result<
+      {
+        token: string;
+        user: UserDto;
       },
-    };
+      string
+    >
+  > {
+    return new Promise<
+      Result<
+        {
+          token: string;
+          user: UserDto;
+        },
+        string
+      >
+    >((resolve, reject) => {
+      this.client.signIn(
+        { email, password },
+        new Metadata(),
+        rpcOptions(),
+        async (err, response) => {
+          if (err) {
+            reject(err);
+          } else {
+            if (response.payload?.$case === "success") {
+              const user = userDtoSchema.parse(response.payload.success.user);
+              try {
+                await this.usersRepo.ensureUser(user.id);
+              } catch (error) {
+                reject(error);
+                return;
+              }
+              resolve({
+                success: true,
+                data: {
+                  token: response.payload.success.token,
+                  user,
+                },
+              });
+            } else if (response.payload?.$case === "error") {
+              resolve({ success: false, error: response.payload.error });
+            }
+          }
+        },
+      );
+    });
   }
 }

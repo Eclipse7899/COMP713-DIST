@@ -1,36 +1,32 @@
-FROM oven/bun:alpine as base
+FROM oven/bun:alpine AS base
 
 WORKDIR /app
 
 FROM base AS build
 
-COPY package.json bun.lock* ./
+RUN apk add --no-cache protoc
 
-RUN bun install
+COPY . .
 
-COPY prisma ./prisma
-COPY prisma.config.ts ./
-COPY src ./src
+WORKDIR /app/backend
+
+RUN bun install --frozen-lockfile
+RUN bun run prisma:generate
+RUN bun run proto:generate
 
 ENV NODE_ENV=production
 
-RUN bun run prisma:generate
-RUN bun build ./src/index.ts --outdir ./dist --target bun
+RUN bun build src/index.ts --outdir ./dist --target bun
 
 FROM base AS release
 
 RUN apk add --no-cache curl
 
-COPY --from=build /app/dist ./dist
-COPY --from=build /app/package.json ./
-COPY --from=build /app/node_modules ./node_modules
-COPY --from=build /app/prisma ./prisma
-COPY --from=build /app/prisma.config.ts ./
-COPY --from=build /app/src ./src
+COPY --from=build /app/backend/dist ./dist
 
 ENV NODE_ENV=production
 
 USER bun
 EXPOSE 3000
 
-ENTRYPOINT ["bun", "run", "dist/index.js"]
+ENTRYPOINT ["bun", "./dist/index.js"]

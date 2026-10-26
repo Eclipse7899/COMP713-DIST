@@ -1,24 +1,38 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { setupTestDatabase, teardownTestDatabase } from '../setup';
-import { createDb } from '../../src/db';
+import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  jest,
+} from 'bun:test';
 import { createApp } from '../../src/app';
-import type { PrismaClient } from '../../src/generated/prisma/client';
 import { sign } from 'hono/jwt';
 import type { JwtFields } from '../../src/variables';
+import { PrismaClient } from '../../src/generated/prisma/client';
+import { PrismaClient as AuthPrismaClient } from '../../../auth-service/src/generated/prisma/client';
+import { setup, teardown } from '../setup';
+import { PrismaPg } from '@prisma/adapter-pg';
 import { FoodCategory } from '../../src/generated/prisma/enums';
+
+jest.setTimeout(30000);
 
 let app: ReturnType<typeof createApp>['app'];
 let db: PrismaClient;
+let authDb: AuthPrismaClient;
 const jwtSecret = 'test-secret';
+const authPort = 5051;
 
 async function createTestUser(username: string, email: string) {
-  const user = await db.user.create({
+  const user = await authDb.user.create({
     data: {
       username,
       email,
       hashed_password: 'hashedpassword',
     },
   });
+  await db.user.create({ data: { id: user.id } });
 
   const payload: JwtFields = {
     sub: user.id,
@@ -32,20 +46,28 @@ async function createTestUser(username: string, email: string) {
 }
 
 beforeAll(async () => {
-  const dbUrl = await setupTestDatabase();
-  db = createDb(dbUrl);
-  app = createApp(jwtSecret, db).app;
+  const { backendDatabaseUrl, authDatabaseUrl, auth } = await setup(
+    jwtSecret,
+    authPort,
+  );
+  db = new PrismaClient({
+    adapter: new PrismaPg(backendDatabaseUrl),
+  });
+  authDb = new AuthPrismaClient({
+    adapter: new PrismaPg(authDatabaseUrl),
+  });
+  app = createApp(jwtSecret, auth, db).app;
 });
 
 afterAll(async () => {
-  await teardownTestDatabase();
+  await teardown();
 });
 
 beforeEach(async () => {
-  // Ensure idempotent clean state between tests
   await db.foodItem.deleteMany();
   await db.food.deleteMany();
   await db.user.deleteMany();
+  await authDb.user.deleteMany();
 });
 
 describe('Food Endpoints', () => {

@@ -25,6 +25,10 @@
     {
       "name": "Items",
       "description": "Food inventory management"
+    },
+    {
+      "name": "WebSocket",
+      "description": "Realtime inventory event streaming"
     }
   ],
   "servers": [
@@ -43,37 +47,6 @@
     }
   },
   "paths": {
-    "/health": {
-      "get": {
-        "operationId": "getHealth",
-        "tags": [
-          "Health"
-        ],
-        "summary": "Health check",
-        "description": "Returns a static status payload. Does not touch the database or require authentication.",
-        "responses": {
-          "200": {
-            "description": "Service is running",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "status": {
-                      "type": "string",
-                      "const": "ok"
-                    }
-                  },
-                  "required": [
-                    "status"
-                  ]
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/users/me": {
       "get": {
         "operationId": "getApiUsersMe",
@@ -198,15 +171,11 @@
                         "description": "Category the food belongs to"
                       },
                       "createdByUserId": {
-                        "anyOf": [
-                          {
-                            "type": "string"
-                          },
-                          {
-                            "type": "null"
-                          }
-                        ],
-                        "description": "Owner user id, or null for a globally available food"
+                        "description": "Owner user id, or null for a globally available food",
+                        "type": [
+                          "string",
+                          "null"
+                        ]
                       }
                     },
                     "required": [
@@ -313,15 +282,11 @@
                       "description": "Category the food belongs to"
                     },
                     "createdByUserId": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ],
-                      "description": "Owner user id, or null for a globally available food"
+                      "description": "Owner user id, or null for a globally available food",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
                     }
                   },
                   "required": [
@@ -463,15 +428,11 @@
                       "description": "Category the food belongs to"
                     },
                     "createdByUserId": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ],
-                      "description": "Owner user id, or null for a globally available food"
+                      "description": "Owner user id, or null for a globally available food",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
                     }
                   },
                   "required": [
@@ -667,20 +628,521 @@
         }
       }
     },
-    "/api/items": {
+    "/api/items/shared-with-me": {
       "get": {
-        "operationId": "getApiItems",
+        "operationId": "getApiItemsSharedWithMe",
         "tags": [
           "Items"
         ],
-        "summary": "List the authenticated user food items",
-        "description": "Returns the food items owned by the authenticated user, optionally filtered by name, category, and expiry date, and sorted by expiry date.",
+        "summary": "List inventories shared with the authenticated user",
+        "description": "Returns the inventories other users have shared with the authenticated user, including the owner username used to label the inventory. The user identity is taken from the JWT.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Inventories shared with the authenticated user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "userId": {
+                        "type": "string",
+                        "description": "CUID2 identifier of the inventory owner"
+                      },
+                      "username": {
+                        "type": "string",
+                        "description": "Username of the inventory owner, used as the display label"
+                      },
+                      "sharedAt": {
+                        "description": "Timestamp the inventory was shared (ISO 8601)",
+                        "type": "string",
+                        "format": "date-time"
+                      }
+                    },
+                    "required": [
+                      "userId",
+                      "username",
+                      "sharedAt"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, malformed, or invalid access token",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string",
+                  "example": "Unauthorized"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/items/{userId}/shared": {
+      "get": {
+        "operationId": "getApiItemsByUserIdShared",
+        "tags": [
+          "Items"
+        ],
+        "summary": "List users an inventory is shared with",
+        "description": "Returns the inventory shares owned by the user in the path. Only the authenticated owner may list their shares. The user identity is taken from the JWT, never from the path.",
         "security": [
           {
             "bearerAuth": []
           }
         ],
         "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "description": "CUID2 identifier of the inventory owner",
+            "schema": {
+              "type": "string",
+              "example": "clh0000000000000000000000"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Inventory shares owned by the authenticated user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "userId": {
+                        "type": "string",
+                        "description": "CUID2 identifier of the inventory owner"
+                      },
+                      "sharedWithUserId": {
+                        "type": "string",
+                        "description": "CUID2 identifier of the user the inventory is shared with"
+                      },
+                      "sharedAt": {
+                        "description": "Timestamp the inventory was shared (ISO 8601)",
+                        "type": "string",
+                        "format": "date-time"
+                      }
+                    },
+                    "required": [
+                      "userId",
+                      "sharedWithUserId",
+                      "sharedAt"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "description": "Zod validation issues"
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, malformed, or invalid access token",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string",
+                  "example": "Unauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The authenticated user may not access this inventory",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "description": "Human readable error code or message"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "postApiItemsByUserIdShared",
+        "tags": [
+          "Items"
+        ],
+        "summary": "Share an inventory with another user",
+        "description": "Shares the authenticated owner's inventory with another user identified by email address. Only the owner may share their inventory. The user identity is taken from the JWT, never from the path.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "description": "CUID2 identifier of the inventory owner",
+            "schema": {
+              "type": "string",
+              "example": "clh0000000000000000000000"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "sharedWithEmail": {
+                    "type": "string",
+                    "format": "email",
+                    "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+                  }
+                },
+                "required": [
+                  "sharedWithEmail"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Inventory shared",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "const": true,
+                      "description": "Always true when the share was created"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "userId": {
+                          "type": "string",
+                          "description": "CUID2 identifier of the inventory owner"
+                        },
+                        "sharedWithUserId": {
+                          "type": "string",
+                          "description": "CUID2 identifier of the user the inventory is shared with"
+                        },
+                        "sharedAt": {
+                          "description": "Timestamp the inventory was shared (ISO 8601)",
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      },
+                      "required": [
+                        "userId",
+                        "sharedWithUserId",
+                        "sharedAt"
+                      ],
+                      "description": "The newly created inventory share"
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request validation failed, or the owner cannot share with themselves",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "description": "Human readable error code or message"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, malformed, or invalid access token",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string",
+                  "example": "Unauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The authenticated user may not access this inventory",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "description": "Human readable error code or message"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No user exists with that email address",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "description": "Human readable error code or message"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The inventory is already shared with that user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "description": "Human readable error code or message"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/items/{userId}/shared/{sharedWithUserId}": {
+      "delete": {
+        "operationId": "deleteApiItemsByUserIdSharedBySharedWithUserId",
+        "tags": [
+          "Items"
+        ],
+        "summary": "Stop sharing an inventory with a user",
+        "description": "Removes the share between the authenticated owner and the user in the path. Only the owner may change their shares. The user identity is taken from the JWT, never from the path.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "description": "CUID2 identifier of the inventory owner",
+            "schema": {
+              "type": "string",
+              "example": "clh0000000000000000000000"
+            }
+          },
+          {
+            "name": "sharedWithUserId",
+            "in": "path",
+            "required": true,
+            "description": "CUID2 identifier of the user the inventory is shared with",
+            "schema": {
+              "type": "string",
+              "example": "clh0000000000000000000000"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Share removed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "description": "Whether the operation succeeded"
+                    }
+                  },
+                  "required": [
+                    "success"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "description": "Zod validation issues"
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, malformed, or invalid access token",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string",
+                  "example": "Unauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The authenticated user may not access this inventory",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "description": "Human readable error code or message"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The share does not exist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "description": "Human readable error code or message"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/items/{userId}": {
+      "get": {
+        "operationId": "getApiItemsByUserId",
+        "tags": [
+          "Items"
+        ],
+        "summary": "List a user food items",
+        "description": "Returns the food items owned by the user in the path. The authenticated user may list their own items or the items another user has shared with them, optionally filtered by name, category, and expiry date, and sorted by expiry date. The user identity is taken from the JWT, never from the path.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "description": "CUID2 identifier of the inventory owner",
+            "schema": {
+              "type": "string",
+              "example": "clh0000000000000000000000"
+            }
+          },
           {
             "name": "contains",
             "in": "query",
@@ -742,7 +1204,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Food items owned by the authenticated user",
+            "description": "Food items the authenticated user may access",
             "content": {
               "application/json": {
                 "schema": {
@@ -778,20 +1240,18 @@
                         "anyOf": [
                           {
                             "type": "string",
-                            "format": "date-time",
-                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                            "format": "date-time"
                           },
                           {
                             "type": "null"
                           }
                         ],
-                        "description": "Expiry timestamp (ISO 8601) or null when it does not expire"
+                        "description": "Expiry timestamp (ISO 8601)"
                       },
                       "addedAt": {
+                        "description": "Timestamp the item was added (ISO 8601)",
                         "type": "string",
-                        "format": "date-time",
-                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
-                        "description": "Timestamp the item was added (ISO 8601)"
+                        "format": "date-time"
                       },
                       "food": {
                         "type": "object",
@@ -821,15 +1281,11 @@
                             "description": "Category the food belongs to"
                           },
                           "createdByUserId": {
-                            "anyOf": [
-                              {
-                                "type": "string"
-                              },
-                              {
-                                "type": "null"
-                              }
-                            ],
-                            "description": "Owner user id, or null for a globally available food"
+                            "description": "Owner user id, or null for a globally available food",
+                            "type": [
+                              "string",
+                              "null"
+                            ]
                           }
                         },
                         "required": [
@@ -891,19 +1347,50 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "The authenticated user may not access this inventory",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "description": "Human readable error code or message"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
           }
         }
       },
       "post": {
-        "operationId": "postApiItems",
+        "operationId": "postApiItemsByUserId",
         "tags": [
           "Items"
         ],
         "summary": "Create a food item",
-        "description": "Adds a food item to the authenticated user's inventory. The referenced food must be global or owned by the user.",
+        "description": "Adds a food item to the authenticated user's inventory. Only the owner may add items. The referenced food must be global or owned by the user. The user identity is taken from the JWT, never from the path.",
         "security": [
           {
             "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "description": "CUID2 identifier of the inventory owner",
+            "schema": {
+              "type": "string",
+              "example": "clh0000000000000000000000"
+            }
           }
         ],
         "requestBody": {
@@ -938,7 +1425,7 @@
                       {
                         "type": "string",
                         "format": "date-time",
-                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
                       },
                       {
                         "type": "null"
@@ -999,20 +1486,18 @@
                           "anyOf": [
                             {
                               "type": "string",
-                              "format": "date-time",
-                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                              "format": "date-time"
                             },
                             {
                               "type": "null"
                             }
                           ],
-                          "description": "Expiry timestamp (ISO 8601) or null when it does not expire"
+                          "description": "Expiry timestamp (ISO 8601)"
                         },
                         "addedAt": {
+                          "description": "Timestamp the item was added (ISO 8601)",
                           "type": "string",
-                          "format": "date-time",
-                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
-                          "description": "Timestamp the item was added (ISO 8601)"
+                          "format": "date-time"
                         },
                         "food": {
                           "type": "object",
@@ -1042,15 +1527,11 @@
                               "description": "Category the food belongs to"
                             },
                             "createdByUserId": {
-                              "anyOf": [
-                                {
-                                  "type": "string"
-                                },
-                                {
-                                  "type": "null"
-                                }
-                              ],
-                              "description": "Owner user id, or null for a globally available food"
+                              "description": "Owner user id, or null for a globally available food",
+                              "type": [
+                                "string",
+                                "null"
+                              ]
                             }
                           },
                           "required": [
@@ -1120,7 +1601,7 @@
             }
           },
           "403": {
-            "description": "The referenced food belongs to another user",
+            "description": "The authenticated user is not the owner, or the referenced food belongs to another user",
             "content": {
               "application/json": {
                 "schema": {
@@ -1160,20 +1641,30 @@
         }
       }
     },
-    "/api/items/{id}": {
+    "/api/items/{userId}/{id}": {
       "put": {
-        "operationId": "putApiItemsById",
+        "operationId": "putApiItemsByUserIdById",
         "tags": [
           "Items"
         ],
         "summary": "Update a food item",
-        "description": "Updates a food item owned by the authenticated user. The referenced food must be global or owned by the user.",
+        "description": "Updates a food item owned by the authenticated user. Only the owner may update items. The referenced food must be global or owned by the user. The user identity is taken from the JWT, never from the path.",
         "security": [
           {
             "bearerAuth": []
           }
         ],
         "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "description": "CUID2 identifier of the inventory owner",
+            "schema": {
+              "type": "string",
+              "example": "clh0000000000000000000000"
+            }
+          },
           {
             "name": "id",
             "in": "path",
@@ -1217,7 +1708,7 @@
                       {
                         "type": "string",
                         "format": "date-time",
-                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
                       },
                       {
                         "type": "null"
@@ -1270,20 +1761,18 @@
                       "anyOf": [
                         {
                           "type": "string",
-                          "format": "date-time",
-                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                          "format": "date-time"
                         },
                         {
                           "type": "null"
                         }
                       ],
-                      "description": "Expiry timestamp (ISO 8601) or null when it does not expire"
+                      "description": "Expiry timestamp (ISO 8601)"
                     },
                     "addedAt": {
+                      "description": "Timestamp the item was added (ISO 8601)",
                       "type": "string",
-                      "format": "date-time",
-                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
-                      "description": "Timestamp the item was added (ISO 8601)"
+                      "format": "date-time"
                     },
                     "food": {
                       "type": "object",
@@ -1313,15 +1802,11 @@
                           "description": "Category the food belongs to"
                         },
                         "createdByUserId": {
-                          "anyOf": [
-                            {
-                              "type": "string"
-                            },
-                            {
-                              "type": "null"
-                            }
-                          ],
-                          "description": "Owner user id, or null for a globally available food"
+                          "description": "Owner user id, or null for a globally available food",
+                          "type": [
+                            "string",
+                            "null"
+                          ]
                         }
                       },
                       "required": [
@@ -1383,6 +1868,25 @@
               }
             }
           },
+          "403": {
+            "description": "The authenticated user may not access this inventory",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "description": "Human readable error code or message"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
           "404": {
             "description": "The item or the referenced food was not found, or the food does not belong to the user",
             "content": {
@@ -1405,18 +1909,28 @@
         }
       },
       "delete": {
-        "operationId": "deleteApiItemsById",
+        "operationId": "deleteApiItemsByUserIdById",
         "tags": [
           "Items"
         ],
         "summary": "Delete a food item",
-        "description": "Deletes a food item owned by the authenticated user.",
+        "description": "Deletes a food item owned by the authenticated user. Only the owner may delete items. The user identity is taken from the JWT, never from the path.",
         "security": [
           {
             "bearerAuth": []
           }
         ],
         "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "description": "CUID2 identifier of the inventory owner",
+            "schema": {
+              "type": "string",
+              "example": "clh0000000000000000000000"
+            }
+          },
           {
             "name": "id",
             "in": "path",
@@ -1485,6 +1999,25 @@
               }
             }
           },
+          "403": {
+            "description": "The authenticated user may not access this inventory",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "description": "Human readable error code or message"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
           "404": {
             "description": "Item not found or not owned by the user",
             "content": {
@@ -1500,6 +2033,99 @@
                   "required": [
                     "error"
                   ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ws": {
+      "get": {
+        "operationId": "getApiWs",
+        "tags": [
+          "WebSocket"
+        ],
+        "summary": "Open a realtime WebSocket connection",
+        "description": "Upgrades the request to a WebSocket connection and streams realtime inventory events to the client as JSON messages. Authenticate by passing a single-use ticket (obtained from GET /ws/ticket) as the ticket query parameter rather than an Authorization header.",
+        "parameters": [
+          {
+            "name": "ticket",
+            "in": "query",
+            "required": true,
+            "description": "Single-use ticket previously issued by GET /ws/ticket",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "101": {
+            "description": "Switching Protocols: the WebSocket connection was established"
+          },
+          "400": {
+            "description": "The ticket query parameter is missing",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The provided ticket is invalid, expired, or already used",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ws/ticket": {
+      "get": {
+        "operationId": "getApiWsTicket",
+        "tags": [
+          "WebSocket"
+        ],
+        "summary": "Issue a WebSocket connection ticket",
+        "description": "Generates a single-use ticket for the authenticated user, valid for 30 seconds, to be supplied as the ticket query parameter when opening the WebSocket connection at GET /ws.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Connection ticket issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ticket": {
+                      "type": "string",
+                      "description": "Single-use ticket to pass as the ticket query parameter of /ws"
+                    }
+                  },
+                  "required": [
+                    "ticket"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, malformed, or invalid access token",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string",
+                  "example": "Unauthorized"
                 }
               }
             }
@@ -1525,7 +2151,7 @@
                   "email": {
                     "type": "string",
                     "format": "email",
-                    "pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+                    "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
                   },
                   "password": {
                     "type": "string"
@@ -1570,14 +2196,14 @@
                       ],
                       "description": "The authenticated user"
                     },
-                    "accessToken": {
+                    "token": {
                       "type": "string",
                       "description": "JWT access token, valid for one hour"
                     }
                   },
                   "required": [
                     "user",
-                    "accessToken"
+                    "token"
                   ]
                 }
               }
@@ -1649,7 +2275,7 @@
                   "email": {
                     "type": "string",
                     "format": "email",
-                    "pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+                    "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
                   },
                   "password": {
                     "type": "string",
@@ -1702,14 +2328,14 @@
                       ],
                       "description": "The authenticated user"
                     },
-                    "accessToken": {
+                    "token": {
                       "type": "string",
                       "description": "JWT access token, valid for one hour"
                     }
                   },
                   "required": [
                     "user",
-                    "accessToken"
+                    "token"
                   ]
                 }
               }
@@ -1755,6 +2381,37 @@
                   },
                   "required": [
                     "message"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/health": {
+      "get": {
+        "operationId": "getApiHealth",
+        "tags": [
+          "Health"
+        ],
+        "summary": "Health check",
+        "description": "Returns a static status payload. Does not touch the database or require authentication.",
+        "responses": {
+          "200": {
+            "description": "Service is running",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "const": "ok"
+                    }
+                  },
+                  "required": [
+                    "status"
                   ]
                 }
               }
